@@ -1,0 +1,31 @@
+---
+description: Enforce clean architecture, best practices, and optimized code in React and NestJS projects.
+globs:
+  - "**/*.ts"
+  - "**/*.tsx"
+  - "**/*.js"
+  - "**/*.jsx"
+alwaysApply: true
+---
+
+# Best Practices Rule
+
+**React:**
+- Use functional components and hooks (e.g., `useState`, `useEffect`, `useContext`)
+- Keep components reusable and small (one responsibility)
+- Style using Tailwind CSS or CSS Modules
+- Avoid inline styles and logic-heavy JSX
+- Folder structure: `components/`, `pages/`, `hooks/`, `utils/`
+
+**NestJS:**
+- Use modular structure with services, controllers, and DTOs
+- Implement validation using `class-validator` and `ValidationPipe`
+- Secure routes with guards and proper HTTP status codes
+- Use dependency injection (`@Injectable()`) and config services
+- Organize code in feature-based folders: `auth/`, `user/`, `common/`
+
+**General:**
+- Prefer type safety (`TypeScript`)
+- Write clean, readable, documented code
+- Avoid magic strings or numbers
+- Always include error handling and input validation

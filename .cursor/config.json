@@ -1,0 +1,4 @@
+{
+    "defaultPrompt": "Always follow best practices. For React, use reusable components, hooks, and follow clean code principles. For NestJS, use modular services/controllers, secure endpoints, validation, and error handling. All code should be production-ready, optimized, and readable. Avoid unnecessary complexity."
+  }
+  
