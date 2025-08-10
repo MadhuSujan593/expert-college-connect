@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useVerification } from '../../hooks/useVerification';
 import Toast from '../../components/common/Toast';
+import { EmailVerificationModal, PhoneVerificationModal, VerificationField } from '../../components/verification';
 
 const ExpertRegistration = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -269,166 +270,85 @@ const ExpertRegistration = () => {
 
               {/* Email and Phone Number Row */}
               <div className="space-y-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <label htmlFor="email" className="block text-xs font-semibold text-gray-800">
-                        Email Address *
-                      </label>
-                      {isEmailVerified && (
-                        <span className="text-green-600 text-sm font-medium">✓ Verified</span>
-                      )}
-                    </div>
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <input
-                        id="email"
-                        name="email"
-                        type="email"
-                        required
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        className="w-full sm:flex-1 px-4 py-2.5 sm:py-3 bg-gray-50/50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 hover:border-gray-300 transition-all duration-300 text-sm"
-                        placeholder="Enter your email address"
-                      />
-                      {!isEmailVerified && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            handleSendEmailOtp(formData.email);
-                          }}
-                          disabled={isEmailSending || !formData.email || !isValidEmail(formData.email)}
-                          className="w-full sm:w-auto px-4 py-2.5 bg-green-600 text-white text-xs font-semibold rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-colors"
-                        >
-                          {isEmailSending ? 'Sending...' : emailOtpSent ? 'Resend OTP' : 'Verify Email'}
-                        </button>
-                      )}
-                    </div>
+                  {/* Email Address with Verification */}
+                  <VerificationField
+                    type="email"
+                    id="email"
+                    name="email"
+                    label="Email Address"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    placeholder="Enter your email address"
+                    isVerified={isEmailVerified}
+                    isSending={isEmailSending}
+                    isValid={isValidEmail}
+                    onSendOtp={handleSendEmailOtp}
+                    otpSent={emailOtpSent}
+                    buttonColor="bg-green-600"
+                    buttonHoverColor="hover:bg-green-700"
+                    verifiedTagColor="text-green-600"
+                  />
 
-                    {/* Email OTP Verification Modal */}
-                    {showEmailVerification && (
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-3">
-                        <h4 className="text-sm font-semibold text-blue-800 mb-2">Email Verification</h4>
-                        <p className="text-xs text-blue-600 mb-3">
-                          We've sent a verification code to {formData.email}. Enter the code below:
-                        </p>
-                        <div className="flex flex-col sm:flex-row gap-2">
-                          <input
-                            type="text"
-                            value={emailOtp}
-                            onChange={(e) => setEmailOtp(e.target.value)}
-                            placeholder="Enter OTP (use 123456 for demo)"
-                            className="w-full sm:flex-1 px-3 py-2 bg-white border border-blue-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            maxLength="6"
-                          />
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleVerifyEmailOtp();
-                            }}
-                            disabled={isEmailVerifying || !emailOtp}
-                            className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
-                          >
-                            {isEmailVerifying ? 'Verifying...' : 'Verify'}
-                          </button>
-                        </div>
-                        <div className="mt-3 flex justify-center">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowEmailVerification(false);
-                              setEmailOtpSent(false);
-                              setEmailOtp('');
-                            }}
-                            className="text-xs text-blue-600 hover:text-blue-800 underline"
-                          >
-                            Skip verification (you can verify later)
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  {/* Email OTP Verification Modal */}
+                  <EmailVerificationModal
+                    isOpen={showEmailVerification}
+                    email={formData.email}
+                    otp={emailOtp}
+                    setOtp={setEmailOtp}
+                    isVerifying={isEmailVerifying}
+                    onVerify={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleVerifyEmailOtp();
+                    }}
+                    onClose={() => setShowEmailVerification(false)}
+                    onSkip={() => {
+                      setShowEmailVerification(false);
+                      setEmailOtpSent(false);
+                      setEmailOtp('');
+                    }}
+                    otpSent={emailOtpSent}
+                  />
 
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <label htmlFor="phone" className="block text-xs font-semibold text-gray-800">
-                        Phone Number *
-                      </label>
-                      {isPhoneVerified && (
-                        <span className="text-green-600 text-sm font-medium">✓ Verified</span>
-                      )}
-                    </div>
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <input
-                        id="phone"
-                        name="phone"
-                        type="tel"
-                        required
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        className="w-full sm:flex-1 px-4 py-2.5 sm:py-3 bg-gray-50/50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 hover:border-gray-300 transition-all duration-300 text-sm"
-                        placeholder="Enter your phone number"
-                        maxLength="6"
-                      />
-                      {!isPhoneVerified && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            handleSendPhoneOtp(formData.phone);
-                          }}
-                          disabled={isPhoneSending || !formData.phone || !isValidPhone(formData.phone)}
-                          className="w-full sm:w-auto px-4 py-2.5 bg-purple-600 text-white text-xs font-semibold rounded-lg hover:bg-purple-700 disabled:bg-gray-400 transition-colors"
-                        >
-                          {isPhoneSending ? 'Sending...' : phoneOtpSent ? 'Resend OTP' : 'Verify Phone'}
-                        </button>
-                      )}
-                    </div>
+                  {/* Phone Number with Verification */}
+                  <VerificationField
+                    type="tel"
+                    id="phone"
+                    name="phone"
+                    label="Phone Number"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    placeholder="Enter your phone number"
+                    isVerified={isPhoneVerified}
+                    isSending={isPhoneSending}
+                    isValid={isValidPhone}
+                    onSendOtp={handleSendPhoneOtp}
+                    otpSent={phoneOtpSent}
+                    buttonColor="bg-purple-600"
+                    buttonHoverColor="hover:bg-purple-700"
+                    verifiedTagColor="text-green-600"
+                  />
 
-                    {/* Phone OTP Verification Modal */}
-                    {showPhoneVerification && (
-                      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mt-3">
-                        <h4 className="text-sm font-semibold text-purple-800 mb-2">Phone Verification</h4>
-                        <p className="text-xs text-purple-600 mb-3">
-                          We've sent a verification code to {formData.phone}. Enter the code below:
-                        </p>
-                        <div className="flex flex-col sm:flex-row gap-2">
-                          <input
-                            type="text"
-                            value={phoneOtp}
-                            onChange={(e) => setPhoneOtp(e.target.value)}
-                            placeholder="Enter OTP (use 654321 for demo)"
-                            className="w-full sm:flex-1 px-3 py-2 bg-white border border-purple-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                            maxLength="6"
-                          />
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleVerifyPhoneOtp();
-                            }}
-                            disabled={isPhoneVerifying || !phoneOtp}
-                            className="w-full sm:w-auto px-4 py-2 bg-purple-600 text-white text-xs font-semibold rounded-lg hover:bg-purple-700 disabled:bg-gray-400 transition-colors"
-                          >
-                            {isPhoneVerifying ? 'Verifying...' : 'Verify'}
-                          </button>
-                        </div>
-                        <div className="mt-3 flex justify-center">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowPhoneVerification(false);
-                              setPhoneOtpSent(false);
-                              setPhoneOtp('');
-                            }}
-                            className="text-xs text-purple-600 hover:text-purple-800 underline"
-                          >
-                            Skip verification (you can verify later)
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  {/* Phone OTP Verification Modal */}
+                  <PhoneVerificationModal
+                    isOpen={showPhoneVerification}
+                    phone={formData.phone}
+                    otp={phoneOtp}
+                    setOtp={setPhoneOtp}
+                    isVerifying={isPhoneVerifying}
+                    onVerify={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleVerifyPhoneOtp();
+                    }}
+                    onClose={() => setShowPhoneVerification(false)}
+                    onSkip={() => {
+                      setShowPhoneVerification(false);
+                      setPhoneOtpSent(false);
+                      setPhoneOtp('');
+                    }}
+                    otpSent={phoneOtpSent}
+                  />
 
                 </div>
 
