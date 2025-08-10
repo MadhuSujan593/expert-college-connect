@@ -12,7 +12,9 @@ import {
   Shield,
   CheckCircle,
   Sparkles,
-  ArrowLeft
+  ArrowLeft,
+  Building2,
+  Users
 } from 'lucide-react';
 import { useVerification } from '../../hooks/useVerification';
 import Toast from '../../components/common/Toast';
@@ -168,326 +170,332 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 relative overflow-hidden">
-      {/* Clean modern background */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 relative overflow-hidden">
+      {/* Enterprise Background Pattern */}
       <div className="absolute inset-0">
-        {/* Elegant wave patterns */}
-        <div className="absolute inset-0 opacity-30">
-          <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 1440 320">
-            <path fill="rgba(59, 130, 246, 0.1)" fillOpacity="1" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,128C960,117,1056,75,1152,64C1248,53,1344,75,1392,85.3L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
-          </svg>
-        </div>
-        
-        <div className="absolute inset-0 opacity-20">
-          <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 1440 320">
-            <path fill="rgba(99, 102, 241, 0.1)" fillOpacity="1" d="M0,224L48,208C96,192,192,160,288,165.3C384,171,480,213,576,213.3C672,213,768,171,864,149.3C960,128,1056,128,1152,144C1248,160,1344,192,1392,208L1440,224L1440,0L1392,0C1344,0,1248,0,1152,0C1056,0,960,0,864,0C768,0,672,0,576,0C480,0,384,0,288,0C192,0,96,0,48,0L0,0Z"></path>
-          </svg>
-        </div>
-        
-        {/* Floating elements */}
-        <div className="absolute top-20 right-20 w-64 h-64 bg-gradient-to-br from-blue-200/20 to-indigo-200/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 left-20 w-80 h-80 bg-gradient-to-br from-indigo-200/15 to-purple-200/10 rounded-full blur-3xl"></div>
-        
-        {/* Modern grid pattern */}
-        <div className="absolute inset-0 opacity-5" style={{
+        {/* Subtle geometric pattern */}
+        <div className="absolute inset-0 opacity-[0.02]" style={{
           backgroundImage: `
-            linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px)
+            radial-gradient(circle at 25% 25%, #3B82F6 1px, transparent 1px),
+            radial-gradient(circle at 75% 75%, #6366F1 1px, transparent 1px)
           `,
-          backgroundSize: '50px 50px'
+          backgroundSize: '80px 80px'
         }}></div>
+        
+        {/* Subtle gradient overlays */}
+        <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-white/40 to-transparent"></div>
+        <div className="absolute bottom-0 right-0 w-full h-32 bg-gradient-to-t from-indigo-50/30 to-transparent"></div>
       </div>
 
-      <div className="relative flex items-center justify-center min-h-screen py-2 px-4 sm:px-6 lg:px-8">
-        {/* Back to Home Button */}
-        <Link
-          to="/"
-          className="fixed top-4 left-4 sm:top-6 sm:left-6 flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-200 bg-white/95 backdrop-blur-sm px-3 py-1.5 sm:px-4 sm:py-2 rounded-full shadow-lg hover:shadow-xl z-50"
-        >
-          <ArrowRight className="w-4 h-4 rotate-180" />
-          <span className="text-xs sm:text-sm font-medium">Back to Home</span>
-        </Link>
-        
-        <div className="max-w-lg w-full">
-          {/* Sophisticated Login Form */}
-          <motion.div
-            initial={{ opacity: 0, y: 30, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.7, ease: "easeOut" }}
-            className="relative bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 p-5 hover:shadow-2xl transition-all duration-500"
-          >
-            {/* Elegant glass overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-white/20 to-transparent rounded-3xl"></div>
-            
-            {/* Compact Header */}
-            <div className="relative text-center mb-5">
-              <div className="inline-flex items-center justify-center w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl mb-3 shadow-lg shadow-blue-500/30">
-                <GraduationCap className="w-5 h-5 text-white" />
+      <div className="relative flex min-h-screen">
+        {/* Left Panel - Brand & Info (Hidden on mobile) */}
+        <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-700 via-indigo-800 to-purple-900 relative overflow-hidden">
+          {/* Enhanced brand overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-black/30 via-black/20 to-black/10"></div>
+          
+          {/* Subtle pattern overlay */}
+          <div className="absolute inset-0 opacity-10" style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+          }}></div>
+          
+          {/* Content */}
+          <div className="relative z-10 flex flex-col justify-center px-10 py-12 text-white">
+            {/* Logo */}
+            <div className="mb-6">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl mb-3 shadow-2xl border border-white/10">
+                <GraduationCap className="w-8 h-8 text-white" />
+              </div>
+              <h1 className="text-4xl font-bold tracking-tight mb-2 bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">ExpertConnect</h1>
+              <p className="text-blue-100 text-lg font-medium">Connecting Expertise with Opportunity</p>
+            </div>
+
+            {/* Value propositions */}
+            <div className="space-y-4 mb-8">
+              <div className="flex items-start space-x-3 group">
+                <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-1 shadow-lg border border-white/10 group-hover:bg-white/30 transition-all duration-300">
+                  <Users className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg mb-1 text-white">Expert Network</h3>
+                  <p className="text-blue-100 leading-relaxed opacity-90">Access a curated network of industry professionals and subject matter experts</p>
+                </div>
               </div>
               
-              <h1 className="text-xl font-bold text-gray-900 mb-1 tracking-tight">
-                {showOtpInput ? 'Verify OTP' : 'Welcome back'}
+              <div className="flex items-start space-x-3 group">
+                <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-1 shadow-lg border border-white/10 group-hover:bg-white/30 transition-all duration-300">
+                  <Building2 className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg mb-1 text-white">Institutional Excellence</h3>
+                  <p className="text-blue-100 leading-relaxed opacity-90">Connect with leading educational institutions and corporate partners</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start space-x-3 group">
+                <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-1 shadow-lg border border-white/10 group-hover:bg-white/30 transition-all duration-300">
+                  <Shield className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg mb-1 text-white">Trusted Platform</h3>
+                  <p className="text-blue-100 leading-relaxed opacity-90">Built on security, verification, and professional standards</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Stats or social proof */}
+            <div className="border-t border-white/20 pt-4">
+              <p className="text-blue-100 text-sm opacity-80">Trusted by 500+ institutions and 10,000+ experts worldwide</p>
+            </div>
+          </div>
+
+          {/* Enhanced floating elements */}
+          <div className="absolute top-20 right-20 w-32 h-32 bg-white/5 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-20 left-20 w-40 h-40 bg-white/5 rounded-full blur-3xl animate-pulse" style={{animationDelay: '2s'}}></div>
+        </div>
+
+        {/* Right Panel - Login Form */}
+        <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-12 py-4 lg:py-8">
+          <div className="w-full max-w-md">
+            {/* Back to Home Button */}
+            <Link
+              to="/"
+              className="inline-flex items-center space-x-2 text-gray-500 hover:text-gray-700 transition-all duration-300 mb-3 lg:mb-4 group hover:scale-105"
+            >
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-300" />
+              <span className="text-sm font-medium">Back to Home</span>
+            </Link>
+
+            {/* Login Header */}
+            <div className="mb-3 lg:mb-4">
+              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1 bg-gradient-to-r from-gray-900 via-blue-900 to-indigo-900 bg-clip-text text-transparent">
+                {showOtpInput ? 'Verify Your Code' : 'Welcome Back'}
               </h1>
-              <p className="text-sm text-gray-600">
+              <p className="text-gray-600 text-sm lg:text-base">
                 {showOtpInput 
-                  ? `Enter the verification code sent to ${loginMethod === 'email' ? formData.email : formData.phone}`
+                  ? `Enter the 6-digit code sent to ${loginMethod === 'email' ? formData.email : formData.phone}`
                   : 'Sign in to your ExpertConnect account'
                 }
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="relative space-y-4">
-              {!showOtpInput ? (
-                <>
-                  {/* Login Method Toggle */}
-                  <div className="flex items-center justify-center space-x-2 bg-gray-100 rounded-lg p-1">
-                    <button
-                      type="button"
-                      onClick={() => setLoginMethod('email')}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                        loginMethod === 'email'
-                          ? 'bg-white text-blue-600 shadow-sm'
-                          : 'text-gray-600 hover:text-gray-800'
-                      }`}
-                    >
-                      <Mail className="w-4 h-4 inline mr-2" />
-                      Email
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setLoginMethod('phone')}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                        loginMethod === 'phone'
-                          ? 'bg-white text-blue-600 shadow-sm'
-                          : 'text-gray-600 hover:text-gray-800'
-                      }`}
-                    >
-                      <Phone className="w-4 h-4 inline mr-2" />
-                      Phone
-                    </button>
-                  </div>
-
-                  {/* Email/Phone Field */}
-                  <div className="space-y-1">
-                    <label htmlFor={loginMethod} className="block text-sm font-semibold text-gray-800">
-                      {loginMethod === 'email' ? 'Email Address' : 'Phone Number'}
-                    </label>
-                    <div className="relative group">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        {loginMethod === 'email' ? (
-                          <Mail className="h-5 w-5 text-blue-400 group-focus-within:text-blue-500 transition-colors duration-200" />
-                        ) : (
-                          <Phone className="h-5 w-5 text-blue-400 group-focus-within:text-blue-500 transition-colors duration-200" />
-                        )}
-                      </div>
-                      <input
-                        id={loginMethod}
-                        name={loginMethod}
-                        type={loginMethod === 'email' ? 'email' : 'tel'}
-                        required
-                        value={formData[loginMethod]}
-                        onChange={handleInputChange}
-                        className="w-full pl-12 pr-4 py-3 bg-gray-50/50 border-2 border-gray-200 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all duration-300 text-base font-medium"
-                        placeholder={loginMethod === 'email' ? 'Enter your email address' : 'Enter your phone number'}
-                        maxLength={loginMethod === 'phone' ? 15 : undefined}
-                      />
-                      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/5 to-indigo-500/5 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+            {/* Login Form */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50 p-4 lg:p-5 shadow-2xl shadow-blue-500/5">
+              <form onSubmit={handleSubmit} className="space-y-3">
+                {!showOtpInput ? (
+                  <>
+                    {/* Login Method Toggle */}
+                    <div className="flex bg-gray-100/80 rounded-xl p-1.5 shadow-inner">
+                      <button
+                        type="button"
+                        onClick={() => setLoginMethod('email')}
+                        className={`flex-1 flex items-center justify-center space-x-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 ${
+                          loginMethod === 'email'
+                            ? 'bg-white text-gray-900 shadow-lg shadow-gray-200/50 transform scale-105'
+                            : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
+                        }`}
+                      >
+                        <Mail className="w-4 h-4" />
+                        <span>Email</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setLoginMethod('phone')}
+                        className={`flex-1 flex items-center justify-center space-x-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 ${
+                          loginMethod === 'phone'
+                            ? 'bg-white text-gray-900 shadow-lg shadow-gray-200/50 transform scale-105'
+                            : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
+                        }`}
+                      >
+                        <Phone className="w-4 h-4" />
+                        <span>Phone</span>
+                      </button>
                     </div>
-                  </div>
 
-                  {/* Password Field - Only show for email login */}
-                  {loginMethod === 'email' && (
-                    <div className="space-y-1">
-                      <label htmlFor="password" className="block text-sm font-semibold text-gray-800">
-                        Password
+                    {/* Email/Phone Field */}
+                    <div>
+                      <label htmlFor={loginMethod} className="block text-sm font-semibold text-gray-700 mb-2">
+                        {loginMethod === 'email' ? 'Email Address' : 'Phone Number'}
                       </label>
                       <div className="relative group">
-                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                          <Lock className="h-5 w-5 text-blue-400 group-focus-within:text-blue-500 transition-colors duration-200" />
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          {loginMethod === 'email' ? (
+                            <Mail className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" />
+                          ) : (
+                            <Phone className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" />
+                          )}
                         </div>
                         <input
-                          id="password"
-                          name="password"
-                          type={showPassword ? 'text' : 'password'}
+                          id={loginMethod}
+                          name={loginMethod}
+                          type={loginMethod === 'email' ? 'email' : 'tel'}
                           required
-                          value={formData.password}
+                          value={formData[loginMethod]}
                           onChange={handleInputChange}
-                          className="w-full pl-12 pr-12 py-3 bg-gray-50/50 border-2 border-gray-200 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all duration-300 text-base font-medium"
-                          placeholder="Enter your password"
+                          className="w-full pl-10 pr-4 py-3 bg-gray-50/80 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 focus:bg-white focus:shadow-lg focus:shadow-blue-500/20"
+                          placeholder={loginMethod === 'email' ? 'Enter your email' : 'Enter your phone number'}
+                          maxLength={loginMethod === 'phone' ? 15 : undefined}
                         />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute inset-y-0 right-0 pr-4 flex items-center hover:scale-110 transition-transform duration-200"
-                        >
-                          {showPassword ? (
-                            <EyeOff className="h-5 w-5 text-blue-400 hover:text-blue-500 transition-colors duration-200" />
-                          ) : (
-                            <Eye className="h-5 w-5 text-blue-400 hover:text-blue-500 transition-colors duration-200" />
-                          )}
-                        </button>
-                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/5 to-indigo-500/5 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                       </div>
                     </div>
-                  )}
 
-                  {/* Remember Me & Forgot Password - Only show for email login */}
-                  {loginMethod === 'email' && (
-                    <div className="flex items-center justify-between pt-2">
-                      <div className="flex items-center space-x-3">
-                        <input
-                          id="rememberMe"
-                          name="rememberMe"
-                          type="checkbox"
-                          checked={formData.rememberMe}
-                          onChange={handleInputChange}
-                          className="h-5 w-5 text-blue-600 bg-gray-50 border-2 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 transition-all duration-200"
-                        />
-                        <label htmlFor="rememberMe" className="text-sm text-gray-700 font-medium">
-                          Remember me
+                    {/* Password Field - Only show for email login */}
+                    {loginMethod === 'email' && (
+                      <div>
+                        <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
+                          Password
                         </label>
+                        <div className="relative group">
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" />
+                          </div>
+                          <input
+                            id="password"
+                            name="password"
+                            type={showPassword ? 'text' : 'password'}
+                            required
+                            value={formData.password}
+                            onChange={handleInputChange}
+                            className="w-full pl-10 pr-12 py-3 bg-gray-50/80 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 focus:bg-white focus:shadow-lg focus:shadow-blue-500/20"
+                            placeholder="Enter your password"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-300 hover:scale-110"
+                          >
+                            {showPassword ? (
+                              <Eye className="h-5 w-5" />
+                            ) : (
+                              <EyeOff className="h-5 w-5" />
+                            )}
+                          </button>
+                        </div>
                       </div>
-                      <Link
-                        to="/forgot-password"
-                        className="text-sm font-semibold text-blue-600 hover:text-blue-500 transition-colors duration-200 hover:underline"
+                    )}
+
+                    {/* Remember Me & Forgot Password - Only show for email login */}
+                    {loginMethod === 'email' && (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <input
+                            id="rememberMe"
+                            name="rememberMe"
+                            type="checkbox"
+                            checked={formData.rememberMe}
+                            onChange={handleInputChange}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-all duration-200 hover:scale-110"
+                          />
+                          <label htmlFor="rememberMe" className="ml-2 text-sm text-gray-700 font-medium">
+                            Remember me
+                          </label>
+                        </div>
+                        <Link
+                          to="/forgot-password"
+                          className="text-sm font-medium text-blue-600 hover:text-blue-500 transition-all duration-200 hover:underline"
+                        >
+                          Forgot password?
+                        </Link>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {/* OTP Input Field */}
+                    <div>
+                      <label htmlFor="otp" className="block text-sm font-semibold text-gray-700 mb-2">
+                        Verification Code
+                      </label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" />
+                        </div>
+                        <input
+                          id="otp"
+                          name="otp"
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]{6}"
+                          required
+                          value={formData.otp}
+                          onChange={handleInputChange}
+                          className="w-full pl-10 pr-4 py-3 bg-gray-50/80 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 focus:bg-white focus:shadow-lg focus:shadow-blue-500/20 text-center tracking-widest text-lg font-mono"
+                          placeholder="000000"
+                          maxLength="6"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Back Button */}
+                    <div className="flex justify-center">
+                      <button
+                        type="button"
+                        onClick={resetForm}
+                        className="inline-flex items-center space-x-2 text-sm text-gray-600 hover:text-gray-800 transition-all duration-300 hover:scale-105"
                       >
-                        Forgot password?
-                      </Link>
+                        <ArrowLeft className="w-4 h-4" />
+                        <span>Back to login</span>
+                      </button>
                     </div>
-                  )}
-                </>
-              ) : (
-                <>
-                  {/* OTP Input Field */}
-                  <div className="space-y-1">
-                    <label htmlFor="otp" className="block text-sm font-semibold text-gray-800">
-                      Verification Code
-                    </label>
-                    <div className="relative group">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <Lock className="h-5 w-5 text-blue-400 group-focus-within:text-blue-500 transition-colors duration-200" />
-                      </div>
-                      <input
-                        id="otp"
-                        name="otp"
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]{6}"
-                        required
-                        value={formData.otp}
-                        onChange={handleInputChange}
-                        className="w-full pl-12 pr-4 py-3 bg-gray-50/50 border-2 border-gray-200 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all duration-300 text-base font-medium text-center tracking-widest"
-                        placeholder="Enter 6-digit code"
-                        maxLength="6"
-                      />
-                                           <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/5 to-indigo-500/5 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
-                   </div>
-                  </div>
+                  </>
+                )}
 
-                  {/* Back Button */}
-                  <div className="flex justify-center">
-                    <button
-                      type="button"
-                      onClick={resetForm}
-                      className="flex items-center space-x-2 text-sm text-gray-600 hover:text-blue-600 transition-colors duration-200"
-                    >
-                      <ArrowLeft className="w-4 h-4" />
-                      <span>Back to login</span>
-                    </button>
-                  </div>
-                </>
-              )}
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={
-                  showOtpInput 
-                    ? !formData.otp || formData.otp.length !== 6
-                    : loginMethod === 'email' 
-                      ? !formData.email || !formData.password 
-                      : !formData.phone
-                }
-                className="group relative w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 text-white py-2.5 px-6 rounded-xl text-base font-bold shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 disabled:shadow-none transition-all duration-300 flex items-center justify-center transform hover:-translate-y-1 disabled:transform-none mt-4 overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <span className="relative flex items-center">
-                  {showOtpInput 
-                    ? (loginMethod === 'email' ? isEmailVerifying : isPhoneVerifying) 
-                      ? 'Verifying...' 
-                      : 'Verify & Login'
-                    : loginMethod === 'email'
-                      ? 'Sign In'
-                      : 'Send OTP & Continue'
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={
+                    showOtpInput 
+                      ? !formData.otp || formData.otp.length !== 6
+                      : loginMethod === 'email' 
+                        ? !formData.email || !formData.password 
+                        : !formData.phone
                   }
-                  <ArrowRight className="ml-3 w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
-                </span>
-              </button>
-            </form>
-          </motion.div>
-
-          {/* Sophisticated Registration Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.2 }}
-            className="mt-4 space-y-3"
-          >
-            {/* Elegant Divider */}
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200" />
-              </div>
-              <div className="relative flex justify-center">
-                <span className="px-4 py-1.5 bg-white text-gray-600 font-semibold text-sm rounded-full border border-gray-200 shadow-sm">
-                  New to ExpertConnect?
-                </span>
-              </div>
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-300 disabled:to-gray-400 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-300 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 hover:scale-[1.02] transform disabled:transform-none"
+                >
+                  <span>
+                    {showOtpInput 
+                      ? (loginMethod === 'email' ? isEmailVerifying : isPhoneVerifying) 
+                        ? 'Verifying...' 
+                        : 'Verify & Sign In'
+                      : loginMethod === 'email'
+                        ? 'Sign In'
+                        : 'Send Code'
+                    }
+                  </span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </form>
             </div>
 
-            {/* Elegant Register Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Link
-                to="/register/expert"
-                className="group relative bg-white border-2 border-gray-200 hover:border-green-400 rounded-xl p-3 transition-all duration-300 hover:shadow-lg hover:shadow-green-100/50 transform hover:-translate-y-1"
-              >
-                <div className="flex items-center space-x-4">
-                  <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                    <Shield className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-bold text-gray-900 text-sm group-hover:text-green-700 transition-colors">
-                      Join as Expert
+            {/* Registration Section */}
+            <div className="mt-3 lg:mt-4 text-center">
+              <p className="text-gray-600 mb-3 font-medium">Don't have an account?</p>
+              <div className="grid grid-cols-2 gap-3">
+                <Link
+                  to="/register/expert"
+                  className="group bg-white/80 backdrop-blur-sm border border-gray-200/50 hover:border-green-500/60 rounded-xl p-4 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/20 hover:scale-105 transform"
+                >
+                  <div className="flex flex-col items-center space-y-2">
+                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-all duration-300 shadow-md">
+                      <Shield className="w-4 h-4 text-green-600" />
                     </div>
-                    <div className="text-gray-500 text-xs font-medium">
-                      Share your expertise
-                    </div>
+                    <span className="text-sm font-semibold text-gray-900">Join as Expert</span>
                   </div>
-                  <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-green-500 group-hover:translate-x-1 transition-all duration-300" />
-                </div>
-              </Link>
-              
-              <Link
-                to="/register/college"
-                className="group relative bg-white border-2 border-gray-200 hover:border-purple-400 rounded-xl p-3 transition-all duration-300 hover:shadow-lg hover:shadow-purple-100/50 transform hover:-translate-y-1"
-              >
-                <div className="flex items-center space-x-4">
-                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                    <GraduationCap className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="flex-1">  
-                    <div className="font-bold text-gray-900 text-sm group-hover:text-purple-700 transition-colors">
-                      Join as Institution
+                </Link>
+                
+                <Link
+                  to="/register/college"
+                  className="group bg-white/80 backdrop-blur-sm border border-gray-200/50 hover:border-purple-500/60 rounded-xl p-4 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20 hover:scale-105 transform"
+                >
+                  <div className="flex flex-col items-center space-y-2">
+                    <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-all duration-300 shadow-md">
+                      <GraduationCap className="w-4 h-4 text-purple-600" />
                     </div>
-                    <div className="text-gray-500 text-xs font-medium">
-                      Find expert talent
-                    </div>
+                    <span className="text-sm font-semibold text-gray-900">Join as Institution</span>
                   </div>
-                  <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-purple-500 group-hover:translate-x-1 transition-all duration-300" />
-                </div>
-              </Link>
+                </Link>
+              </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
 

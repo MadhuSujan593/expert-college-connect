@@ -18,7 +18,8 @@ import {
   Award,
   BookOpen,
   Users,
-  Star
+  Star,
+  Building2
 } from 'lucide-react';
 import { useVerification } from '../../hooks/useVerification';
 import Toast from '../../components/common/Toast';
@@ -188,49 +189,38 @@ const ExpertRegistration = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 relative overflow-hidden">
-      {/* Clean modern background */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 relative overflow-hidden">
+      {/* Enterprise Background Pattern */}
       <div className="absolute inset-0">
-        {/* Elegant wave patterns */}
-        <div className="absolute inset-0 opacity-30">
-          <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 1440 320">
-            <path fill="rgba(34, 197, 94, 0.1)" fillOpacity="1" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,128C960,117,1056,75,1152,64C1248,53,1344,75,1392,85.3L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
-          </svg>
-        </div>
-        
-        <div className="absolute inset-0 opacity-20">
-          <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 1440 320">
-            <path fill="rgba(16, 185, 129, 0.1)" fillOpacity="1" d="M0,224L48,208C96,192,192,160,288,165.3C384,171,480,213,576,213.3C672,213,768,171,864,149.3C960,128,1056,128,1152,144C1248,160,1344,192,1392,208L1440,224L1440,0L1392,0C1344,0,1248,0,1152,0C1056,0,960,0,864,0C768,0,672,0,576,0C480,0,384,0,288,0C192,0,96,0,48,0L0,0Z"></path>
-          </svg>
-        </div>
-        
-        {/* Floating elements */}
-        <div className="absolute top-20 right-20 w-64 h-64 bg-gradient-to-br from-green-200/20 to-emerald-200/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 left-20 w-80 h-80 bg-gradient-to-br from-emerald-200/15 to-teal-200/10 rounded-full blur-3xl"></div>
-        
-
-        
-        {/* Modern grid pattern */}
-        <div className="absolute inset-0 opacity-5" style={{
+        {/* Subtle geometric pattern */}
+        <div className="absolute inset-0 opacity-[0.02]" style={{
           backgroundImage: `
-            linear-gradient(rgba(34, 197, 94, 0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(34, 197, 94, 0.1) 1px, transparent 1px)
+            radial-gradient(circle at 25% 25%, #3B82F6 1px, transparent 1px),
+            radial-gradient(circle at 75% 75%, #6366F1 1px, transparent 1px)
           `,
-          backgroundSize: '50px 50px'
+          backgroundSize: '80px 80px'
         }}></div>
+        
+        {/* Subtle gradient overlays */}
+        <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-white/40 to-transparent"></div>
+        <div className="absolute bottom-0 right-0 w-full h-32 bg-gradient-to-t from-indigo-50/30 to-transparent"></div>
+        
+        {/* Enhanced floating elements */}
+        <div className="absolute top-20 right-20 w-64 h-64 bg-gradient-to-br from-blue-200/20 to-indigo-200/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 left-20 w-80 h-80 bg-gradient-to-br from-indigo-200/15 to-purple-200/10 rounded-full blur-3xl animate-pulse" style={{animationDelay: '2s'}}></div>
       </div>
 
       <div className="relative flex items-center justify-center min-h-screen py-2 px-3 sm:px-6 lg:px-8">
         {/* Back to Home Button */}
         <Link
           to="/"
-          className="fixed top-4 left-4 sm:top-6 sm:left-6 flex items-center space-x-2 text-gray-600 hover:text-green-600 transition-colors duration-200 bg-white/95 backdrop-blur-sm px-3 py-1.5 sm:px-4 sm:py-2 rounded-full shadow-lg hover:shadow-xl z-50"
+          className="fixed top-4 left-4 sm:top-6 sm:left-6 flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-all duration-300 bg-white/95 backdrop-blur-sm px-3 py-1.5 sm:px-4 sm:py-2 rounded-full shadow-lg hover:shadow-xl z-50 hover:scale-105 transform"
         >
           <ArrowRight className="w-4 h-4 rotate-180" />
           <span className="text-xs sm:text-sm font-medium">Back to Home</span>
         </Link>
         
-        <div className="max-w-3xl w-full space-y-3 sm:space-y-4 mt-16 sm:mt-12">
+        <div className="max-w-4xl w-full space-y-2 sm:space-y-3 lg:space-y-3 mt-12 sm:mt-10 lg:mt-8">
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -238,42 +228,45 @@ const ExpertRegistration = () => {
             transition={{ duration: 0.6 }}
             className="text-center"
           >
-            <h1 className="text-lg sm:text-xl font-bold text-gray-900 mb-1 sm:mb-2 leading-tight">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-1 sm:mb-2 lg:mb-1 leading-tight bg-gradient-to-r from-gray-900 via-blue-900 to-indigo-900 bg-clip-text text-transparent">
               Share Your Expertise
-              <span className="text-green-600"> With Future Leaders</span>
+              <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent"> With Future Leaders</span>
             </h1>
-            <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3 max-w-xl mx-auto">
-              Connect with educational institutions and inspire professionals
-            </p>
+           
           </motion.div>
 
-          {/* Clean Registration Form */}
+          {/* Premium Registration Form */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="bg-white/90 backdrop-blur-xl rounded-xl shadow-lg border border-gray-100 p-4 sm:p-5 hover:shadow-xl transition-all duration-300"
+            className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl shadow-blue-500/5 border border-gray-200/50 p-3 sm:p-4 lg:p-5 pb-4 sm:pb-6 lg:pb-6 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500"
           >
-            <form onSubmit={handleSubmit} className="space-y-2 sm:space-y-3">
+            <form onSubmit={handleSubmit} className="space-y-2 sm:space-y-3 lg:space-y-3">
               {/* Full Name */}
               <div>
-                <label htmlFor="fullName" className="block text-xs font-semibold text-gray-800 mb-0.5">
+                <label htmlFor="fullName" className="block text-sm font-semibold text-gray-800 mb-1">
                   Full Name *
                 </label>
-                <input
-                  id="fullName"
-                  name="fullName"
-                  type="text"
-                  required
-                  value={formData.fullName}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 sm:py-2.5 bg-gray-50/50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 hover:border-gray-300 transition-all duration-300 text-sm"
-                  placeholder="Enter your full name"
-                />
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" />
+                  </div>
+                  <input
+                    id="fullName"
+                    name="fullName"
+                    type="text"
+                    required
+                    value={formData.fullName}
+                    onChange={handleInputChange}
+                    className="w-full pl-10 pr-4 py-2 sm:py-2.5 lg:py-2.5 bg-gray-50/80 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 hover:border-gray-300 transition-all duration-300 focus:bg-white focus:shadow-lg focus:shadow-blue-500/20 text-sm placeholder:text-sm"
+                    placeholder="Enter your full name"
+                  />
+                </div>
               </div>
 
               {/* Email and Phone Number Row */}
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-2">
                   {/* Email Address with Verification */}
                   <VerificationField
                     type="email"
@@ -288,8 +281,8 @@ const ExpertRegistration = () => {
                     isValid={isValidEmail}
                     onSendOtp={handleSendEmailOtp}
                     otpSent={emailOtpSent}
-                    buttonColor="bg-green-600"
-                    buttonHoverColor="hover:bg-green-700"
+                    buttonColor="bg-blue-600"
+                    buttonHoverColor="hover:bg-blue-700"
                     verifiedTagColor="text-green-600"
                   />
 
@@ -328,8 +321,8 @@ const ExpertRegistration = () => {
                     isValid={isValidPhone}
                     onSendOtp={handleSendPhoneOtp}
                     otpSent={phoneOtpSent}
-                    buttonColor="bg-purple-600"
-                    buttonHoverColor="hover:bg-purple-700"
+                    buttonColor="bg-indigo-600"
+                    buttonHoverColor="hover:bg-indigo-700"
                     verifiedTagColor="text-green-600"
                   />
 
@@ -353,49 +346,61 @@ const ExpertRegistration = () => {
                     }}
                     otpSent={phoneOtpSent}
                   />
-
                 </div>
 
               {/* Job Title and Company Row */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 lg:gap-3">
                 <div>
-                  <label htmlFor="jobTitle" className="block text-xs font-semibold text-gray-800 mb-1">
+                  <label htmlFor="jobTitle" className="block text-sm font-semibold text-gray-800 mb-1">
                     Current Job Title *
                   </label>
-                  <input
-                    id="jobTitle"
-                    name="jobTitle"
-                    type="text"
-                    required
-                    value={formData.jobTitle}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2.5 sm:py-3 bg-gray-50/50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 hover:border-gray-300 transition-all duration-300 text-sm"
-                    placeholder="e.g., Senior Data Scientist"
-                  />
-        </div>
-        <div>
-                  <label htmlFor="company" className="block text-xs font-semibold text-gray-800 mb-1">
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Briefcase className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" />
+                    </div>
+                    <input
+                      id="jobTitle"
+                      name="jobTitle"
+                      type="text"
+                      required
+                      value={formData.jobTitle}
+                      onChange={handleInputChange}
+                      className="w-full pl-10 pr-4 py-2 sm:py-2.5 lg:py-2.5 bg-gray-50/80 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 hover:border-gray-300 transition-all duration-300 focus:bg-white focus:shadow-lg focus:shadow-blue-500/20 text-sm placeholder:text-sm"
+                      placeholder="e.g., Senior Data Scientist"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="company" className="block text-sm font-semibold text-gray-800 mb-1">
                     Company/Organization *
                   </label>
-                  <input
-                    id="company"
-                    name="company"
-                    type="text"
-                    required
-                    value={formData.company}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2.5 sm:py-3 bg-gray-50/50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 hover:border-gray-300 transition-all duration-300 text-sm"
-                    placeholder="e.g., Google, Microsoft, etc."
-                  />
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Building2 className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" />
+                    </div>
+                    <input
+                      id="company"
+                      name="company"
+                      type="text"
+                      required
+                      value={formData.company}
+                      onChange={handleInputChange}
+                      className="w-full pl-10 pr-4 py-2 sm:py-2.5 lg:py-2.5 bg-gray-50/80 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 hover:border-gray-300 transition-all duration-300 focus:bg-white focus:shadow-lg focus:shadow-blue-500/20 text-sm placeholder:text-sm"
+                      placeholder="e.g., Google, Microsoft, etc."
+                    />
+                  </div>
                 </div>
               </div>
 
               {/* Password */}
               <div>
-                <label htmlFor="password" className="block text-xs font-semibold text-gray-800 mb-0.5">
+                <label htmlFor="password" className="block text-sm font-semibold text-gray-800 mb-1">
                   Password *
                 </label>
-                <div className="relative">
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" />
+                  </div>
                   <input
                     id="password"
                     name="password"
@@ -403,21 +408,22 @@ const ExpertRegistration = () => {
                     required
                     value={formData.password}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 sm:py-2.5 pr-10 bg-gray-50/50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 hover:border-gray-300 transition-all duration-300 text-sm"
+                    className="w-full pl-10 pr-12 py-2 sm:py-2.5 lg:py-2.5 bg-gray-50/80 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 hover:border-gray-300 transition-all duration-300 focus:bg-white focus:shadow-lg focus:shadow-blue-500/20 text-sm placeholder:text-sm"
                     placeholder="Create a strong password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-all duration-300 hover:scale-110"
                   >
                     {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                      <Eye className="h-5 w-5" />
                     ) : (
-                      <Eye className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                      <EyeOff className="h-5 w-5" />
                     )}
                   </button>
                 </div>
+                <p className="text-xs text-gray-500 mt-1">Use at least 8 characters with a mix of letters, numbers, and symbols</p>
               </div>
 
               {/* Terms & Conditions */}
@@ -429,17 +435,17 @@ const ExpertRegistration = () => {
                   required
                   checked={formData.agreeToTerms}
                   onChange={handleInputChange}
-                  className="h-3 w-3 text-green-600 focus:ring-green-500 border-gray-300 rounded mt-0.5"
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-0.5 transition-all duration-200 hover:scale-110"
                 />
-                <label htmlFor="agreeToTerms" className="ml-2 text-xs text-gray-700">
-                  I agree to the <Link to="/terms" className="text-green-600 hover:text-green-500 font-semibold">Terms</Link> and <Link to="/privacy" className="text-green-600 hover:text-green-500 font-semibold">Privacy Policy</Link> *
+                <label htmlFor="agreeToTerms" className="ml-3 text-sm text-gray-700 font-medium">
+                  I agree to the <Link to="/terms" className="text-blue-600 hover:text-blue-500 font-semibold hover:underline transition-colors">Terms</Link> and <Link to="/privacy" className="text-blue-600 hover:text-blue-500 font-semibold hover:underline transition-colors">Privacy Policy</Link> *
                 </label>
-        </div>
+              </div>
 
               {/* Submit Button */}
               <button
                 type="submit"
-                className="group relative w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-3 sm:py-3.5 px-6 rounded-lg text-base font-bold shadow-md shadow-green-500/25 hover:shadow-lg hover:shadow-green-500/30 transition-all duration-300 flex items-center justify-center transform hover:-translate-y-0.5 mt-3 sm:mt-4 overflow-hidden"
+                className="group relative w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-2.5 sm:py-3 lg:py-3 px-6 rounded-xl text-base font-semibold shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 flex items-center justify-center transform hover:scale-[1.02] mt-2 sm:mt-2 lg:mt-3 overflow-hidden"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <span className="relative flex items-center">
@@ -450,17 +456,15 @@ const ExpertRegistration = () => {
             </form>
 
             {/* Login Link */}
-            <div className="mt-1 sm:mt-2 text-center">
-              <p className="text-xs text-gray-600">
+            <div className="mt-3 sm:mt-3 lg:mt-4 text-center">
+              <p className="text-sm text-gray-600 font-medium">
                 Already have an account?{' '}
-                <Link to="/login" className="text-green-600 hover:text-green-500 font-semibold hover:underline transition-colors">
+                <Link to="/login" className="text-blue-600 hover:text-blue-500 font-semibold hover:underline transition-colors">
                   Sign in here
                 </Link>
               </p>
             </div>
           </motion.div>
-
-
         </div>
       </div>
 
