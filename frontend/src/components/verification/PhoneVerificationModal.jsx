@@ -14,9 +14,9 @@ const PhoneVerificationModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mt-3">
-      <h4 className="text-sm font-semibold text-purple-800 mb-2">Phone Verification</h4>
-      <p className="text-xs text-purple-600 mb-3">
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mt-2">
+                  <h4 className="text-sm font-semibold text-purple-800 mb-1.5">Phone Verification</h4>
+                  <p className="text-xs text-purple-600 mb-2">
         We've sent a verification code to {phone}. Enter the code below:
       </p>
       <div className="flex flex-col sm:flex-row gap-2">
@@ -37,7 +37,7 @@ const PhoneVerificationModal = ({
           {isVerifying ? 'Verifying...' : 'Verify'}
         </button>
       </div>
-      <div className="mt-3 flex justify-center">
+                        <div className="mt-2 flex justify-center">
         <button
           type="button"
           onClick={onSkip}

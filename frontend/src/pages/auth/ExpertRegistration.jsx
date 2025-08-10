@@ -137,10 +137,14 @@ const ExpertRegistration = () => {
   ];
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     
-    // Update form data
-    setFormData(prev => ({ ...prev, [name]: value }));
+    // Update form data - handle checkbox inputs properly
+    if (type === 'checkbox') {
+      setFormData(prev => ({ ...prev, [name]: checked }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
 
     // Reset verification status when verified input is changed (but not cleared)
     if (name === 'email' && isEmailVerified && value !== '' && value !== formData.email) {
@@ -248,12 +252,12 @@ const ExpertRegistration = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="bg-white/90 backdrop-blur-xl rounded-xl shadow-lg border border-gray-100 p-5 sm:p-6 hover:shadow-xl transition-all duration-300"
+            className="bg-white/90 backdrop-blur-xl rounded-xl shadow-lg border border-gray-100 p-4 sm:p-5 hover:shadow-xl transition-all duration-300"
           >
-            <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-2 sm:space-y-3">
               {/* Full Name */}
               <div>
-                <label htmlFor="fullName" className="block text-xs font-semibold text-gray-800 mb-1">
+                <label htmlFor="fullName" className="block text-xs font-semibold text-gray-800 mb-0.5">
                   Full Name *
                 </label>
                 <input
@@ -263,13 +267,13 @@ const ExpertRegistration = () => {
                   required
                   value={formData.fullName}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2.5 sm:py-3 bg-gray-50/50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 hover:border-gray-300 transition-all duration-300 text-sm"
+                  className="w-full px-4 py-2 sm:py-2.5 bg-gray-50/50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 hover:border-gray-300 transition-all duration-300 text-sm"
                   placeholder="Enter your full name"
                 />
               </div>
 
               {/* Email and Phone Number Row */}
-              <div className="space-y-4">
+              <div className="space-y-3">
                   {/* Email Address with Verification */}
                   <VerificationField
                     type="email"
@@ -388,7 +392,7 @@ const ExpertRegistration = () => {
 
               {/* Password */}
               <div>
-                <label htmlFor="password" className="block text-xs font-semibold text-gray-800 mb-1">
+                <label htmlFor="password" className="block text-xs font-semibold text-gray-800 mb-0.5">
                   Password *
                 </label>
                 <div className="relative">
@@ -399,7 +403,7 @@ const ExpertRegistration = () => {
                     required
                     value={formData.password}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2.5 sm:py-3 pr-10 bg-gray-50/50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 hover:border-gray-300 transition-all duration-300 text-sm"
+                    className="w-full px-4 py-2 sm:py-2.5 pr-10 bg-gray-50/50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 hover:border-gray-300 transition-all duration-300 text-sm"
                     placeholder="Create a strong password"
                   />
                   <button
@@ -417,7 +421,7 @@ const ExpertRegistration = () => {
               </div>
 
               {/* Terms & Conditions */}
-              <div className="flex items-start pt-2">
+              <div className="flex items-start pt-1">
                 <input
                   id="agreeToTerms"
                   name="agreeToTerms"
@@ -443,10 +447,10 @@ const ExpertRegistration = () => {
                   <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
                 </span>
               </button>
-      </form>
+            </form>
 
             {/* Login Link */}
-            <div className="mt-2 sm:mt-3 text-center">
+            <div className="mt-1 sm:mt-2 text-center">
               <p className="text-xs text-gray-600">
                 Already have an account?{' '}
                 <Link to="/login" className="text-green-600 hover:text-green-500 font-semibold hover:underline transition-colors">

@@ -19,7 +19,7 @@ const VerificationField = ({
 }) => {
   return (
     <div>
-      <div className="flex items-center gap-2 mb-1">
+      <div className="flex items-center gap-2 mb-0.5">
         <label htmlFor={id} className="block text-xs font-semibold text-gray-800">
           {label} *
         </label>
@@ -35,7 +35,7 @@ const VerificationField = ({
           required
           value={value}
           onChange={onChange}
-          className="w-full sm:flex-1 px-4 py-2.5 sm:py-3 bg-gray-50/50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 hover:border-gray-300 transition-all duration-300 text-sm"
+          className="w-full sm:flex-1 px-4 py-2 sm:py-2.5 bg-gray-50/50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 hover:border-gray-300 transition-all duration-300 text-sm"
           placeholder={placeholder}
           maxLength={type === 'tel' ? '15' : undefined}
         />
@@ -44,7 +44,7 @@ const VerificationField = ({
             type="button"
             onClick={() => onSendOtp(value)}
             disabled={isSending || !value || !isValid(value)}
-            className={`w-full sm:w-auto px-4 py-2.5 ${buttonColor} text-white text-xs font-semibold rounded-lg ${buttonHoverColor} disabled:bg-gray-400 transition-colors`}
+            className={`w-full sm:w-auto px-4 py-2 ${buttonColor} text-white text-xs font-semibold rounded-lg ${buttonHoverColor} disabled:bg-gray-400 transition-colors`}
           >
             {isSending ? 'Sending...' : otpSent ? 'Resend OTP' : `Verify ${type === 'email' ? 'Email' : 'Phone'}`}
           </button>

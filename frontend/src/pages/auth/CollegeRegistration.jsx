@@ -70,7 +70,8 @@ const CollegeRegistration = () => {
     password: '',
     
     // Agreements
-    agreeToTerms: false
+    agreeToTerms: false,
+    useOfficialEmail: false
   });
 
           // Watch for email and phone changes to reset verification
@@ -185,12 +186,12 @@ const CollegeRegistration = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="bg-white/90 backdrop-blur-xl rounded-xl shadow-lg border border-gray-100 p-5 sm:p-6 hover:shadow-xl transition-all duration-300"
+            className="bg-white/90 backdrop-blur-xl rounded-xl shadow-lg border border-gray-100 p-4 sm:p-5 hover:shadow-xl transition-all duration-300"
           >
-            <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-2 sm:space-y-3">
               {/* Institution Name */}
               <div>
-                <label htmlFor="institutionName" className="block text-xs font-semibold text-gray-800 mb-1">
+                <label htmlFor="institutionName" className="block text-xs font-semibold text-gray-800 mb-0.5">
                   Institution Name *
                 </label>
                 <input
@@ -200,14 +201,14 @@ const CollegeRegistration = () => {
                   required
                   value={formData.institutionName}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2.5 sm:py-3 bg-gray-50/50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 hover:border-gray-300 transition-all duration-300 text-sm"
+                  className="w-full px-4 py-2 sm:py-2.5 bg-gray-50/50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 hover:border-gray-300 transition-all duration-300 text-sm"
                   placeholder="Enter institution name"
                 />
               </div>
 
               {/* Contact Person Name */}
               <div>
-                <label htmlFor="contactPersonName" className="block text-xs font-semibold text-gray-800 mb-1">
+                <label htmlFor="contactPersonName" className="block text-xs font-semibold text-gray-800 mb-0.5">
                   Contact Person Name *
                 </label>
                 <input
@@ -217,7 +218,7 @@ const CollegeRegistration = () => {
                   required
                   value={formData.contactPersonName}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2.5 sm:py-3 bg-gray-50/50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 hover:border-gray-300 transition-all duration-300 text-sm"
+                  className="w-full px-4 py-2 sm:py-2.5 bg-gray-50/50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 hover:border-gray-300 transition-all duration-300 text-sm"
                   placeholder="Enter your full name"
                 />
               </div>
@@ -261,6 +262,22 @@ const CollegeRegistration = () => {
                 }}
                 otpSent={emailOtpSent}
               />
+
+              {/* Use Official Email Checkbox */}
+              <div className="flex items-start pt-1">
+                <input
+                  id="useOfficialEmail"
+                  name="useOfficialEmail"
+                  type="checkbox"
+                  checked={formData.useOfficialEmail}
+                  onChange={handleInputChange}
+                  className="h-3 w-3 text-purple-600 focus:ring-purple-500 border-gray-300 rounded mt-0.5"
+                />
+                <label htmlFor="useOfficialEmail" className="ml-2 text-xs text-gray-700">
+                  Use official email address{' '}
+                  <span className="text-gray-500 italic">(this will manage for all your operations)</span>
+                </label>
+              </div>
               
               {/* Contact Phone with Verification - Full Row */}
               <VerificationField
@@ -303,8 +320,8 @@ const CollegeRegistration = () => {
               />
 
               {/* Password */}
-        <div>
-                <label htmlFor="password" className="block text-xs font-semibold text-gray-800 mb-1">
+              <div>
+                <label htmlFor="password" className="block text-xs font-semibold text-gray-800 mb-0.5">
                   Password *
                 </label>
                 <div className="relative">
@@ -315,7 +332,7 @@ const CollegeRegistration = () => {
                     required
                     value={formData.password}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2.5 sm:py-3 pr-10 bg-gray-50/50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 hover:border-gray-300 transition-all duration-300 text-sm"
+                    className="w-full px-4 py-2 sm:py-2.5 pr-10 bg-gray-50/50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 hover:border-gray-300 transition-all duration-300 text-sm"
                     placeholder="Create a strong password"
                   />
                   <button
@@ -333,7 +350,7 @@ const CollegeRegistration = () => {
               </div>
 
               {/* Terms & Conditions */}
-              <div className="flex items-start pt-2">
+              <div className="flex items-start pt-1">
                 <input
                   id="agreeToTerms"
                   name="agreeToTerms"
@@ -359,10 +376,10 @@ const CollegeRegistration = () => {
                   <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
                 </span>
               </button>
-      </form>
+            </form>
 
             {/* Login Link */}
-            <div className="mt-3 sm:mt-4 text-center">
+            <div className="mt-1 sm:mt-2 text-center">
               <p className="text-xs sm:text-sm text-gray-600">
                 Already have an account?{' '}
                 <Link to="/login" className="text-purple-600 hover:text-purple-500 font-semibold hover:underline transition-colors">
