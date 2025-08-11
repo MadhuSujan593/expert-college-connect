@@ -9,9 +9,12 @@ import Footer from './components/layout/Footer';
 
 // Pages
 import HomePage from './pages/HomePage';
-import ExpertRegistration from './pages/auth/ExpertRegistration';
-import CollegeRegistration from './pages/auth/CollegeRegistration';
-import Login from './pages/auth/Login';
+import { 
+  ExpertRegistration, 
+  CollegeRegistration, 
+  Login, 
+  ForgotPassword 
+} from './pages/auth';
 // import ExpertDashboard from './pages/expert/ExpertDashboard';
 // import CollegeDashboard from './pages/college/CollegeDashboard';
 // import SearchExperts from './pages/search/SearchExperts';
@@ -33,8 +36,13 @@ const queryClient = new QueryClient({
 
 const AppContent = () => {
   const location = useLocation();
-  const isAuthPage = location.pathname.includes('/login') || 
-                     location.pathname.includes('/register');
+  const isAuthPage = ['/login', '/register', '/forgot-password'].some(path => 
+    location.pathname === path || location.pathname.startsWith(path + '/')
+  );
+  
+  // Debug logging
+  console.log('Current pathname:', location.pathname);
+  console.log('Is auth page:', isAuthPage);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
@@ -46,6 +54,7 @@ const AppContent = () => {
           <Route path="/register/expert" element={<ExpertRegistration />} />
           <Route path="/register/college" element={<CollegeRegistration />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           {/* <Route path="/search/experts" element={<SearchExperts />} />
           <Route path="/search/requirements" element={<SearchRequirements />} />
           <Route path="/expert/:id" element={<ExpertProfile />} />
