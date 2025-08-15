@@ -20,7 +20,7 @@ const VerificationField = ({
   return (
     <div className="space-y-1">
       <div className="flex items-center gap-3 mb-1 sm:mb-2">
-        <label htmlFor={id} className="block text-sm font-semibold text-gray-800">
+        <label htmlFor={id} className="block text-sm font-semibold text-gray-700">
           {label} <span className="text-red-500">*</span>
         </label>
         {isVerified && (

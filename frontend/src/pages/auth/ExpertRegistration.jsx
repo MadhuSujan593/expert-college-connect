@@ -245,8 +245,8 @@ const ExpertRegistration = () => {
             <form onSubmit={handleSubmit} className="space-y-2 sm:space-y-3 lg:space-y-3">
               {/* Full Name */}
               <div>
-                <label htmlFor="fullName" className="block text-sm font-semibold text-gray-800 mb-1">
-                  Full Name *
+                <label htmlFor="fullName" className="block text-sm font-semibold text-gray-700 mb-1">
+                  Full Name <span className="text-red-500">*</span>
                 </label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -351,8 +351,8 @@ const ExpertRegistration = () => {
               {/* Job Title and Company Row */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 lg:gap-3">
                 <div>
-                  <label htmlFor="jobTitle" className="block text-sm font-semibold text-gray-800 mb-1">
-                    Current Job Title *
+                  <label htmlFor="jobTitle" className="block text-sm font-semibold text-gray-700 mb-1">
+                    Current Job Title <span className="text-red-500">*</span>
                   </label>
                   <div className="relative group">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -371,8 +371,8 @@ const ExpertRegistration = () => {
                   </div>
                 </div>
                 <div>
-                  <label htmlFor="company" className="block text-sm font-semibold text-gray-800 mb-1">
-                    Company/Organization *
+                  <label htmlFor="company" className="block text-sm font-semibold text-gray-700 mb-1">
+                    Company/Organization <span className="text-red-500">*</span>
                   </label>
                   <div className="relative group">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -394,8 +394,8 @@ const ExpertRegistration = () => {
 
               {/* Password */}
               <div>
-                <label htmlFor="password" className="block text-sm font-semibold text-gray-800 mb-1">
-                  Password *
+                <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-1">
+                  Password <span className="text-red-500">*</span>
                 </label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -438,7 +438,7 @@ const ExpertRegistration = () => {
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-0.5 transition-all duration-200 hover:scale-110"
                 />
                 <label htmlFor="agreeToTerms" className="ml-3 text-sm text-gray-700 font-medium">
-                  I agree to the <Link to="/terms" className="text-blue-600 hover:text-blue-500 font-semibold hover:underline transition-colors">Terms</Link> and <Link to="/privacy" className="text-blue-600 hover:text-blue-500 font-semibold hover:underline transition-colors">Privacy Policy</Link> *
+                  I agree to the <Link to="/terms" className="text-blue-600 hover:text-blue-500 font-semibold hover:underline transition-colors">Terms</Link> and <Link to="/privacy" className="text-blue-600 hover:text-blue-500 font-semibold hover:underline transition-colors">Privacy Policy</Link> <span className="text-red-500">*</span>
                 </label>
               </div>
 
