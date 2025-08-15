@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { 
   isValidEmail, 
   isValidPhone, 
+  checkAvailability,
   sendEmailOtp, 
   verifyEmailOtp, 
   sendPhoneOtp, 
@@ -56,9 +57,9 @@ export const useVerification = () => {
     );
   };
 
-  const handleVerifyEmailOtp = (email) => {
+  const handleVerifyEmailOtp = (otp, email) => {
     return verifyEmailOtp(
-      emailOtp, 
+      otp, 
       email,
       setIsEmailVerified, 
       setShowEmailVerification, 
@@ -78,9 +79,9 @@ export const useVerification = () => {
     );
   };
 
-  const handleVerifyPhoneOtp = (phone) => {
+  const handleVerifyPhoneOtp = (otp, phone) => {
     return verifyPhoneOtp(
-      phoneOtp, 
+      otp, 
       phone,
       setIsPhoneVerified, 
       setShowPhoneVerification, 
@@ -142,6 +143,7 @@ export const useVerification = () => {
     // Functions
     isValidEmail,
     isValidPhone,
+    checkAvailability,
     handleSendEmailOtp,
     handleVerifyEmailOtp,
     handleSendPhoneOtp,

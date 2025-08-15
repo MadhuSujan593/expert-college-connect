@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 // Shared verification utilities for registration forms
 
 // API Base URL - update this to match your backend
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
 
 // Check if we're in development mode
 const isDevelopment = import.meta.env.DEV;
@@ -15,8 +15,45 @@ export const isValidEmail = (email) => {
 };
 
 export const isValidPhone = (phone) => {
-  const phoneRegex = /^[+]?[\d\s\-\(\)]{10,}$/;
-  return phoneRegex.test(phone.replace(/\s/g, ''));
+  if (!phone) return false;
+  
+  // Remove all non-digit characters except +
+  const cleanPhone = phone.replace(/[^\d+]/g, '');
+  
+  // Check if it starts with + (international) or just digits (local)
+  if (cleanPhone.startsWith('+')) {
+    // International format: +[country code][number] (total 7-15 digits)
+    const phoneWithoutPlus = cleanPhone.substring(1);
+    const isValid = phoneWithoutPlus.length >= 7 && phoneWithoutPlus.length <= 15;
+    return isValid;
+  } else {
+    // Local format: just digits (10-15 digits)
+    const isValid = cleanPhone.length >= 10 && cleanPhone.length <= 15;
+    return isValid;
+  }
+};
+
+// Check if email/phone is available (not already taken)
+export const checkAvailability = async (type, value) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/check-availability`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ type, value }),
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      return result;
+    } else {
+      const error = await response.json();
+      return { available: false, message: error.message || 'Failed to check availability' };
+    }
+  } catch (error) {
+    return { available: false, message: 'Failed to check availability. Please try again.' };
+  }
 };
 
 // Generic OTP sending function
@@ -27,32 +64,33 @@ export const sendOtp = async (endpoint, data, setOtpSent, setShowVerification, s
   }
   
   const isValid = type === 'email' ? isValidEmail(data) : isValidPhone(data);
+  
   if (!isValid) {
-    showToast(`Please enter a valid ${type} address`, 'error');
+    showToast(`Please enter a valid ${type === 'email' ? 'email address' : 'phone number'}`, 'error');
     return false;
   }
   
   try {
     setIsSending(true);
     
-    // In development mode, use mock API
-    if (isDevelopment) {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setOtpSent(true);
-      setShowVerification(true);
-      showToast(`OTP sent to your ${type} address`, 'success');
-      return true;
+    // First check if email/phone is available
+    const availabilityResult = await checkAvailability(type, data);
+    
+    if (!availabilityResult.available) {
+      showToast(availabilityResult.message, 'error');
+      setIsSending(false);
+      return false;
     }
     
     // Production mode - real API call
+    const requestBody = { [type === 'email' ? 'email' : 'phone']: data };
+    
     const response = await fetch(`${API_BASE_URL}/auth/${endpoint}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ [type === 'email' ? 'email' : 'phone']: data }),
+      body: JSON.stringify(requestBody),
     });
 
     if (response.ok) {
@@ -67,7 +105,6 @@ export const sendOtp = async (endpoint, data, setOtpSent, setShowVerification, s
       return false;
     }
   } catch (error) {
-    console.error(`Error sending ${type} OTP:`, error);
     showToast(`Failed to send OTP. Please try again.`, 'error');
     return false;
   } finally {
@@ -81,45 +118,45 @@ export const verifyOtp = async (endpoint, otp, data, setIsVerified, setShowVerif
     showToast('Please enter the OTP', 'error');
     return false;
   }
+
+  if (!data) {
+    showToast(`${type === 'email' ? 'Email' : 'Phone'} is required`, 'error');
+    return false;
+  }
+
+  // Validate email/phone before sending
+  const isValid = type === 'email' ? isValidEmail(data) : isValidPhone(data);
+  
+  if (!isValid) {
+    showToast(`Please provide a valid ${type === 'email' ? 'email address' : 'phone number'}`, 'error');
+    return false;
+  }
   
   try {
     setIsVerifying(true);
     
-    // In development mode, use mock verification
-    if (isDevelopment) {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // For development, accept any 6-digit OTP
-      if (otp.length === 6 && /^\d{6}$/.test(otp)) {
-        setIsVerified(true);
-        setShowVerification(false);
-        setOtp('');
-        showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} verified successfully!`, 'success');
-        return true;
-      } else {
-        showToast('Invalid OTP. Please enter a 6-digit code.', 'error');
-        return false;
-      }
-    }
-    
     // Production mode - real API call
+    const requestBody = { 
+      [type === 'email' ? 'email' : 'phone']: data,
+      otp: otp 
+    };
+    
     const response = await fetch(`${API_BASE_URL}/auth/${endpoint}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ 
-        [type === 'email' ? 'email' : 'phone']: data,
-        otp: otp 
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (response.ok) {
       const result = await response.json();
+      
+      // Update verification state
       setIsVerified(true);
       setShowVerification(false);
       setOtp('');
+      
       showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} verified successfully!`, 'success');
       return true;
     } else {
@@ -128,7 +165,6 @@ export const verifyOtp = async (endpoint, otp, data, setIsVerified, setShowVerif
       return false;
     }
   } catch (error) {
-    console.error(`Error verifying ${type} OTP:`, error);
     showToast(`Failed to verify OTP. Please try again.`, 'error');
     return false;
   } finally {
@@ -142,7 +178,7 @@ export const sendEmailOtp = async (email, setEmailOtpSent, setShowEmailVerificat
 };
 
 export const verifyEmailOtp = async (emailOtp, email, setIsEmailVerified, setShowEmailVerification, setIsEmailVerifying, setEmailOtp, showToast) => {
-  return verifyOtp('verify-email-otp', emailOtp, email, setIsEmailVerified, setShowEmailVerification, setIsEmailVerifying, setEmailOtp, showToast, 'email');
+  return verifyOtp('verify-email', emailOtp, email, setIsEmailVerified, setShowEmailVerification, setIsEmailVerifying, setEmailOtp, showToast, 'email');
 };
 
 // Phone OTP Functions
@@ -151,7 +187,7 @@ export const sendPhoneOtp = async (phone, setPhoneOtpSent, setShowPhoneVerificat
 };
 
 export const verifyPhoneOtp = async (phoneOtp, phone, setIsPhoneVerified, setShowPhoneVerification, setIsPhoneVerifying, setPhoneOtp, showToast) => {
-  return verifyOtp('verify-phone-otp', phoneOtp, phone, setIsPhoneVerified, setShowPhoneVerification, setIsPhoneVerifying, setPhoneOtp, showToast, 'phone');
+  return verifyOtp('verify-phone', phoneOtp, phone, setIsPhoneVerified, setShowPhoneVerification, setIsPhoneVerifying, setPhoneOtp, showToast, 'phone');
 };
 
 // Toast Functions
@@ -179,4 +215,4 @@ export const useToastAutoHide = (toast, hideToast) => {
       return () => clearTimeout(timer);
     }
   }, [toast.show, hideToast]);
-}; 
+};

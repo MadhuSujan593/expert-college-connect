@@ -1,0 +1,432 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ========================================
+// USER MANAGEMENT
+// ========================================
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique @db.VarChar(255)
+  phone             String?  @unique @db.VarChar(20)
+  password          String   @db.VarChar(255)
+  fullName          String   @db.VarChar(255)
+  isEmailVerified   Boolean  @default(false)
+  isPhoneVerified   Boolean  @default(false)
+  emailVerifiedAt   DateTime?
+  phoneVerifiedAt   DateTime?
+  lastLoginAt       DateTime?
+  isActive          Boolean  @default(true)
+  isDeleted         Boolean  @default(false)
+  role              UserRole @default(USER)
+  profileImage      String?  @db.VarChar(500)
+  timezone          String?  @default("UTC") @db.VarChar(50)
+  language          String?  @default("en") @db.VarChar(10)
+  
+  // Timestamps
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  deletedAt         DateTime?
+  
+  // Relations
+  expertProfile     ExpertProfile?
+  collegeProfile    CollegeProfile?
+  sessions          Session[]
+  refreshTokens     RefreshToken[]
+  passwordReset     PasswordReset[]
+  emailVerifications EmailVerification[]
+  phoneVerifications PhoneVerification[]
+  
+  // Indexes
+  @@index([email])
+  @@index([phone])
+  @@index([role])
+  @@index([isActive])
+  @@index([createdAt])
+}
+
+enum UserRole {
+  USER
+  EXPERT
+  COLLEGE_ADMIN
+  SUPER_ADMIN
+}
+
+// ========================================
+// EXPERT PROFILES
+// ========================================
+
+model ExpertProfile {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  jobTitle          String   @db.VarChar(255)
+  company           String   @db.VarChar(255)
+  experience        String?  @db.VarChar(100)
+  location          String?  @db.VarChar(255)
+  website           String?  @db.VarChar(500)
+  primaryExpertise  String?  @db.VarChar(255)
+  bio               String?  @db.Text
+  hourlyRate        Decimal? @db.Decimal(10, 2)
+  availableFor      Json?    // Store as JSON string for MySQL compatibility
+  preferredMode     String?  @db.VarChar(100)
+  isProfileComplete Boolean  @default(false)
+  isVerified        Boolean  @default(false)
+  verificationDate  DateTime?
+  
+  // Timestamps
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skills            ExpertSkill[]
+  ratings           Rating[]
+  services          Service[]
+  
+  // Indexes
+  @@index([primaryExpertise])
+  @@index([location])
+  @@index([isVerified])
+  @@index([hourlyRate])
+}
+
+model ExpertSkill {
+  id              String        @id @default(cuid())
+  expertProfileId String
+  skillName       String        @db.VarChar(255)
+  skillLevel      SkillLevel    @default(INTERMEDIATE)
+  
+  // Timestamps
+  createdAt       DateTime      @default(now())
+  
+  // Relations
+  expertProfile   ExpertProfile @relation(fields: [expertProfileId], references: [id], onDelete: Cascade)
+  
+  // Indexes
+  @@index([skillName])
+  @@index([skillLevel])
+}
+
+enum SkillLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+// ========================================
+// COLLEGE PROFILES
+// ========================================
+
+model CollegeProfile {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  institutionName   String   @db.VarChar(255)
+  contactPersonName String   @db.VarChar(255)
+  institutionType   InstitutionType @default(UNIVERSITY)
+  accreditation     String?  @db.VarChar(500)
+  website           String?  @db.VarChar(500)
+  address           String?  @db.Text
+  city              String?  @db.VarChar(100)
+  state             String?  @db.VarChar(100)
+  country           String?  @db.VarChar(100)
+  postalCode        String?  @db.VarChar(20)
+  phone             String?  @db.VarChar(20)
+  isProfileComplete Boolean  @default(false)
+  isVerified        Boolean  @default(false)
+  verificationDate  DateTime?
+  
+  // Timestamps
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  requirements      Requirement[]
+  
+  // Indexes
+  @@index([institutionName])
+  @@index([city])
+  @@index([state])
+  @@index([country])
+  @@index([isVerified])
+}
+
+enum InstitutionType {
+  UNIVERSITY
+  COLLEGE
+  INSTITUTE
+  SCHOOL
+  OTHER
+}
+
+// ========================================
+// AUTHENTICATION & SECURITY
+// ========================================
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  token        String   @unique @db.VarChar(500)
+  ipAddress    String?  @db.VarChar(45)
+  userAgent    String?  @db.Text
+  expiresAt    DateTime
+  isActive     Boolean  @default(true)
+  
+  // Timestamps
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Indexes
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+  @@index([isActive])
+}
+
+model RefreshToken {
+  id           String   @id @default(cuid())
+  userId       String
+  token        String   @unique @db.VarChar(500)
+  expiresAt    DateTime
+  isRevoked    Boolean  @default(false)
+  
+  // Timestamps
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Indexes
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+  @@index([isRevoked])
+}
+
+model PasswordReset {
+  id           String   @id @default(cuid())
+  userId       String
+  token        String   @unique @db.VarChar(500)
+  expiresAt    DateTime
+  isUsed       Boolean  @default(false)
+  
+  // Timestamps
+  createdAt    DateTime @default(now())
+  usedAt       DateTime?
+  
+  // Relations
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Indexes
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+  @@index([isUsed])
+}
+
+model EmailVerification {
+  id           String   @id @default(cuid())
+  userId       String?  // Optional for pre-registration verification
+  email        String   @db.VarChar(255)
+  otp          String   @db.VarChar(10)
+  expiresAt    DateTime
+  isUsed       Boolean  @default(false)
+  
+  // Timestamps
+  createdAt    DateTime @default(now())
+  usedAt       DateTime?
+  
+  // Relations
+  user         User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Indexes
+  @@index([userId])
+  @@index([email])
+  @@index([otp])
+  @@index([expiresAt])
+  @@index([isUsed])
+}
+
+model PhoneVerification {
+  id           String   @id @default(cuid())
+  userId       String?  // Optional for pre-registration verification
+  phone        String   @db.VarChar(20)
+  otp          String   @db.VarChar(10)
+  expiresAt    DateTime
+  isUsed       Boolean  @default(false)
+  
+  // Timestamps
+  createdAt    DateTime @default(now())
+  usedAt       DateTime?
+  
+  // Relations
+  user         User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Indexes
+  @@index([userId])
+  @@index([phone])
+  @@index([otp])
+  @@index([expiresAt])
+  @@index([isUsed])
+}
+
+// ========================================
+// SERVICES & REQUIREMENTS
+// ========================================
+
+model Service {
+  id                String   @id @default(cuid())
+  expertProfileId   String
+  title             String   @db.VarChar(255)
+  description       String   @db.Text
+  category          String   @db.VarChar(100)
+  subcategory       String?  @db.VarChar(100)
+  price             Decimal  @db.Decimal(10, 2)
+  priceType         PriceType @default(FIXED)
+  duration          Int?     // in minutes
+  isActive          Boolean  @default(true)
+  
+  // Timestamps
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  expertProfile     ExpertProfile @relation(fields: [expertProfileId], references: [id], onDelete: Cascade)
+  
+  // Indexes
+  @@index([expertProfileId])
+  @@index([category])
+  @@index([subcategory])
+  @@index([price])
+  @@index([isActive])
+}
+
+enum PriceType {
+  FIXED
+  HOURLY
+  DAILY
+  NEGOTIABLE
+}
+
+model Requirement {
+  id                String   @id @default(cuid())
+  collegeProfileId  String
+  title             String   @db.VarChar(255)
+  description       String   @db.Text
+  category          String   @db.VarChar(100)
+  subcategory       String?  @db.VarChar(100)
+  budget            Decimal? @db.Decimal(10, 2)
+  budgetType        BudgetType @default(FIXED)
+  deadline          DateTime?
+  isUrgent          Boolean  @default(false)
+  isActive          Boolean  @default(true)
+  
+  // Timestamps
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  collegeProfile    CollegeProfile @relation(fields: [collegeProfileId], references: [id], onDelete: Cascade)
+  
+  // Indexes
+  @@index([collegeProfileId])
+  @@index([category])
+  @@index([subcategory])
+  @@index([budget])
+  @@index([deadline])
+  @@index([isUrgent])
+  @@index([isActive])
+}
+
+enum BudgetType {
+  FIXED
+  RANGE
+  NEGOTIABLE
+}
+
+// ========================================
+// RATINGS & REVIEWS
+// ========================================
+
+model Rating {
+  id                String   @id @default(cuid())
+  expertProfileId   String
+  collegeProfileId  String
+  rating            Int      // 1-5 stars
+  review            String?  @db.Text
+  isAnonymous       Boolean  @default(false)
+  
+  // Timestamps
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  expertProfile     ExpertProfile @relation(fields: [expertProfileId], references: [id], onDelete: Cascade)
+  
+  // Indexes
+  @@index([expertProfileId])
+  @@index([collegeProfileId])
+  @@index([rating])
+  @@index([createdAt])
+  
+  // Note: MySQL doesn't support @@check constraints in Prisma
+  // Rating validation will be handled at the application level
+}
+
+// ========================================
+// PAYMENTS & TRANSACTIONS
+// ========================================
+
+model Payment {
+  id                String   @id @default(cuid())
+  userId            String
+  amount            Decimal  @db.Decimal(10, 2)
+  currency          String   @default("USD") @db.VarChar(3)
+  paymentMethod     PaymentMethod
+  status            PaymentStatus @default(PENDING)
+  transactionId     String?  @unique @db.VarChar(255)
+  description       String?  @db.Text
+  metadata          Json?    // Additional payment data
+  
+  // Timestamps
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  completedAt       DateTime?
+  
+  // Indexes
+  @@index([userId])
+  @@index([status])
+  @@index([transactionId])
+  @@index([createdAt])
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  DEBIT_CARD
+  BANK_TRANSFER
+  DIGITAL_WALLET
+  CRYPTO
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+} 

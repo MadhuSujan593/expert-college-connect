@@ -2,17 +2,20 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
-import { User } from '../users/entities/user.entity';
+import { PrismaModule } from '../prisma/prisma.module';
+import { UsersModule } from '../users/users.module';
+import { ServicesModule } from '../services/services.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]),
+    PrismaModule,
+    UsersModule,
+    ServicesModule,
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

@@ -15,8 +15,20 @@ const VerificationField = ({
   otpSent,
   buttonColor = 'bg-gradient-to-r from-blue-600 to-indigo-600',
   buttonHoverColor = 'hover:from-blue-700 hover:to-indigo-700',
-  verifiedTagColor = 'text-emerald-600'
+  verifiedTagColor = 'text-emerald-600',
+  className = ''
 }) => {
+  // Determine if this is a phone input that should connect with country selector
+  const isPhoneWithCountry = type === 'tel' && className.includes('rounded-l-none');
+  
+  // Base input classes
+  const baseInputClasses = "w-full pl-10 pr-4 py-2.5 sm:py-3 lg:py-3 bg-gray-50/80 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 hover:border-gray-300 transition-all duration-300 focus:bg-white focus:shadow-lg focus:shadow-blue-500/20 text-sm placeholder:text-sm";
+  
+  // Apply different styling for phone input vs regular input
+  const inputClasses = isPhoneWithCountry 
+    ? `${baseInputClasses} border border-gray-300/50 rounded-r-xl border-l-0`
+    : `${baseInputClasses} border border-gray-300/50 rounded-xl`;
+
   return (
     <div className="space-y-1">
       <div className="flex items-center gap-3 mb-1 sm:mb-2">
@@ -52,7 +64,7 @@ const VerificationField = ({
             required
             value={value}
             onChange={onChange}
-            className="w-full pl-10 pr-4 py-2.5 sm:py-3 lg:py-3 bg-gray-50/80 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 hover:border-gray-300 transition-all duration-300 focus:bg-white focus:shadow-lg focus:shadow-blue-500/20 text-sm placeholder:text-sm"
+            className={inputClasses}
             placeholder={placeholder}
             maxLength={type === 'tel' ? '15' : undefined}
           />
