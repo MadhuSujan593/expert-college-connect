@@ -15,15 +15,16 @@ import {
   Login, 
   ForgotPassword 
 } from './pages/auth';
-// import ExpertDashboard from './pages/expert/ExpertDashboard';
-// import CollegeDashboard from './pages/college/CollegeDashboard';
+import ExpertDashboard from './pages/expert/ExpertDashboard';
+import CollegeDashboard from './pages/college/CollegeDashboard';
 // import SearchExperts from './pages/search/SearchExperts';
 // import SearchRequirements from './pages/search/SearchRequirements';
 // import ExpertProfile from './pages/expert/ExpertProfile';
 // import CollegeProfile from './pages/college/CollegeProfile';
 
 // Context
-// import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider } from './contexts/AuthContext';
+import ProtectedRoute from './components/common/ProtectedRoute';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -55,12 +56,29 @@ const AppContent = () => {
           <Route path="/register/college" element={<CollegeRegistration />} />
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          
+          {/* Protected Routes */}
+          <Route 
+            path="/dashboard/expert" 
+            element={
+              <ProtectedRoute requiredRole="EXPERT">
+                <ExpertDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/dashboard/college" 
+            element={
+              <ProtectedRoute requiredRole="COLLEGE_ADMIN">
+                <CollegeDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          
           {/* <Route path="/search/experts" element={<SearchExperts />} />
           <Route path="/search/requirements" element={<SearchRequirements />} />
           <Route path="/expert/:id" element={<ExpertProfile />} />
-          <Route path="/college/:id" element={<CollegeProfile />} />
-          <Route path="/dashboard/expert" element={<ExpertDashboard />} />
-          <Route path="/dashboard/college" element={<CollegeDashboard />} /> */}
+          <Route path="/college/:id" element={<CollegeProfile />} /> */}
         </Routes>
       </main>
       {!isAuthPage && <Footer />}
@@ -95,11 +113,11 @@ const AppContent = () => {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      {/* <AuthProvider> */}
+      <AuthProvider>
         <Router>
           <AppContent />
         </Router>
-      {/* </AuthProvider> */}
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

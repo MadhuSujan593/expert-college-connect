@@ -10,72 +10,70 @@ import {
   ArrowRight, 
   GraduationCap,
   Shield,
-  CheckCircle,
-  Sparkles,
   ArrowLeft,
   Building2,
   Users
 } from 'lucide-react';
-import { useVerification } from '../../hooks/useVerification';
 import Toast from '../../components/common/Toast';
+import { useAuth } from '../../contexts/AuthContext';
+import { Navigate } from 'react-router-dom';
 
 const Login = () => {
-  const [loginMethod, setLoginMethod] = useState('email'); // 'email' or 'phone'
   const [showPassword, setShowPassword] = useState(false);
-  const [showOtpInput, setShowOtpInput] = useState(false);
   const [formData, setFormData] = useState({
-    email: '',
-    phone: '',
+    identifier: '', // Can be email or phone
     password: '',
-    otp: '',
     rememberMe: false
   });
+  const [toast, setToast] = useState({ show: false, message: '', type: 'info' });
+  const [toastTimeout, setToastTimeout] = useState(null);
+  
+  const { isAuthenticated, login, getDashboardRoute, loading } = useAuth();
 
-  // Use shared verification hook
-  const {
-    showEmailVerification,
-    setShowEmailVerification,
-    showPhoneVerification,
-    setShowPhoneVerification,
-    emailOtp,
-    setEmailOtp,
-    phoneOtp,
-    setPhoneOtp,
-    isEmailVerified,
-    setIsEmailVerified,
-    isPhoneVerified,
-    setIsPhoneVerified,
-    emailOtpSent,
-    setEmailOtpSent,
-    phoneOtpSent,
-    setPhoneOtpSent,
-    isEmailSending,
-    isPhoneSending,
-    isEmailVerifying,
-    isPhoneVerifying,
-    toast,
-    showToast,
-    hideToast,
-    isValidEmail,
-    isValidPhone,
-    handleSendEmailOtp,
-    handleVerifyEmailOtp,
-    handleSendPhoneOtp,
-    handleVerifyPhoneOtp,
-  } = useVerification();
+  // Redirect if already authenticated
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to={getDashboardRoute()} replace />;
+  }
+
+  // Toast functions
+  const showToast = (message, type = 'info') => {
+    // Clear any existing timeout
+    if (toastTimeout) {
+      clearTimeout(toastTimeout);
+    }
+    
+    setToast({ show: true, message, type });
+    
+    // Set new timeout for auto-hide after 5 seconds
+    const timeout = setTimeout(() => {
+      hideToast();
+    }, 5000);
+    
+    setToastTimeout(timeout);
+  };
+
+  const hideToast = () => {
+    // Clear timeout when manually hiding
+    if (toastTimeout) {
+      clearTimeout(toastTimeout);
+      setToastTimeout(null);
+    }
+    setToast({ show: false, message: '', type: 'info' });
+  };
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
-    // Special handling for OTP field - only allow numeric input
-    if (name === 'otp') {
-      const numericValue = value.replace(/\D/g, ''); // Remove non-numeric characters
-      setFormData(prev => ({
-        ...prev,
-        [name]: numericValue
-      }));
-      return;
-    }
     
     setFormData(prev => ({
       ...prev,
@@ -83,90 +81,52 @@ const Login = () => {
     }));
   };
 
-  const handleSendOtp = async () => {
-    if (loginMethod === 'email') {
-      if (!isValidEmail(formData.email)) {
-        showToast('Please enter a valid email address', 'error');
-        return;
-      }
-      if (!formData.password) {
-        showToast('Please enter your password', 'error');
-        return;
-      }
-      // For email login, we'll handle traditional authentication here
-      // For now, just show a message that email login is traditional
-      showToast('Email login uses traditional password authentication', 'info');
-      return;
-    } else {
-      if (!isValidPhone(formData.phone)) {
-        showToast('Please enter a valid phone number', 'error');
-        return;
-      }
-      // Phone login only needs phone number + OTP
-      await handleSendPhoneOtp(formData.phone);
-      setShowOtpInput(true);
-    }
+  // Helper function to detect if identifier is email or phone
+  const detectIdentifierType = (identifier) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^\+?[\d\s\-\(\)]+$/;
+    
+    if (emailRegex.test(identifier)) return 'email';
+    if (phoneRegex.test(identifier.replace(/\s/g, ''))) return 'phone';
+    return 'unknown';
   };
 
-  const handleVerifyOtp = async () => {
-    if (loginMethod === 'email') {
-      // Email login doesn't use OTP
-      return;
-    } else {
-      // Validate OTP length before proceeding
-      if (!formData.otp || formData.otp.length !== 6) {
-        showToast('Please enter a valid 6-digit verification code', 'error');
-        return;
-      }
-      
-      await handleVerifyPhoneOtp();
-      if (isPhoneVerified) {
-        handleLoginSuccess();
-      }
-    }
+  // Helper function to validate identifier
+  const isValidIdentifier = (identifier) => {
+    const type = detectIdentifierType(identifier);
+    return type === 'email' || type === 'phone';
   };
 
-  const handleLoginSuccess = () => {
-    showToast('Login successful!', 'success');
-    // Here you would typically redirect to dashboard or set authentication state
-    console.log('Login successful for:', loginMethod === 'email' ? formData.email : formData.phone);
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (loginMethod === 'email') {
-      // Traditional email + password login
-      if (!formData.email || !formData.password) {
-        showToast('Please enter both email and password', 'error');
-        return;
-      }
-      // Here you would handle traditional email authentication
-      console.log('Email login attempt:', { email: formData.email, password: formData.password });
-      showToast('Email login functionality to be implemented', 'info');
-    } else {
-      // Phone + OTP login
-      if (!showOtpInput) {
-        handleSendOtp();
-      } else {
-        handleVerifyOtp();
-      }
+    
+    // Validate identifier and password
+    if (!formData.identifier || !formData.password) {
+      showToast('Please enter both email/phone and password', 'error');
+      return;
     }
-  };
 
-  const resetForm = () => {
-    setShowOtpInput(false);
-    setFormData(prev => ({ ...prev, otp: '' }));
-    setEmailOtp('');
-    setPhoneOtp('');
-    setEmailOtpSent(false);
-    setPhoneOtpSent(false);
-    setIsEmailVerified(false);
-    setIsPhoneVerified(false);
-  };
+    if (!isValidIdentifier(formData.identifier)) {
+      showToast('Please enter a valid email address or phone number', 'error');
+      return;
+    }
 
-  const switchLoginMethod = () => {
-    setLoginMethod(prev => prev === 'email' ? 'phone' : 'email');
-    resetForm();
+    try {
+      // Use auth context login method
+      const response = await login({
+        identifier: formData.identifier,
+        password: formData.password
+      });
+
+      // Show success message
+      showToast(response.message || 'Login successful!', 'success');
+
+      // Navigation will be handled by the redirect in useEffect above
+      
+    } catch (error) {
+      console.error('Login error:', error);
+      showToast(error.message || 'Login failed. Please check your credentials.', 'error');
+    }
   };
 
   return (
@@ -268,199 +228,107 @@ const Login = () => {
             {/* Login Header */}
             <div className="mb-3 lg:mb-4">
               <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1 bg-gradient-to-r from-gray-900 via-blue-900 to-indigo-900 bg-clip-text text-transparent">
-                {showOtpInput ? 'Verify Your Code' : 'Welcome Back'}
+                Welcome Back
               </h1>
               <p className="text-gray-600 text-sm lg:text-base">
-                {showOtpInput 
-                  ? `Enter the 6-digit code sent to ${loginMethod === 'email' ? formData.email : formData.phone}`
-                  : 'Sign in to your ExpertConnect account'
-                }
+                Sign in to your ExpertConnect account
               </p>
             </div>
 
             {/* Login Form */}
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50 p-4 lg:p-5 shadow-2xl shadow-blue-500/5">
               <form onSubmit={handleSubmit} className="space-y-3">
-                {!showOtpInput ? (
-                  <>
-                    {/* Login Method Toggle */}
-                    <div className="flex bg-gray-100/80 rounded-xl p-1.5 shadow-inner">
-                      <button
-                        type="button"
-                        onClick={() => setLoginMethod('email')}
-                        className={`flex-1 flex items-center justify-center space-x-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 ${
-                          loginMethod === 'email'
-                            ? 'bg-white text-gray-900 shadow-lg shadow-gray-200/50 transform scale-105'
-                            : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
-                        }`}
-                      >
-                        <Mail className="w-4 h-4" />
-                        <span>Email</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setLoginMethod('phone')}
-                        className={`flex-1 flex items-center justify-center space-x-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 ${
-                          loginMethod === 'phone'
-                            ? 'bg-white text-gray-900 shadow-lg shadow-gray-200/50 transform scale-105'
-                            : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
-                        }`}
-                      >
-                        <Phone className="w-4 h-4" />
-                        <span>Phone</span>
-                      </button>
+                {/* Email/Phone Field */}
+                <div>
+                  <label htmlFor="identifier" className="block text-sm font-semibold text-gray-700 mb-2">
+                    Email Address or Phone Number
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      {detectIdentifierType(formData.identifier) === 'email' ? (
+                        <Mail className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" />
+                      ) : detectIdentifierType(formData.identifier) === 'phone' ? (
+                        <Phone className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" />
+                      ) : (
+                        <Mail className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" />
+                      )}
                     </div>
+                    <input
+                      id="identifier"
+                      name="identifier"
+                      type="text"
+                      required
+                      value={formData.identifier}
+                      onChange={handleInputChange}
+                      className="w-full pl-10 pr-4 py-3 bg-gray-50/80 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 focus:bg-white focus:shadow-lg focus:shadow-blue-500/20"
+                      placeholder="Enter your email or phone number"
+                    />
+                  </div>
+                </div>
 
-                    {/* Email/Phone Field */}
-                    <div>
-                      <label htmlFor={loginMethod} className="block text-sm font-semibold text-gray-700 mb-2">
-                        {loginMethod === 'email' ? 'Email Address' : 'Phone Number'}
-                      </label>
-                      <div className="relative group">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          {loginMethod === 'email' ? (
-                            <Mail className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" />
-                          ) : (
-                            <Phone className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" />
-                          )}
-                        </div>
-                        <input
-                          id={loginMethod}
-                          name={loginMethod}
-                          type={loginMethod === 'email' ? 'email' : 'tel'}
-                          required
-                          value={formData[loginMethod]}
-                          onChange={handleInputChange}
-                          className="w-full pl-10 pr-4 py-3 bg-gray-50/80 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 focus:bg-white focus:shadow-lg focus:shadow-blue-500/20"
-                          placeholder={loginMethod === 'email' ? 'Enter your email' : 'Enter your phone number'}
-                          maxLength={loginMethod === 'phone' ? 15 : undefined}
-                        />
-                      </div>
+                {/* Password Field */}
+                <div>
+                  <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
+                    Password
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" />
                     </div>
+                    <input
+                      id="password"
+                      name="password"
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      className="w-full pl-10 pr-12 py-3 bg-gray-50/80 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 focus:bg-white focus:shadow-lg focus:shadow-blue-500/20"
+                      placeholder="Enter your password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-300 hover:scale-110"
+                    >
+                      {showPassword ? (
+                        <Eye className="h-5 w-5" />
+                      ) : (
+                        <EyeOff className="h-5 w-5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
 
-                    {/* Password Field - Only show for email login */}
-                    {loginMethod === 'email' && (
-                      <div>
-                        <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
-                          Password
-                        </label>
-                        <div className="relative group">
-                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" />
-                          </div>
-                          <input
-                            id="password"
-                            name="password"
-                            type={showPassword ? 'text' : 'password'}
-                            required
-                            value={formData.password}
-                            onChange={handleInputChange}
-                            className="w-full pl-10 pr-12 py-3 bg-gray-50/80 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 focus:bg-white focus:shadow-lg focus:shadow-blue-500/20"
-                            placeholder="Enter your password"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-300 hover:scale-110"
-                          >
-                            {showPassword ? (
-                              <Eye className="h-5 w-5" />
-                            ) : (
-                              <EyeOff className="h-5 w-5" />
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Remember Me & Forgot Password - Only show for email login */}
-                    {loginMethod === 'email' && (
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <input
-                            id="rememberMe"
-                            name="rememberMe"
-                            type="checkbox"
-                            checked={formData.rememberMe}
-                            onChange={handleInputChange}
-                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-all duration-200 hover:scale-110"
-                          />
-                          <label htmlFor="rememberMe" className="ml-2 text-sm text-gray-700 font-medium">
-                            Remember me
-                          </label>
-                        </div>
-                        <Link
-                          to="/forgot-password"
-                          className="text-sm font-medium text-blue-600 hover:text-blue-500 transition-all duration-200 hover:underline"
-                        >
-                          Forgot password?
-                        </Link>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    {/* OTP Input Field */}
-                    <div>
-                      <label htmlFor="otp" className="block text-sm font-semibold text-gray-700 mb-2">
-                        Verification Code
-                      </label>
-                      <div className="relative group">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" />
-                        </div>
-                        <input
-                          id="otp"
-                          name="otp"
-                          type="text"
-                          inputMode="numeric"
-                          pattern="[0-9]{6}"
-                          required
-                          value={formData.otp}
-                          onChange={handleInputChange}
-                          className="w-full pl-10 pr-4 py-3 bg-gray-50/80 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 focus:bg-white focus:shadow-lg focus:shadow-blue-500/20 text-center tracking-widest text-lg font-mono"
-                          placeholder="000000"
-                          maxLength="6"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Back Button */}
-                    <div className="flex justify-center">
-                      <button
-                        type="button"
-                        onClick={resetForm}
-                        className="inline-flex items-center space-x-2 text-sm text-gray-600 hover:text-gray-800 transition-all duration-300 hover:scale-105"
-                      >
-                        <ArrowLeft className="w-4 h-4" />
-                        <span>Back to login</span>
-                      </button>
-                    </div>
-                  </>
-                )}
+                {/* Remember Me & Forgot Password */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <input
+                      id="rememberMe"
+                      name="rememberMe"
+                      type="checkbox"
+                      checked={formData.rememberMe}
+                      onChange={handleInputChange}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-all duration-200 hover:scale-110"
+                    />
+                    <label htmlFor="rememberMe" className="ml-2 text-sm text-gray-700 font-medium">
+                      Remember me
+                    </label>
+                  </div>
+                  <Link
+                    to="/forgot-password"
+                    className="text-sm font-medium text-blue-600 hover:text-blue-500 transition-all duration-200 hover:underline"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
 
                 {/* Submit Button */}
                 <button
                   type="submit"
-                  disabled={
-                    showOtpInput 
-                      ? !formData.otp || formData.otp.length !== 6
-                      : loginMethod === 'email' 
-                        ? !formData.email || !formData.password 
-                        : !formData.phone
-                  }
+                  disabled={!formData.identifier || !formData.password}
                   className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-300 disabled:to-gray-400 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-300 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 hover:scale-[1.02] transform disabled:transform-none"
                 >
-                  <span>
-                    {showOtpInput 
-                      ? (loginMethod === 'email' ? isEmailVerifying : isPhoneVerifying) 
-                        ? 'Verifying...' 
-                        : 'Verify & Sign In'
-                      : loginMethod === 'email'
-                        ? 'Sign In'
-                        : 'Send Code'
-                    }
-                  </span>
+                  <span>Sign In</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </form>

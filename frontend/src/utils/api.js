@@ -75,6 +75,15 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  async verifyPasswordResetOtp(email, otp) {
+    const response = await fetch(`${this.baseURL}/auth/verify-password-reset-otp`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ email, otp }),
+    });
+    return this.handleResponse(response);
+  }
+
   async resetPassword(token, newPassword) {
     const response = await fetch(`${this.baseURL}/auth/reset-password`, {
       method: 'POST',

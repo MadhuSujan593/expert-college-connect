@@ -18,6 +18,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import Toast from '../../components/common/Toast';
+import apiService from '../../utils/api';
 
 const ForgotPassword = () => {
   const [step, setStep] = useState('email'); // 'email', 'otp', 'reset'
@@ -32,13 +33,32 @@ const ForgotPassword = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [resetToken, setResetToken] = useState('');
   const [toast, setToast] = useState({ show: false, message: '', type: 'info' });
+  const [toastTimeout, setToastTimeout] = useState(null);
 
   const showToast = (message, type = 'info') => {
+    // Clear any existing timeout
+    if (toastTimeout) {
+      clearTimeout(toastTimeout);
+    }
+    
     setToast({ show: true, message, type });
+    
+    // Set new timeout for auto-hide after 5 seconds
+    const timeout = setTimeout(() => {
+      hideToast();
+    }, 5000);
+    
+    setToastTimeout(timeout);
   };
 
   const hideToast = () => {
+    // Clear timeout when manually hiding
+    if (toastTimeout) {
+      clearTimeout(toastTimeout);
+      setToastTimeout(null);
+    }
     setToast({ show: false, message: '', type: 'info' });
   };
 
@@ -87,15 +107,15 @@ const ForgotPassword = () => {
 
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await apiService.forgotPassword(formData.email);
       
       setOtpSent(true);
       startCountdown();
       setStep('otp');
-      showToast('Verification code sent to your email', 'success');
+      showToast(response.message || 'Verification code sent to your email', 'success');
     } catch (error) {
-      showToast('Failed to send verification code. Please try again.', 'error');
+      console.error('Forgot password error:', error);
+      showToast(error.message || 'Failed to send verification code. Please try again.', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -109,13 +129,15 @@ const ForgotPassword = () => {
 
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await apiService.verifyPasswordResetOtp(formData.email, formData.otp);
       
+      // Store the reset token for the final step
+      setResetToken(response.resetToken);
       setStep('reset');
-      showToast('Email verified successfully!', 'success');
+      showToast(response.message || 'Code verified successfully!', 'success');
     } catch (error) {
-      showToast('Invalid verification code. Please try again.', 'error');
+      console.error('OTP verification error:', error);
+      showToast(error.message || 'Invalid verification code. Please try again.', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -132,18 +154,25 @@ const ForgotPassword = () => {
       return;
     }
 
+    if (!resetToken) {
+      showToast('Session expired. Please start over.', 'error');
+      resetForm();
+      return;
+    }
+
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await apiService.resetPassword(resetToken, formData.newPassword);
       
-      showToast('Password reset successfully!', 'success');
+      showToast(response.message || 'Password reset successfully!', 'success');
+      
       // Redirect to login after a short delay
       setTimeout(() => {
         window.location.href = '/login';
       }, 2000);
     } catch (error) {
-      showToast('Failed to reset password. Please try again.', 'error');
+      console.error('Password reset error:', error);
+      showToast(error.message || 'Failed to reset password. Please try again.', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -165,6 +194,7 @@ const ForgotPassword = () => {
     setStep('email');
     setOtpSent(false);
     setCountdown(0);
+    setResetToken('');
   };
 
   const getStepTitle = () => {

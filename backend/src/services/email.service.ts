@@ -599,6 +599,204 @@ export class EmailService {
   }
 
   /**
+   * Send Password Reset OTP Email
+   */
+  async sendPasswordResetOtp(email: string, otp: string, userName: string): Promise<boolean> {
+    try {
+      this.logger.log(`Attempting to send password reset OTP email to: ${email}`);
+
+      // In development mode or if SMTP fails, just log the OTP
+      if (this.configService.get('NODE_ENV') === 'development' || !this.transporter) {
+        this.logger.log(`[DEV MODE] Password Reset OTP for ${email}: ${otp}`);
+        return true;
+      }
+
+      const emailTemplate = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Password Reset Code</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { 
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+              line-height: 1.6; 
+              color: #2d3748; 
+              background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+              padding: 20px;
+            }
+            .container { 
+              max-width: 600px; 
+              margin: 0 auto; 
+              background: white; 
+              border-radius: 20px; 
+              box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+              overflow: hidden;
+            }
+            .header { 
+              background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+              color: white; 
+              padding: 40px 30px; 
+              text-align: center; 
+              position: relative;
+            }
+            .header::before {
+              content: '';
+              position: absolute;
+              top: 0; left: 0; right: 0; bottom: 0;
+              background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+              opacity: 0.3;
+            }
+            .logo { 
+              font-size: 28px; 
+              font-weight: 700; 
+              margin-bottom: 8px; 
+              position: relative; z-index: 1;
+            }
+            .subtitle { 
+              font-size: 16px; 
+              opacity: 0.9; 
+              font-weight: 400;
+              position: relative; z-index: 1;
+            }
+            .content { padding: 40px 30px; background: white; }
+            .greeting { 
+              font-size: 24px; 
+              font-weight: 600; 
+              color: #2d3748; 
+              margin-bottom: 20px;
+              text-align: center;
+            }
+            .description { 
+              font-size: 16px; 
+              color: #4a5568; 
+              margin-bottom: 30px; 
+              text-align: center;
+              line-height: 1.7;
+            }
+            .otp-container { text-align: center; margin: 30px 0; }
+            .otp-box { 
+              background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+              color: white; 
+              padding: 25px; 
+              border-radius: 15px; 
+              margin: 20px auto; 
+              font-size: 32px; 
+              font-weight: 700; 
+              letter-spacing: 8px; 
+              max-width: 300px;
+              box-shadow: 0 10px 30px rgba(239, 68, 68, 0.3);
+              position: relative; overflow: hidden;
+            }
+            .otp-text { position: relative; z-index: 1; }
+            .important-section {
+              background: #fef2f2;
+              border-left: 4px solid #ef4444;
+              padding: 20px;
+              border-radius: 8px;
+              margin: 30px 0;
+            }
+            .important-title { 
+              font-size: 18px; 
+              font-weight: 600; 
+              color: #991b1b; 
+              margin-bottom: 15px;
+            }
+            .important-list { list-style: none; padding: 0; }
+            .important-list li { 
+              padding: 8px 0; 
+              color: #7f1d1d;
+              position: relative; padding-left: 25px;
+            }
+            .important-list li::before {
+              content: '⚠️';
+              position: absolute; left: 0;
+              font-size: 14px;
+            }
+            .closing { 
+              text-align: center; 
+              margin: 30px 0 20px 0;
+              color: #4a5568;
+            }
+            .team-name { font-weight: 600; color: #2d3748; }
+            .footer { 
+              text-align: center; 
+              margin-top: 30px; 
+              padding: 20px; 
+              color: #718096; 
+              font-size: 14px;
+              background: #f7fafc;
+              border-top: 1px solid #e2e8f0;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <div class="logo">🔐 Expert College Connect</div>
+              <div class="subtitle">Password Reset Code</div>
+            </div>
+            <div class="content">
+              <div class="greeting">Hello {{userName}}! 🔑</div>
+              <div class="description">
+                We received a request to reset your password for your <strong>Expert College Connect</strong> account. Use the verification code below to proceed with resetting your password.
+              </div>
+              
+              <div class="otp-container">
+                <div class="otp-box">
+                  <div class="otp-text">{{otp}}</div>
+                </div>
+              </div>
+              
+              <div class="important-section">
+                <div class="important-title">🔒 Security Information:</div>
+                <ul class="important-list">
+                  <li>This verification code will expire in 10 minutes</li>
+                  <li>Never share this code with anyone</li>
+                  <li>If you didn't request this reset, please ignore this email</li>
+                  <li>This code can only be used once</li>
+                </ul>
+              </div>
+              
+              <div class="closing">
+                <p>Need help? Contact our support team.</p>
+                <p class="team-name">The Expert College Connect Team</p>
+              </div>
+            </div>
+            <div class="footer">
+              <p>This is an automated message, please do not reply to this email.</p>
+              <p style="margin-top: 10px; font-size: 12px; color: #a0aec0;">
+                © 2025 Expert College Connect. All rights reserved.
+              </p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      const template = handlebars.compile(emailTemplate);
+      const htmlContent = template({ userName, otp });
+
+      const mailOptions = {
+        from: `"Expert College Connect" <${this.configService.get('SMTP_USER')}>`,
+        to: email,
+        subject: 'Password Reset Code - Expert College Connect',
+        html: htmlContent,
+        text: `Hello ${userName}!\n\nYour password reset verification code is: ${otp}\n\nThis code will expire in 10 minutes.\n\nBest regards,\nThe Expert College Connect Team`,
+      };
+
+      const result = await this.transporter.sendMail(mailOptions);
+      this.logger.log(`Password reset OTP email sent successfully to ${email}. Message ID: ${result.messageId}`);
+      return true;
+    } catch (error) {
+      this.logger.error(`Failed to send password reset OTP email to ${email}:`, error);
+      return false;
+    }
+  }
+
+  /**
    * Send Password Reset Email
    */
   async sendPasswordResetEmail(email: string, resetToken: string, userName: string): Promise<boolean> {

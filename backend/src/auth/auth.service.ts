@@ -200,14 +200,22 @@ export class AuthService {
    * User Login
    */
   async login(loginDto: LoginDto): Promise<LoginResponse> {
-    const { email, phone, password } = loginDto;
+    const { identifier, password } = loginDto;
+
+    // Determine if identifier is email or phone
+    const isEmail = identifier.includes('@');
+    const isPhone = /^\+?[\d\s\-\(\)]+$/.test(identifier);
+
+    if (!isEmail && !isPhone) {
+      throw new BadRequestException('Please enter a valid email address or phone number');
+    }
 
     // Find user by email or phone
     const user = await this.prisma.user.findFirst({
       where: {
         OR: [
-          { email },
-          { phone: phone || undefined }
+          { email: isEmail ? identifier : undefined },
+          { phone: isPhone ? identifier : undefined }
         ],
         isActive: true,
         isDeleted: false,
@@ -321,7 +329,7 @@ export class AuthService {
   }
 
   /**
-   * Forgot Password
+   * Forgot Password - Send OTP
    */
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<{ message: string }> {
     const { email } = forgotPasswordDto;
@@ -331,21 +339,79 @@ export class AuthService {
     });
 
     if (!user) {
-      // Don't reveal if user exists or not
-      return { message: 'If an account with that email exists, a password reset link has been sent.' };
+      throw new BadRequestException('No account found with this email address. Please check your email or create a new account.');
     }
 
-    // Generate password reset token
-    const resetToken = await this.generatePasswordResetToken(user.id);
+    // Generate OTP for password reset
+    const otp = this.generateOTP();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    // TODO: Send email with reset token
-    console.log('Password reset token:', resetToken);
+    // Store OTP in password reset table
+    await this.prisma.passwordReset.create({
+      data: {
+        userId: user.id,
+        token: otp, // Using token field to store OTP
+        expiresAt,
+      },
+    });
 
-    return { message: 'If an account with that email exists, a password reset link has been sent.' };
+    // Send OTP email
+    const emailSent = await this.emailService.sendPasswordResetOtp(email, otp, user.fullName);
+    
+    if (!emailSent) {
+      throw new BadRequestException('Failed to send password reset code');
+    }
+
+    return { message: 'Verification code has been sent to your email address.' };
   }
 
   /**
-   * Reset Password
+   * Verify Password Reset OTP
+   */
+  async verifyPasswordResetOtp(email: string, otp: string): Promise<{ message: string; resetToken: string }> {
+    // Find user by email
+    const user = await this.prisma.user.findUnique({
+      where: { email, isActive: true, isDeleted: false }
+    });
+
+    if (!user) {
+      throw new BadRequestException('Invalid verification code');
+    }
+
+    // Find valid OTP
+    const resetRecord = await this.prisma.passwordReset.findFirst({
+      where: {
+        userId: user.id,
+        token: otp,
+        isUsed: false,
+        expiresAt: { gt: new Date() },
+      },
+    });
+
+    if (!resetRecord) {
+      throw new BadRequestException('Invalid or expired verification code');
+    }
+
+    // Generate a secure reset token for the final step
+    const resetToken = this.generateSecureToken();
+    
+    // Update the record with the new reset token
+    await this.prisma.passwordReset.update({
+      where: { id: resetRecord.id },
+      data: { 
+        token: resetToken,
+        expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes for password reset
+      }
+    });
+
+    return { 
+      message: 'Verification code verified successfully',
+      resetToken 
+    };
+  }
+
+  /**
+   * Reset Password with Token
    */
   async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<{ message: string }> {
     const { token, newPassword } = resetPasswordDto;
@@ -728,9 +794,24 @@ export class AuthService {
   /**
    * Validate user for local strategy
    */
-  async validateUser(email: string, password: string): Promise<any> {
-    const user = await this.prisma.user.findUnique({
-      where: { email, isActive: true, isDeleted: false }
+  async validateUser(identifier: string, password: string): Promise<any> {
+    // Determine if identifier is email or phone
+    const isEmail = identifier.includes('@');
+    const isPhone = /^\+?[\d\s\-\(\)]+$/.test(identifier);
+
+    if (!isEmail && !isPhone) {
+      return null;
+    }
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: isEmail ? identifier : undefined },
+          { phone: isPhone ? identifier : undefined }
+        ],
+        isActive: true,
+        isDeleted: false
+      }
     });
 
     if (user && await this.verifyPassword(password, user.password)) {
@@ -790,13 +871,18 @@ export class AuthService {
         });
       } else {
         // For pre-registration, create verification record without userId
+        const createData: any = {
+          email,
+          otp,
+          expiresAt,
+        };
+        
+        if (user?.id) {
+          createData.userId = user.id;
+        }
+        
         const newRecord = await this.prisma.emailVerification.create({
-          data: {
-            userId: user?.id || null, // null for pre-registration
-            email,
-            otp,
-            expiresAt,
-          },
+          data: createData,
         });
       }
 
@@ -855,13 +941,18 @@ export class AuthService {
         });
       } else {
         // For pre-registration, create verification record without userId
+        const createData: any = {
+          phone,
+          otp,
+          expiresAt,
+        };
+        
+        if (user?.id) {
+          createData.userId = user.id;
+        }
+        
         const newRecord = await this.prisma.phoneVerification.create({
-          data: {
-            userId: user?.id || null, // null for pre-registration
-            phone,
-            otp,
-            expiresAt,
-          },
+          data: createData,
         });
       }
 

@@ -339,11 +339,6 @@ const ExpertRegistration = () => {
 
               {/* Email and Phone Number Row */}
               <div className="space-y-2 sm:space-y-2">
-                {/* Debug: Show verification states */}
-                <div className="text-xs text-gray-500 bg-gray-100 p-2 rounded">
-                  Debug - Email Verified: {isEmailVerified ? 'YES' : 'NO'}, Phone Verified: {isPhoneVerified ? 'YES' : 'NO'}
-                </div>
-                
                 {/* Email Address with Verification */}
                 <VerificationField
                   type="email"

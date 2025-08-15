@@ -13,22 +13,17 @@ export class SmsService {
 
   private initializeTwilio() {
     try {
-      this.logger.log('Initializing Twilio client...');
-      this.logger.log(`Twilio Account SID: ${this.configService.get('TWILIO_ACCOUNT_SID') ? '***SET***' : 'NOT SET'}`);
-      this.logger.log(`Twilio Auth Token: ${this.configService.get('TWILIO_AUTH_TOKEN') ? '***SET***' : 'NOT SET'}`);
-      this.logger.log(`Twilio Phone Number: ${this.configService.get('TWILIO_PHONE_NUMBER')}`);
-
       const accountSid = this.configService.get('TWILIO_ACCOUNT_SID');
       const authToken = this.configService.get('TWILIO_AUTH_TOKEN');
 
       if (!accountSid || !authToken) {
-        this.logger.warn('Twilio credentials not configured, SMS service will not work');
+        this.logger.warn('Twilio credentials not configured, SMS service will use development mode');
         this.client = null;
         return;
       }
 
       this.client = twilio(accountSid, authToken);
-      this.logger.log('Twilio client initialized successfully');
+      this.logger.log('Twilio SMS service initialized successfully');
     } catch (error) {
       this.logger.error('Failed to initialize Twilio client:', error);
       this.client = null;
@@ -36,49 +31,71 @@ export class SmsService {
   }
 
   /**
+   * Normalize phone number to E.164 format
+   */
+  private normalizePhoneNumber(phone: string): string {
+    // Remove all non-digit characters except +
+    let cleaned = phone.replace(/[^\d+]/g, '');
+    
+    // If it doesn't start with +, add it
+    if (!cleaned.startsWith('+')) {
+      cleaned = `+${cleaned}`;
+    }
+    
+    // Remove all non-digit characters after +
+    const digits = cleaned.substring(1).replace(/\D/g, '');
+    
+    return `+${digits}`;
+  }
+
+  /**
+   * Validate phone number format
+   */
+  private isValidPhoneNumber(phone: string): boolean {
+    const normalized = this.normalizePhoneNumber(phone);
+    // Basic validation for E.164 format
+    const phoneRegex = /^\+[1-9]\d{1,14}$/;
+    return phoneRegex.test(normalized);
+  }
+
+  /**
    * Send OTP SMS
    */
   async sendOtpSms(phone: string, otp: string): Promise<boolean> {
     try {
-      this.logger.log(`Attempting to send OTP SMS to: ${phone}`);
-      this.logger.log(`OTP: ${otp}`);
-      this.logger.log(`Twilio client available: ${this.client ? 'YES' : 'NO'}`);
-      this.logger.log(`NODE_ENV: ${this.configService.get('NODE_ENV')}`);
+      // Normalize and validate phone number
+      const normalizedPhone = this.normalizePhoneNumber(phone);
 
-      // In development mode or if Twilio fails, just log the OTP
+      if (!this.isValidPhoneNumber(phone)) {
+        this.logger.error(`Invalid phone number format: ${phone}`);
+        return false;
+      }
+
+      // Check if we're in development mode or no Twilio client
       if (this.configService.get('NODE_ENV') === 'development' || !this.client) {
-        this.logger.log(`[DEV MODE] OTP for ${phone}: ${otp}`);
-        this.logger.log(`[DEV MODE] SMS would be sent to: ${phone}`);
+        this.logger.log(`[DEV MODE] OTP SMS would be sent to ${normalizedPhone}: ${otp}`);
         return true;
       }
 
-      const message = `Your Expert College Connect verification code is: ${otp}. This code will expire in 10 minutes. Do not share this code with anyone.`;
+      const message = `Your Expert College Connect verification code is: ${otp}
 
-      this.logger.log('Sending SMS via Twilio...');
+Valid for 10 minutes. Do not share.`;
+
+      if (!this.client) {
+        this.logger.error('Twilio client is null - cannot send SMS');
+        return false;
+      }
+      
       const result = await this.client.messages.create({
         body: message,
         from: this.configService.get('TWILIO_PHONE_NUMBER'),
-        to: phone
+        to: normalizedPhone
       });
 
-      this.logger.log(`OTP SMS sent successfully to ${phone}. Message SID: ${result.sid}`);
-      this.logger.log('SMS result:', {
-        sid: result.sid,
-        status: result.status,
-        to: result.to,
-        from: result.from,
-        body: result.body
-      });
-
+      this.logger.log(`SMS sent successfully to ${normalizedPhone}. Message SID: ${result.sid}`);
       return true;
     } catch (error) {
-      this.logger.error(`Failed to send OTP SMS to ${phone}:`, error);
-      this.logger.error('SMS Error Details:', {
-        code: error.code,
-        message: error.message,
-        status: error.status,
-        stack: error.stack
-      });
+      this.logger.error(`Failed to send OTP SMS to ${phone}:`, error.message);
       return false;
     }
   }
