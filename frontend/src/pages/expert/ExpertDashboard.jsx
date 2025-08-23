@@ -548,13 +548,7 @@ const ExpertDashboard = () => {
                 change={`${stats.totalRatings || 0} reviews`}
                 color="yellow"
               />
-              <StatCard
-                icon={DollarSign}
-                title="Total Earnings"
-                value={`$${(stats.totalEarnings || 0).toLocaleString()}`}
-                change="+15% this month"
-                color="purple"
-              />
+             
             </div>
 
             {/* Quick Actions */}
