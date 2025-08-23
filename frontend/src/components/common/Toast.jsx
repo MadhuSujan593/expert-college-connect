@@ -1,8 +1,45 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, AlertCircle, Check, CheckCircle } from 'lucide-react';
 
 const Toast = ({ toast, hideToast }) => {
+  const [progress, setProgress] = React.useState(100);
+  const [isPaused, setIsPaused] = React.useState(false);
+
+  // Reset progress when a new toast is shown
+  useEffect(() => {
+    if (toast.show) {
+      setProgress(100);
+      setIsPaused(false);
+    }
+  }, [toast.show, toast.message]); // Reset when message changes (new toast)
+
+  useEffect(() => {
+    if (toast.show && !isPaused) {
+      // Different timeout durations based on toast type
+      const timeout = toast.type === 'error' ? 6000 : 4000; // Errors stay longer
+      
+      // Progress bar animation
+      const progressInterval = setInterval(() => {
+        setProgress(prev => {
+          const decrement = 100 / (timeout / 100);
+          const newProgress = Math.max(0, prev - decrement);
+          
+          // Auto hide when progress reaches 0
+          if (newProgress <= 0) {
+            hideToast();
+          }
+          
+          return newProgress;
+        });
+      }, 100);
+
+      return () => {
+        clearInterval(progressInterval);
+      };
+    }
+  }, [toast.show, toast.type, hideToast, isPaused]);
+
   if (!toast.show) return null;
 
   return (
@@ -14,15 +51,19 @@ const Toast = ({ toast, hideToast }) => {
         transition={{ duration: 0.3, ease: "easeOut" }}
         className="fixed top-4 right-4 sm:top-6 sm:right-6 z-50 max-w-sm"
       >
-        <div className={`
-          flex items-center p-4 rounded-lg shadow-lg border backdrop-blur-sm
-          ${toast.type === 'success'
-            ? 'bg-green-50/95 border-green-200 text-green-800'
-            : toast.type === 'error'
-            ? 'bg-red-50/95 border-red-200 text-red-800'
-            : 'bg-blue-50/95 border-blue-200 text-blue-800'
-          }
-        `}>
+        <div 
+          className={`
+            flex items-center p-4 rounded-lg shadow-lg border backdrop-blur-sm cursor-pointer
+            ${toast.type === 'success'
+              ? 'bg-green-50/95 border-green-200 text-green-800'
+              : toast.type === 'error'
+              ? 'bg-red-50/95 border-red-200 text-red-800'
+              : 'bg-blue-50/95 border-blue-200 text-blue-800'
+            }
+          `}
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+        >
           <div className="flex-shrink-0 mr-3">
             {toast.type === 'success' && (
               <Check className="w-5 h-5 text-green-600" />
@@ -36,6 +77,19 @@ const Toast = ({ toast, hideToast }) => {
           </div>
           <div className="flex-1">
             <p className="text-sm font-medium">{toast.message}</p>
+            {/* Progress bar */}
+            <div className="mt-2 w-full bg-gray-200 rounded-full h-1">
+              <div 
+                className={`h-1 rounded-full transition-all duration-100 ease-linear ${
+                  toast.type === 'success' 
+                    ? 'bg-green-500' 
+                    : toast.type === 'error' 
+                    ? 'bg-red-500' 
+                    : 'bg-blue-500'
+                }`}
+                style={{ width: `${progress}%` }}
+              />
+            </div>
           </div>
           <button
             onClick={hideToast}

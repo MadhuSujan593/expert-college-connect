@@ -41,9 +41,12 @@ const AppContent = () => {
     location.pathname === path || location.pathname.startsWith(path + '/')
   );
   
+  const isDashboardPage = location.pathname.startsWith('/dashboard');
+  
   // Debug logging
   console.log('Current pathname:', location.pathname);
   console.log('Is auth page:', isAuthPage);
+  console.log('Is dashboard page:', isDashboardPage);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
@@ -81,7 +84,7 @@ const AppContent = () => {
           <Route path="/college/:id" element={<CollegeProfile />} /> */}
         </Routes>
       </main>
-      {!isAuthPage && <Footer />}
+      {!isAuthPage && !isDashboardPage && <Footer />}
       <Toaster
         position="top-right"
         toastOptions={{

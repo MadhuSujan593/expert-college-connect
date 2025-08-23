@@ -67,8 +67,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   async getDatabaseStats() {
     try {
       const userCount = await this.user.count();
-      const expertCount = await this.expertProfile.count();
-      const collegeCount = await this.collegeProfile.count();
+      const expertCount = await this.expertprofile.count();
+      const collegeCount = await this.collegeprofile.count();
       const sessionCount = await this.session.count({ where: { isActive: true } });
 
       return {

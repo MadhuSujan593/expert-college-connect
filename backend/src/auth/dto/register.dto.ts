@@ -11,7 +11,7 @@ import {
   ValidateIf
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { UserRole } from '@prisma/client';
+import { user_role as UserRole } from '@prisma/client';
 
 export class RegisterDto {
   @ApiProperty({

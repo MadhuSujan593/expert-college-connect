@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { UserRole } from '@prisma/client';
+import { user_role as UserRole } from '@prisma/client';
 
 @Injectable()
 export class UserService {
@@ -13,8 +13,8 @@ export class UserService {
     const user = await this.prisma.user.findUnique({
       where: { id, isActive: true, isDeleted: false },
       include: {
-        expertProfile: true,
-        collegeProfile: true,
+        expertprofile: true,
+        collegeprofile: true,
       },
     });
 
@@ -54,8 +54,8 @@ export class UserService {
       { role, isActive: true, isDeleted: false },
       { createdAt: 'desc' },
       {
-        expertProfile: true,
-        collegeProfile: true,
+        expertprofile: true,
+        collegeprofile: true,
       }
     );
   }
@@ -68,8 +68,8 @@ export class UserService {
       where: { id },
       data,
       include: {
-        expertProfile: true,
-        collegeProfile: true,
+        expertprofile: true,
+        collegeprofile: true,
       },
     });
   }

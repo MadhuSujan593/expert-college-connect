@@ -1,4 +1,4 @@
-import { UserRole } from '@prisma/client';
+import { user_role as UserRole } from '@prisma/client';
 
 export interface RegisterResponse {
   user: {

@@ -6,6 +6,7 @@ import { EmailService } from '../services/email.service';
 import { SmsService } from '../services/sms.service';
 import * as bcrypt from 'bcryptjs';
 import { ConfigService } from '@nestjs/config';
+import { v4 as uuidv4 } from 'uuid';
 import { 
   LoginDto, 
   RegisterDto, 
@@ -90,7 +91,7 @@ export class AuthService {
     const hashedPassword = await this.hashPassword(password);
 
     // Check if email and phone were verified before registration
-    const emailVerification = await this.prisma.emailVerification.findFirst({
+    const emailVerification = await this.prisma.emailverification.findFirst({
       where: { 
         email, 
         isUsed: true,
@@ -99,7 +100,7 @@ export class AuthService {
       orderBy: { usedAt: 'desc' }
     });
 
-    const phoneVerification = phone ? await this.prisma.phoneVerification.findFirst({
+    const phoneVerification = phone ? await this.prisma.phoneverification.findFirst({
       where: { 
         phone, 
         isUsed: true,
@@ -113,6 +114,7 @@ export class AuthService {
       // Create user
       const user = await prisma.user.create({
         data: {
+          id: uuidv4(),
           email,
           phone,
           password: hashedPassword,
@@ -120,6 +122,7 @@ export class AuthService {
           role,
           isEmailVerified: !!emailVerification, // Set based on verification status
           isPhoneVerified: !!phoneVerification, // Set based on verification status
+          updatedAt: new Date(),
         },
         select: {
           id: true,
@@ -135,8 +138,9 @@ export class AuthService {
 
       // Create Expert Profile if role is EXPERT
       if (role === 'EXPERT') {
-        const expertProfile = await prisma.expertProfile.create({
+        const expertProfile = await prisma.expertprofile.create({
           data: {
+            id: uuidv4(),
             userId: user.id,
             jobTitle: jobTitle || '',
             company: company || '',
@@ -146,6 +150,7 @@ export class AuthService {
             availableFor: availableFor ? JSON.parse(availableFor) : null,
             preferredMode: preferredMode || '',
             hourlyRate: hourlyRate ? parseFloat(hourlyRate) : null,
+            updatedAt: new Date(),
           }
         });
 
@@ -154,8 +159,9 @@ export class AuthService {
           const skillsArray = skills.split(',').map(skill => skill.trim());
           for (const skillName of skillsArray) {
             if (skillName) {
-              await prisma.expertSkill.create({
+              await prisma.expertskill.create({
                 data: {
+                  id: uuidv4(),
                   expertProfileId: expertProfile.id,
                   skillName: skillName,
                   skillLevel: 'INTERMEDIATE'
@@ -171,20 +177,22 @@ export class AuthService {
          // Validate and set institution type
          const validInstitutionType = this.validateInstitutionType(institutionType);
          
-         await prisma.collegeProfile.create({
-           data: {
-             userId: user.id,
-             institutionName: institutionName || '',
-             contactPersonName: contactPersonName || '',
-             institutionType: validInstitutionType,
-             website: website || '',
-             address: address || '',
-             city: city || '',
-             state: state || '',
-             country: country || '',
-             postalCode: postalCode || '',
-           }
-         });
+                 await prisma.collegeprofile.create({
+          data: {
+            id: uuidv4(),
+            userId: user.id,
+            institutionName: institutionName || '',
+            contactPersonName: contactPersonName || '',
+            institutionType: validInstitutionType,
+            website: website || '',
+            address: address || '',
+            city: city || '',
+            state: state || '',
+            country: country || '',
+            postalCode: postalCode || '',
+            updatedAt: new Date(),
+          }
+        });
        }
 
       return user;
@@ -221,8 +229,8 @@ export class AuthService {
         isDeleted: false,
       },
       include: {
-        expertProfile: true,
-        collegeProfile: true,
+        expertprofile: true,
+        collegeprofile: true,
       }
     });
 
@@ -260,8 +268,8 @@ export class AuthService {
         role: user.role,
         isEmailVerified: user.isEmailVerified,
         isPhoneVerified: user.isPhoneVerified,
-        expertProfile: user.expertProfile,
-        collegeProfile: user.collegeProfile,
+        expertProfile: user.expertprofile,
+        collegeProfile: user.collegeprofile,
       },
       tokens,
       message: 'Login successful',
@@ -281,7 +289,7 @@ export class AuthService {
       });
 
       // Check if refresh token exists and is not revoked
-      const tokenRecord = await this.prisma.refreshToken.findFirst({
+      const tokenRecord = await this.prisma.refreshtoken.findFirst({
         where: {
           token: refreshToken,
           userId: payload.sub,
@@ -298,7 +306,7 @@ export class AuthService {
       const tokens = await this.generateTokens(payload.sub);
 
       // Revoke old refresh token
-      await this.prisma.refreshToken.update({
+      await this.prisma.refreshtoken.update({
         where: { id: tokenRecord.id },
         data: { isRevoked: true }
       });
@@ -314,7 +322,7 @@ export class AuthService {
    */
   async logout(userId: string): Promise<{ message: string }> {
     // Revoke all refresh tokens for user
-    await this.prisma.refreshToken.updateMany({
+    await this.prisma.refreshtoken.updateMany({
       where: { userId, isRevoked: false },
       data: { isRevoked: true }
     });
@@ -347,8 +355,9 @@ export class AuthService {
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     // Store OTP in password reset table
-    await this.prisma.passwordReset.create({
+    await this.prisma.passwordreset.create({
       data: {
+        id: uuidv4(),
         userId: user.id,
         token: otp, // Using token field to store OTP
         expiresAt,
@@ -379,7 +388,7 @@ export class AuthService {
     }
 
     // Find valid OTP
-    const resetRecord = await this.prisma.passwordReset.findFirst({
+    const resetRecord = await this.prisma.passwordreset.findFirst({
       where: {
         userId: user.id,
         token: otp,
@@ -396,7 +405,7 @@ export class AuthService {
     const resetToken = this.generateSecureToken();
     
     // Update the record with the new reset token
-    await this.prisma.passwordReset.update({
+    await this.prisma.passwordreset.update({
       where: { id: resetRecord.id },
       data: { 
         token: resetToken,
@@ -417,7 +426,7 @@ export class AuthService {
     const { token, newPassword } = resetPasswordDto;
 
     // Find valid password reset token
-    const resetRecord = await this.prisma.passwordReset.findFirst({
+    const resetRecord = await this.prisma.passwordreset.findFirst({
       where: {
         token,
         isUsed: false,
@@ -439,13 +448,13 @@ export class AuthService {
     });
 
     // Mark reset token as used
-    await this.prisma.passwordReset.update({
+    await this.prisma.passwordreset.update({
       where: { id: resetRecord.id },
       data: { isUsed: true, usedAt: new Date() }
     });
 
     // Revoke all refresh tokens for security
-    await this.prisma.refreshToken.updateMany({
+    await this.prisma.refreshtoken.updateMany({
       where: { userId: resetRecord.userId, isRevoked: false },
       data: { isRevoked: true }
     });
@@ -473,7 +482,7 @@ export class AuthService {
     // If no user exists, allow verification for pre-registration
 
     // Look for verification record by email (not just by userId)
-    const verificationRecord = await this.prisma.emailVerification.findFirst({
+    const verificationRecord = await this.prisma.emailverification.findFirst({
       where: {
         email,
         otp,
@@ -498,7 +507,7 @@ export class AuthService {
     }
 
     // Mark OTP as used (for both existing users and pre-registration)
-    await this.prisma.emailVerification.update({
+    await this.prisma.emailverification.update({
       where: { id: verificationRecord.id },
       data: { isUsed: true, usedAt: new Date() }
     });
@@ -531,7 +540,7 @@ export class AuthService {
     // If no user exists, allow verification for pre-registration
 
     // Look for verification record by phone (not just by userId)
-    const verificationRecord = await this.prisma.phoneVerification.findFirst({
+    const verificationRecord = await this.prisma.phoneverification.findFirst({
       where: {
         phone,
         otp,
@@ -556,7 +565,7 @@ export class AuthService {
     }
 
     // Mark OTP as used (for both existing users and pre-registration)
-    await this.prisma.phoneVerification.update({
+    await this.prisma.phoneverification.update({
       where: { id: verificationRecord.id },
       data: { isUsed: true, usedAt: new Date() }
     });
@@ -588,11 +597,13 @@ export class AuthService {
     ]);
 
     // Store refresh token
-    await this.prisma.refreshToken.create({
+    await this.prisma.refreshtoken.create({
       data: {
+        id: uuidv4(),
         userId,
         token: refreshToken,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+        updatedAt: new Date(),
       },
     });
 
@@ -605,9 +616,11 @@ export class AuthService {
   private async createSession(userId: string, token: string) {
     await this.prisma.session.create({
       data: {
+        id: uuidv4(),
         userId,
         token,
         expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes
+        updatedAt: new Date(),
       },
     });
   }
@@ -619,8 +632,9 @@ export class AuthService {
     const otp = this.generateOTP();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    return await this.prisma.emailVerification.create({
+    return await this.prisma.emailverification.create({
       data: {
+        id: uuidv4(),
         userId,
         email: (await this.prisma.user.findUnique({ where: { id: userId } }))?.email || '',
         otp,
@@ -646,12 +660,12 @@ export class AuthService {
     }
 
     // Create or update verification record
-    const existingVerification = await this.prisma.emailVerification.findFirst({
+    const existingVerification = await this.prisma.emailverification.findFirst({
       where: { email, isUsed: false }
     });
 
     if (existingVerification) {
-      await this.prisma.emailVerification.update({
+      await this.prisma.emailverification.update({
         where: { id: existingVerification.id },
         data: { otp, expiresAt }
       });
@@ -659,8 +673,9 @@ export class AuthService {
       // For pre-registration, create a temporary userId
       const tempUserId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
-      await this.prisma.emailVerification.create({
+      await this.prisma.emailverification.create({
         data: {
+          id: uuidv4(),
           userId: tempUserId,
           email,
           otp,
@@ -686,8 +701,9 @@ export class AuthService {
     const otp = this.generateOTP();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    return await this.prisma.phoneVerification.create({
+    return await this.prisma.phoneverification.create({
       data: {
+        id: uuidv4(),
         userId,
         phone: (await this.prisma.user.findUnique({ where: { id: userId } }))?.phone || '',
         otp,
@@ -713,12 +729,12 @@ export class AuthService {
     }
 
     // Create or update verification record
-    const existingVerification = await this.prisma.phoneVerification.findFirst({
+    const existingVerification = await this.prisma.phoneverification.findFirst({
       where: { phone, isUsed: false }
     });
 
     if (existingVerification) {
-      await this.prisma.phoneVerification.update({
+      await this.prisma.phoneverification.update({
         where: { id: existingVerification.id },
         data: { otp, expiresAt }
       });
@@ -726,8 +742,9 @@ export class AuthService {
       // For pre-registration, create a temporary userId
       const tempUserId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
-      await this.prisma.phoneVerification.create({
+      await this.prisma.phoneverification.create({
         data: {
+          id: uuidv4(),
           userId: tempUserId,
           phone,
           otp,
@@ -753,8 +770,9 @@ export class AuthService {
     const token = this.generateSecureToken();
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-    return await this.prisma.passwordReset.create({
+    return await this.prisma.passwordreset.create({
       data: {
+        id: uuidv4(),
         userId,
         token,
         expiresAt,
@@ -855,12 +873,12 @@ export class AuthService {
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
       // Create or update email verification record
-      const existingVerification = await this.prisma.emailVerification.findFirst({
+      const existingVerification = await this.prisma.emailverification.findFirst({
         where: { email, isUsed: false }
       });
 
       if (existingVerification) {
-        await this.prisma.emailVerification.update({
+        await this.prisma.emailverification.update({
           where: { id: existingVerification.id },
           data: {
             otp,
@@ -881,7 +899,7 @@ export class AuthService {
           createData.userId = user.id;
         }
         
-        const newRecord = await this.prisma.emailVerification.create({
+        const newRecord = await this.prisma.emailverification.create({
           data: createData,
         });
       }
@@ -925,12 +943,12 @@ export class AuthService {
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
       // Create or update phone verification record
-      const existingPhoneVerification = await this.prisma.phoneVerification.findFirst({
+      const existingPhoneVerification = await this.prisma.phoneverification.findFirst({
         where: { phone, isUsed: false }
       });
 
       if (existingPhoneVerification) {
-        await this.prisma.phoneVerification.update({
+        await this.prisma.phoneverification.update({
           where: { id: existingPhoneVerification.id },
           data: {
             otp,
@@ -951,7 +969,7 @@ export class AuthService {
           createData.userId = user.id;
         }
         
-        const newRecord = await this.prisma.phoneVerification.create({
+        const newRecord = await this.prisma.phoneverification.create({
           data: createData,
         });
       }

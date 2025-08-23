@@ -27,6 +27,12 @@ class ApiService {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }
+    
+    // Handle 204 No Content responses
+    if (response.status === 204) {
+      return null;
+    }
+    
     return response.json();
   }
 
@@ -120,12 +126,178 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  // Expert search endpoints
+  // Expert profile endpoints
+  async getExpertProfile() {
+    const response = await fetch(`${this.baseURL}/expert-profiles/profile`, {
+      method: 'GET',
+      headers: this.getHeaders(true),
+    });
+    return this.handleResponse(response);
+  }
+
+  async updateExpertProfile(profileData) {
+    const response = await fetch(`${this.baseURL}/expert-profiles/profile`, {
+      method: 'PUT',
+      headers: this.getHeaders(true),
+      body: JSON.stringify(profileData),
+    });
+    return this.handleResponse(response);
+  }
+
+  async getExpertDashboardStats() {
+    const response = await fetch(`${this.baseURL}/expert-profiles/dashboard/stats`, {
+      method: 'GET',
+      headers: this.getHeaders(true),
+    });
+    return this.handleResponse(response);
+  }
+
+  async addExpertSkill(skillData) {
+    const response = await fetch(`${this.baseURL}/expert-profiles/skills`, {
+      method: 'POST',
+      headers: this.getHeaders(true),
+      body: JSON.stringify(skillData),
+    });
+    return this.handleResponse(response);
+  }
+
+  async updateExpertSkill(skillId, skillData) {
+    const response = await fetch(`${this.baseURL}/expert-profiles/skills/${skillId}`, {
+      method: 'PUT',
+      headers: this.getHeaders(true),
+      body: JSON.stringify(skillData),
+    });
+    return this.handleResponse(response);
+  }
+
+  async removeExpertSkill(skillId) {
+    const response = await fetch(`${this.baseURL}/expert-profiles/skills/${skillId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(true),
+    });
+    return this.handleResponse(response);
+  }
+
   async searchExperts(filters = {}) {
     const queryParams = new URLSearchParams(filters).toString();
-    const response = await fetch(`${this.baseURL}/experts/search?${queryParams}`, {
+    const response = await fetch(`${this.baseURL}/expert-profiles/search?${queryParams}`, {
       method: 'GET',
       headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  // College profile endpoints
+  async getCollegeProfile() {
+    const response = await fetch(`${this.baseURL}/college-profiles/profile`, {
+      method: 'GET',
+      headers: this.getHeaders(true),
+    });
+    return this.handleResponse(response);
+  }
+
+  async updateCollegeProfile(profileData) {
+    const response = await fetch(`${this.baseURL}/college-profiles/profile`, {
+      method: 'PUT',
+      headers: this.getHeaders(true),
+      body: JSON.stringify(profileData),
+    });
+    return this.handleResponse(response);
+  }
+
+  async getCollegeDashboardStats() {
+    const response = await fetch(`${this.baseURL}/college-profiles/dashboard/stats`, {
+      method: 'GET',
+      headers: this.getHeaders(true),
+    });
+    return this.handleResponse(response);
+  }
+
+  async getCollegeRecentRequirements(limit = 5) {
+    const response = await fetch(`${this.baseURL}/college-profiles/requirements/recent?limit=${limit}`, {
+      method: 'GET',
+      headers: this.getHeaders(true),
+    });
+    return this.handleResponse(response);
+  }
+
+  async getCollegeRequirementsSummary() {
+    const response = await fetch(`${this.baseURL}/college-profiles/requirements/summary`, {
+      method: 'GET',
+      headers: this.getHeaders(true),
+    });
+    return this.handleResponse(response);
+  }
+
+  async searchColleges(filters = {}) {
+    const queryParams = new URLSearchParams(filters).toString();
+    const response = await fetch(`${this.baseURL}/college-profiles/search?${queryParams}`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  // File Upload endpoints
+  async uploadProfilePicture(file) {
+    const formData = new FormData();
+    formData.append('profilePicture', file);
+
+    const response = await fetch(`${this.baseURL}/expert-profiles/upload/profile-picture`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.getToken()}`,
+      },
+      body: formData,
+    });
+    return this.handleResponse(response);
+  }
+
+  async uploadResume(file) {
+    const formData = new FormData();
+    formData.append('resume', file);
+
+    const response = await fetch(`${this.baseURL}/expert-profiles/upload/resume`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.getToken()}`,
+      },
+      body: formData,
+    });
+    return this.handleResponse(response);
+  }
+
+  // Work Experience endpoints
+  async getWorkExperiences() {
+    const response = await fetch(`${this.baseURL}/expert-profiles/work-experience`, {
+      method: 'GET',
+      headers: this.getHeaders(true),
+    });
+    return this.handleResponse(response);
+  }
+
+  async addWorkExperience(experienceData) {
+    const response = await fetch(`${this.baseURL}/expert-profiles/work-experience`, {
+      method: 'POST',
+      headers: this.getHeaders(true),
+      body: JSON.stringify(experienceData),
+    });
+    return this.handleResponse(response);
+  }
+
+  async updateWorkExperience(experienceId, experienceData) {
+    const response = await fetch(`${this.baseURL}/expert-profiles/work-experience/${experienceId}`, {
+      method: 'PUT',
+      headers: this.getHeaders(true),
+      body: JSON.stringify(experienceData),
+    });
+    return this.handleResponse(response);
+  }
+
+  async removeWorkExperience(experienceId) {
+    const response = await fetch(`${this.baseURL}/expert-profiles/work-experience/${experienceId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(true),
     });
     return this.handleResponse(response);
   }
