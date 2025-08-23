@@ -7,16 +7,25 @@ import helmet from 'helmet';
 import compression from 'compression';
 import cors from 'cors';
 import { join } from 'path';
+import * as fs from 'fs';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // Security middleware
-  app.use(helmet());
+  // Security middleware with custom configuration for images
+  app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginEmbedderPolicy: false,
+  }));
   app.use(compression());
   app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: [
+      process.env.FRONTEND_URL || 'http://localhost:5173',
+      'http://localhost:5174' // Alternative Vite port
+    ],
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   }));
 
   // Global validation pipe
@@ -31,9 +40,33 @@ async function bootstrap() {
     }),
   );
 
-  // Serve static files
-  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
+  // Ensure upload directories exist
+  const uploadsDir = join(__dirname, '..', 'uploads');
+  const profilePicsDir = join(uploadsDir, 'profile-pics');
+  const resumesDir = join(uploadsDir, 'resumes');
+  
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+  if (!fs.existsSync(profilePicsDir)) {
+    fs.mkdirSync(profilePicsDir, { recursive: true });
+  }
+  if (!fs.existsSync(resumesDir)) {
+    fs.mkdirSync(resumesDir, { recursive: true });
+  }
+
+
+
+  // Serve static files with proper CORS headers
+  app.useStaticAssets(uploadsDir, {
     prefix: '/uploads/',
+    setHeaders: (res, path) => {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+      res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none');
+    }
   });
 
   // Global prefix

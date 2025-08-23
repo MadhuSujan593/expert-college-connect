@@ -240,16 +240,43 @@ class ApiService {
 
   // File Upload endpoints
   async uploadProfilePicture(file) {
+    console.log('=== FRONTEND UPLOAD PROFILE PICTURE ===');
+    console.log('File to upload:', file);
+    console.log('File details:', {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      lastModified: file.lastModified
+    });
+    
     const formData = new FormData();
     formData.append('profilePicture', file);
+    
+    console.log('FormData created, entries:');
+    for (let pair of formData.entries()) {
+      console.log(pair[0] + ':', pair[1]);
+    }
+
+    const token = localStorage.getItem('accessToken');
+    console.log('Token exists:', !!token);
+    
+    const headers = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    console.log('Request headers:', headers);
+    console.log('Request URL:', `${this.baseURL}/expert-profiles/upload/profile-picture`);
 
     const response = await fetch(`${this.baseURL}/expert-profiles/upload/profile-picture`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.getToken()}`,
-      },
+      headers,
       body: formData,
     });
+    
+    console.log('Response status:', response.status);
+    console.log('Response headers:', response.headers);
+    
     return this.handleResponse(response);
   }
 
@@ -257,12 +284,32 @@ class ApiService {
     const formData = new FormData();
     formData.append('resume', file);
 
+    const token = localStorage.getItem('accessToken');
+    const headers = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${this.baseURL}/expert-profiles/upload/resume`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.getToken()}`,
-      },
+      headers,
       body: formData,
+    });
+    return this.handleResponse(response);
+  }
+
+  async removeProfilePicture() {
+    const response = await fetch(`${this.baseURL}/expert-profiles/upload/profile-picture`, {
+      method: 'DELETE',
+      headers: this.getHeaders(true),
+    });
+    return this.handleResponse(response);
+  }
+
+  async removeResume() {
+    const response = await fetch(`${this.baseURL}/expert-profiles/upload/resume`, {
+      method: 'DELETE',
+      headers: this.getHeaders(true),
     });
     return this.handleResponse(response);
   }
@@ -310,6 +357,54 @@ class ApiService {
 
   getToken() {
     return localStorage.getItem('accessToken');
+  }
+
+  // ============ SERVICE METHODS ============
+  
+  async getServices() {
+    const response = await fetch(`${this.baseURL}/expert-profiles/services`, {
+      method: 'GET',
+      headers: this.getHeaders(true),
+    });
+    return this.handleResponse(response);
+  }
+
+  async createService(serviceData) {
+    console.log('API: Creating service with data:', serviceData);
+    const response = await fetch(`${this.baseURL}/expert-profiles/services`, {
+      method: 'POST',
+      headers: this.getHeaders(true),
+      body: JSON.stringify(serviceData),
+    });
+    return this.handleResponse(response);
+  }
+
+  async updateService(serviceId, serviceData) {
+    console.log('API: Updating service:', serviceId, 'with data:', serviceData);
+    const response = await fetch(`${this.baseURL}/expert-profiles/services/${serviceId}`, {
+      method: 'PUT',
+      headers: this.getHeaders(true),
+      body: JSON.stringify(serviceData),
+    });
+    return this.handleResponse(response);
+  }
+
+  async deleteService(serviceId) {
+    console.log('API: Deleting service:', serviceId);
+    const response = await fetch(`${this.baseURL}/expert-profiles/services/${serviceId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(true),
+    });
+    return this.handleResponse(response);
+  }
+
+  async toggleServiceStatus(serviceId) {
+    console.log('API: Toggling service status:', serviceId);
+    const response = await fetch(`${this.baseURL}/expert-profiles/services/${serviceId}/toggle-status`, {
+      method: 'PUT',
+      headers: this.getHeaders(true),
+    });
+    return this.handleResponse(response);
   }
 
   setTokens(accessToken, refreshToken) {

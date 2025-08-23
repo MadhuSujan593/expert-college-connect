@@ -1,6 +1,28 @@
 import React, { useState, useRef } from 'react';
 import { Upload, X, File, Image, CheckCircle, AlertCircle } from 'lucide-react';
 
+// Helper function to validate file types
+const isValidFileType = (fileType, acceptString) => {
+  if (!acceptString) return true;
+  
+  const acceptedTypes = acceptString.split(',').map(type => type.trim());
+  
+  return acceptedTypes.some(acceptedType => {
+    if (acceptedType === '*/*') return true;
+    if (acceptedType.endsWith('/*')) {
+      // Handle wildcard types like "image/*"
+      const category = acceptedType.slice(0, -2);
+      return fileType.startsWith(category + '/');
+    }
+    // Handle specific types like "image/jpeg" or file extensions like ".pdf"
+    if (acceptedType.startsWith('.')) {
+      // File extension validation would need the actual filename
+      return true; // Skip extension validation for now, rely on MIME type
+    }
+    return fileType === acceptedType;
+  });
+};
+
 const FileUpload = ({
   onFileSelect,
   onUpload,
@@ -9,13 +31,13 @@ const FileUpload = ({
   maxSize = 5,
   type = 'image', // 'image' or 'document'
   currentFile = null,
-  uploading = false,
   label,
   description,
   className = ''
 }) => {
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
   const inputRef = useRef(null);
 
@@ -49,14 +71,32 @@ const FileUpload = ({
     }
 
     // Validate file type
-    if (accept && !accept.includes(file.type)) {
+    if (accept && !isValidFileType(file.type, accept)) {
       setError('Invalid file type');
       return;
     }
 
     setSelectedFile(file);
     if (onFileSelect) {
-      onFileSelect(file);
+      // If onFileSelect is provided, upload immediately and don't show upload buttons
+      setUploading(true);
+      
+      // Handle async upload
+      Promise.resolve(onFileSelect(file))
+        .then(() => {
+          // Clear selected file after successful upload
+          setSelectedFile(null);
+          if (inputRef.current) {
+            inputRef.current.value = '';
+          }
+        })
+        .catch((error) => {
+          console.error('Upload failed:', error);
+          setError('Upload failed. Please try again.');
+        })
+        .finally(() => {
+          setUploading(false);
+        });
     }
   };
 
@@ -116,11 +156,32 @@ const FileUpload = ({
         <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
           <div className="flex items-center space-x-3">
             <CheckCircle className="w-5 h-5 text-green-600" />
-            <div>
+            <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-green-900">Current file uploaded</p>
               <p className="text-xs text-green-700">
                 {type === 'image' ? 'Profile picture' : 'Resume'} is set
               </p>
+              {(() => {
+                // Extract filename from URL
+                const filename = currentFile.split('/').pop() || '';
+                // Decode filename in case it has special characters
+                const decodedFilename = decodeURIComponent(filename);
+                
+                // Make filename more user-friendly
+                let displayName = decodedFilename;
+                
+                // If it's a generated filename (timestamp-random.ext), show just the extension info
+                if (/^\d+-\d+\.(jpg|jpeg|png|gif|pdf|doc|docx)$/i.test(decodedFilename)) {
+                  const extension = decodedFilename.split('.').pop()?.toUpperCase();
+                  displayName = `${type === 'image' ? 'Profile Picture' : 'Resume'}.${extension}`;
+                }
+                
+                return (
+                  <p className="text-xs text-gray-600 truncate mt-1" title={decodedFilename}>
+                    📁 {displayName}
+                  </p>
+                );
+              })()}
             </div>
           </div>
           <button
@@ -171,28 +232,39 @@ const FileUpload = ({
               <p className="text-sm font-medium text-gray-900">{selectedFile.name}</p>
               <p className="text-xs text-gray-500">{formatFileSize(selectedFile.size)}</p>
               
-              <div className="flex justify-center space-x-2 mt-4">
-                <button
-                  onClick={handleUpload}
-                  disabled={uploading}
-                  className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {uploading ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      <span>Uploading...</span>
-                    </div>
-                  ) : (
-                    'Upload'
-                  )}
-                </button>
-                <button
-                  onClick={handleRemove}
-                  className="px-4 py-2 bg-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-400 transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
+              {/* Only show manual upload buttons if onFileSelect is not provided (manual upload mode) */}
+              {!onFileSelect && (
+                <div className="flex justify-center space-x-2 mt-4">
+                  <button
+                    onClick={handleUpload}
+                    disabled={uploading}
+                    className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {uploading ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        <span>Uploading...</span>
+                      </div>
+                    ) : (
+                      'Upload'
+                    )}
+                  </button>
+                  <button
+                    onClick={handleRemove}
+                    className="px-4 py-2 bg-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-400 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+
+              {/* Show uploading status for automatic upload */}
+              {onFileSelect && uploading && (
+                <div className="flex justify-center items-center space-x-2 mt-4">
+                  <div className="w-4 h-4 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin"></div>
+                  <span className="text-sm text-blue-600">Uploading...</span>
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-center">

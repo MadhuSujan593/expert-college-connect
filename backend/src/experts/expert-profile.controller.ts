@@ -13,12 +13,14 @@ import {
   HttpCode,
   UseInterceptors,
   UploadedFile,
-  BadRequestException
+  BadRequestException 
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ExpertProfileService } from './expert-profile.service';
 import { UpdateExpertProfileDto, CreateExpertSkillDto, SearchExpertsDto, CreateWorkExperienceDto, UpdateWorkExperienceDto } from './dto';
+import { CreateServiceDto } from './dto/create-service.dto';
+import { UpdateServiceDto } from './dto/update-service.dto';
 import { FileUploadService } from '../common/services/file-upload.service';
 import type { Request } from 'express';
 
@@ -42,7 +44,18 @@ export class ExpertProfileController {
     @Body() updateData: UpdateExpertProfileDto,
   ) {
     const userId = (req.user as any).id;
-    return this.expertProfileService.updateProfile(userId, updateData);
+    console.log('=== UPDATE PROFILE ENDPOINT ===');
+    console.log('User ID:', userId);
+    console.log('Update data received:', JSON.stringify(updateData, null, 2));
+    
+    try {
+      const result = await this.expertProfileService.updateProfile(userId, updateData);
+      console.log('Profile updated successfully');
+      return result;
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      throw error;
+    }
   }
 
   @Get('dashboard/stats')
@@ -82,54 +95,252 @@ export class ExpertProfileController {
 
   // File Upload Endpoints
   @Post('upload/profile-picture')
-  @UseInterceptors(FileInterceptor('profilePicture'))
+  @UseInterceptors(FileInterceptor('profilePicture', {
+    storage: require('multer').diskStorage({
+      destination: (req, file, cb) => {
+        const path = require('path');
+        const fs = require('fs');
+        const uploadDir = path.join(process.cwd(), 'uploads', 'profile-pics');
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+      },
+      filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = file.originalname.split('.').pop();
+        cb(null, `${uniqueSuffix}.${ext}`);
+      },
+    }),
+    fileFilter: (req, file, cb) => {
+      const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+      if (allowedMimes.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(null, false);
+      }
+    },
+    limits: {
+      fileSize: 5 * 1024 * 1024, // 5MB
+    },
+  }))
   async uploadProfilePicture(
     @Req() req: Request,
     @UploadedFile() file: Express.Multer.File,
   ) {
+    console.log('=== UPLOAD PROFILE PICTURE ENDPOINT HIT ===');
+    console.log('Request headers:', req.headers);
+    console.log('Request body:', req.body);
+    console.log('File received:', file ? 'YES' : 'NO');
+    console.log('File details:', file ? { 
+      mimetype: file.mimetype, 
+      size: file.size, 
+      originalname: file.originalname,
+      filename: file.filename,
+      path: file.path 
+    } : 'no file');
+    
     if (!file) {
-      throw new BadRequestException('No file uploaded');
+      throw new BadRequestException('No file uploaded or invalid file type');
     }
 
     const userId = (req.user as any).id;
-    const fileInfo = this.fileUploadService.processProfilePicture(file);
+    console.log('Processing file for user:', userId);
     
-    // Update user profile image in database
-    await this.expertProfileService.updateProfile(userId, {
-      // This would update the user's profileImage field
+    // Get current profile to check for existing profile picture
+    const currentProfile = await this.expertProfileService.getProfileByUserId(userId);
+    
+    // Delete old profile picture if exists
+    if (currentProfile.profilePicture) {
+      try {
+        const oldFilename = currentProfile.profilePicture.split('/').pop();
+        const path = require('path');
+        const fs = require('fs');
+        const oldFilePath = path.join(process.cwd(), 'uploads', 'profile-pics', oldFilename);
+        
+        if (fs.existsSync(oldFilePath)) {
+          fs.unlinkSync(oldFilePath);
+          console.log('Old profile picture deleted:', oldFilename);
+        }
+      } catch (error) {
+        console.error('Error deleting old profile picture:', error);
+        // Continue with upload even if old file deletion fails
+      }
+    }
+    
+    // Create URL for the uploaded file using static file serving
+    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+    const fileUrl = `${baseUrl}/uploads/profile-pics/${file.filename}`;
+    
+    console.log('File URL:', fileUrl);
+    
+    // Update expert profile with profile picture URL
+    console.log('Updating profile with URL:', fileUrl);
+    const updatedProfile = await this.expertProfileService.updateProfile(userId, {
+      profilePicture: fileUrl,
     });
+    
+    console.log('Profile updated, profilePicture field:', updatedProfile.profilePicture);
 
     return {
       message: 'Profile picture uploaded successfully',
-      url: fileInfo.url,
-      filename: fileInfo.filename,
+      profilePicture: fileUrl,
+      filename: file.filename,
     };
   }
 
   @Post('upload/resume')
-  @UseInterceptors(FileInterceptor('resume'))
+  @UseInterceptors(FileInterceptor('resume', {
+    storage: require('multer').diskStorage({
+      destination: (req, file, cb) => {
+        const path = require('path');
+        const fs = require('fs');
+        const uploadDir = path.join(process.cwd(), 'uploads', 'resumes');
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+      },
+      filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = file.originalname.split('.').pop();
+        cb(null, `${uniqueSuffix}.${ext}`);
+      },
+    }),
+    fileFilter: (req, file, cb) => {
+      const allowedMimes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+      if (allowedMimes.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(null, false);
+      }
+    },
+    limits: {
+      fileSize: 10 * 1024 * 1024, // 10MB
+    },
+  }))
   async uploadResume(
     @Req() req: Request,
     @UploadedFile() file: Express.Multer.File,
   ) {
     if (!file) {
-      throw new BadRequestException('No file uploaded');
+      throw new BadRequestException('No file uploaded or invalid file type');
     }
 
     const userId = (req.user as any).id;
-    const fileInfo = this.fileUploadService.processResume(file);
+    
+    // Get current profile to check for existing resume
+    const currentProfile = await this.expertProfileService.getProfileByUserId(userId);
+    
+    // Delete old resume if exists
+    if (currentProfile.resumeUrl) {
+      try {
+        const oldFilename = currentProfile.resumeUrl.split('/').pop();
+        const path = require('path');
+        const fs = require('fs');
+        const oldFilePath = path.join(process.cwd(), 'uploads', 'resumes', oldFilename);
+        
+        if (fs.existsSync(oldFilePath)) {
+          fs.unlinkSync(oldFilePath);
+          console.log('Old resume deleted:', oldFilename);
+        }
+      } catch (error) {
+        console.error('Error deleting old resume:', error);
+        // Continue with upload even if old file deletion fails
+      }
+    }
+    
+    // Create URL for the uploaded file
+    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+    const fileUrl = `${baseUrl}/uploads/resumes/${file.filename}`;
     
     // Update expert profile with resume URL
     await this.expertProfileService.updateProfile(userId, {
-      resumeUrl: fileInfo.url,
+      resumeUrl: fileUrl,
     });
 
     return {
       message: 'Resume uploaded successfully',
-      url: fileInfo.url,
-      filename: fileInfo.filename,
-      originalName: fileInfo.originalName,
+      resumeUrl: fileUrl,
+      filename: file.filename,
+      originalName: file.originalname,
     };
+  }
+
+  @Delete('upload/profile-picture')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async removeProfilePicture(@Req() req: Request) {
+    const userId = (req.user as any).id;
+    
+    // First, get the current profile to find the file to delete
+    const currentProfile = await this.expertProfileService.getProfileByUserId(userId);
+    
+    if (currentProfile.profilePicture) {
+      try {
+        // Extract filename from URL
+        const filename = currentProfile.profilePicture.split('/').pop();
+        
+        // Delete the physical file
+        const path = require('path');
+        const fs = require('fs');
+        const filePath = path.join(process.cwd(), 'uploads', 'profile-pics', filename);
+        
+        console.log('Attempting to delete file:', filePath);
+        
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+          console.log('File deleted successfully:', filename);
+        } else {
+          console.log('File not found, skipping deletion:', filename);
+        }
+      } catch (error) {
+        console.error('Error deleting file:', error);
+        // Continue with database update even if file deletion fails
+      }
+    }
+    
+    // Update database to remove the URL
+    await this.expertProfileService.updateProfile(userId, {
+      profilePicture: null,
+    });
+  }
+
+  @Delete('upload/resume')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async removeResume(@Req() req: Request) {
+    const userId = (req.user as any).id;
+    
+    // First, get the current profile to find the file to delete
+    const currentProfile = await this.expertProfileService.getProfileByUserId(userId);
+    
+    if (currentProfile.resumeUrl) {
+      try {
+        // Extract filename from URL
+        const filename = currentProfile.resumeUrl.split('/').pop();
+        
+        // Delete the physical file
+        const path = require('path');
+        const fs = require('fs');
+        const filePath = path.join(process.cwd(), 'uploads', 'resumes', filename);
+        
+        console.log('Attempting to delete resume file:', filePath);
+        
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+          console.log('Resume file deleted successfully:', filename);
+        } else {
+          console.log('Resume file not found, skipping deletion:', filename);
+        }
+      } catch (error) {
+        console.error('Error deleting resume file:', error);
+        // Continue with database update even if file deletion fails
+      }
+    }
+    
+    // Update database to remove the URL
+    await this.expertProfileService.updateProfile(userId, {
+      resumeUrl: null,
+    });
   }
 
   // Work Experience Endpoints
@@ -169,6 +380,49 @@ export class ExpertProfileController {
   }
 
   // Public endpoints (no auth required)
+  // ============ SERVICE ENDPOINTS ============
+
+  @Get('services')
+  async getServices(@Req() req: Request) {
+    const userId = (req.user as any).id;
+    return this.expertProfileService.getServices(userId);
+  }
+
+  @Post('services')
+  async createService(@Req() req: Request, @Body() serviceData: CreateServiceDto) {
+    const userId = (req.user as any).id;
+    console.log('Creating service for user:', userId);
+    console.log('Service data:', serviceData);
+    return this.expertProfileService.createService(userId, serviceData);
+  }
+
+  @Put('services/:serviceId')
+  async updateService(
+    @Req() req: Request,
+    @Param('serviceId') serviceId: string,
+    @Body() serviceData: UpdateServiceDto
+  ) {
+    const userId = (req.user as any).id;
+    console.log('Updating service:', serviceId, 'for user:', userId);
+    console.log('Service data:', serviceData);
+    return this.expertProfileService.updateService(userId, serviceId, serviceData);
+  }
+
+  @Delete('services/:serviceId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteService(@Req() req: Request, @Param('serviceId') serviceId: string) {
+    const userId = (req.user as any).id;
+    console.log('Deleting service:', serviceId, 'for user:', userId);
+    await this.expertProfileService.deleteService(userId, serviceId);
+  }
+
+  @Put('services/:serviceId/toggle-status')
+  async toggleServiceStatus(@Req() req: Request, @Param('serviceId') serviceId: string) {
+    const userId = (req.user as any).id;
+    console.log('Toggling service status:', serviceId, 'for user:', userId);
+    return this.expertProfileService.toggleServiceStatus(userId, serviceId);
+  }
+
   @Get('search')
   @UseGuards() // Remove auth guard for public search
   async searchExperts(@Query() filters: SearchExpertsDto) {

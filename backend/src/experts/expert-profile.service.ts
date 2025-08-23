@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateExpertProfileDto, CreateExpertSkillDto, CreateWorkExperienceDto, UpdateWorkExperienceDto } from './dto';
+import { CreateServiceDto } from './dto/create-service.dto';
+import { UpdateServiceDto } from './dto/update-service.dto';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
@@ -19,6 +21,7 @@ export class ExpertProfileService {
             id: true,
             email: true,
             fullName: true,
+            phone: true,
             profileImage: true,
             isEmailVerified: true,
             isPhoneVerified: true,
@@ -62,12 +65,15 @@ export class ExpertProfileService {
       _avg: { rating: true },
     });
 
-    return {
+    const result = {
       ...expertProfile,
       averageRating: avgRating._avg.rating || 0,
       totalRatings: expertProfile._count.rating,
       totalServices: expertProfile._count.service,
     };
+    
+    console.log('getProfileByUserId result profilePicture:', result.profilePicture);
+    return result;
   }
 
   /**
@@ -82,22 +88,67 @@ export class ExpertProfileService {
       throw new NotFoundException('Expert profile not found');
     }
 
+    // Define which fields belong to user table vs expertprofile table
+    const userFields = {
+      fullName: updateData.fullName,
+      phone: updateData.phone || updateData.phoneNumber,
+    };
+
+    // Define which fields belong to expertprofile table (only valid schema fields)
+    const expertProfileFields = {
+      jobTitle: updateData.jobTitle,
+      company: updateData.company,
+      experience: updateData.experience,
+      location: updateData.location,
+      website: updateData.website,
+      primaryExpertise: updateData.primaryExpertise,
+      bio: updateData.bio,
+      hourlyRate: updateData.hourlyRate,
+      availableFor: updateData.availableFor,
+      preferredMode: updateData.preferredMode,
+      resumeUrl: updateData.resumeUrl,
+      profilePicture: updateData.profilePicture,
+      // Note: isAvailable is NOT in the schema, so removed it
+    };
+
+    // Remove undefined values
+    Object.keys(userFields).forEach(key => {
+      if (userFields[key] === undefined) delete userFields[key];
+    });
+    Object.keys(expertProfileFields).forEach(key => {
+      if (expertProfileFields[key] === undefined) delete expertProfileFields[key];
+    });
+    
+    console.log('User fields to update:', userFields);
+    console.log('Expert profile fields to update:', expertProfileFields);
+    
+    // Update user table if user fields are provided
+    if (Object.keys(userFields).length > 0) {
+      console.log('Updating user table...');
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: userFields,
+      });
+      console.log('User table updated successfully');
+    }
+
     // Parse availableFor if it's a string
-    let availableForData = updateData.availableFor;
-    if (typeof updateData.availableFor === 'string') {
+    let availableForData = expertProfileFields.availableFor;
+    if (typeof expertProfileFields.availableFor === 'string') {
       try {
-        availableForData = JSON.parse(updateData.availableFor);
+        availableForData = JSON.parse(expertProfileFields.availableFor);
       } catch (error) {
-        availableForData = updateData.availableFor.split(',').map(item => item.trim());
+        availableForData = expertProfileFields.availableFor.split(',').map(item => item.trim());
       }
     }
 
+    // Update expert profile table
     const updatedProfile = await this.prisma.expertprofile.update({
       where: { userId },
       data: {
-        ...updateData,
+        ...expertProfileFields,
         availableFor: availableForData,
-        hourlyRate: updateData.hourlyRate ? parseFloat(updateData.hourlyRate.toString()) : undefined,
+        hourlyRate: expertProfileFields.hourlyRate ? parseFloat(expertProfileFields.hourlyRate.toString()) : undefined,
         isProfileComplete: true, // Mark as complete when updated
       },
       include: {
@@ -106,14 +157,52 @@ export class ExpertProfileService {
             id: true,
             email: true,
             fullName: true,
+            phone: true,
             profileImage: true,
+            isEmailVerified: true,
+            isPhoneVerified: true,
           },
         },
         expertskill: true,
+        workexperience: {
+          orderBy: { startDate: 'desc' },
+        },
+        service: {
+          where: { isActive: true },
+          orderBy: { createdAt: 'desc' },
+        },
+        rating: {
+          include: {
+            expertprofile: {
+              select: {
+                id: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+        },
+        _count: {
+          select: {
+            rating: true,
+            service: true,
+          },
+        },
       },
     });
 
-    return updatedProfile;
+    // Calculate average rating
+    const avgRating = await this.prisma.rating.aggregate({
+      where: { expertProfileId: updatedProfile.id },
+      _avg: { rating: true },
+    });
+
+    return {
+      ...updatedProfile,
+      averageRating: avgRating._avg.rating || 0,
+      totalRatings: updatedProfile._count.rating,
+      totalServices: updatedProfile._count.service,
+    };
   }
 
   /**
@@ -525,5 +614,146 @@ export class ExpertProfileService {
       limit,
       totalPages: Math.ceil(total / limit),
     };
+  }
+
+  // ============ SERVICE METHODS ============
+
+  /**
+   * Get all services for an expert
+   */
+  async getServices(userId: string) {
+    const expertProfile = await this.prisma.expertprofile.findUnique({
+      where: { userId },
+    });
+
+    if (!expertProfile) {
+      throw new NotFoundException('Expert profile not found');
+    }
+
+    return this.prisma.service.findMany({
+      where: { expertProfileId: expertProfile.id },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * Create a new service
+   */
+  async createService(userId: string, serviceData: CreateServiceDto) {
+    const expertProfile = await this.prisma.expertprofile.findUnique({
+      where: { userId },
+    });
+
+    if (!expertProfile) {
+      throw new NotFoundException('Expert profile not found');
+    }
+
+    return this.prisma.service.create({
+      data: {
+        id: uuidv4(),
+        expertProfileId: expertProfile.id,
+        title: serviceData.title,
+        description: serviceData.description,
+        category: serviceData.category,
+        subcategory: serviceData.subcategory,
+        price: serviceData.price,
+        priceType: serviceData.priceType,
+        duration: serviceData.duration,
+        isActive: serviceData.isActive ?? true,
+        updatedAt: new Date(),
+      },
+    });
+  }
+
+  /**
+   * Update a service
+   */
+  async updateService(userId: string, serviceId: string, serviceData: UpdateServiceDto) {
+    const expertProfile = await this.prisma.expertprofile.findUnique({
+      where: { userId },
+    });
+
+    if (!expertProfile) {
+      throw new NotFoundException('Expert profile not found');
+    }
+
+    const service = await this.prisma.service.findFirst({
+      where: { 
+        id: serviceId,
+        expertProfileId: expertProfile.id 
+      },
+    });
+
+    if (!service) {
+      throw new NotFoundException('Service not found');
+    }
+
+    return this.prisma.service.update({
+      where: { id: serviceId },
+      data: {
+        ...serviceData,
+        updatedAt: new Date(),
+      },
+    });
+  }
+
+  /**
+   * Delete a service
+   */
+  async deleteService(userId: string, serviceId: string) {
+    const expertProfile = await this.prisma.expertprofile.findUnique({
+      where: { userId },
+    });
+
+    if (!expertProfile) {
+      throw new NotFoundException('Expert profile not found');
+    }
+
+    const service = await this.prisma.service.findFirst({
+      where: { 
+        id: serviceId,
+        expertProfileId: expertProfile.id 
+      },
+    });
+
+    if (!service) {
+      throw new NotFoundException('Service not found');
+    }
+
+    await this.prisma.service.delete({
+      where: { id: serviceId },
+    });
+  }
+
+  /**
+   * Toggle service active status
+   */
+  async toggleServiceStatus(userId: string, serviceId: string) {
+    const expertProfile = await this.prisma.expertprofile.findUnique({
+      where: { userId },
+    });
+
+    if (!expertProfile) {
+      throw new NotFoundException('Expert profile not found');
+    }
+
+    const service = await this.prisma.service.findFirst({
+      where: { 
+        id: serviceId,
+        expertProfileId: expertProfile.id 
+      },
+    });
+
+    if (!service) {
+      throw new NotFoundException('Service not found');
+    }
+
+    return this.prisma.service.update({
+      where: { id: serviceId },
+      data: {
+        isActive: !service.isActive,
+        updatedAt: new Date(),
+      },
+    });
   }
 }

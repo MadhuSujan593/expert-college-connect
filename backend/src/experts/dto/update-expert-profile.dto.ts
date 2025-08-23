@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsNumber, IsArray, IsEnum, MaxLength, Min } from 'class-validator';
+import { IsOptional, IsString, IsNumber, IsArray, IsEnum, IsBoolean, MaxLength, Min, ValidateIf } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class UpdateExpertProfileDto {
@@ -51,7 +51,29 @@ export class UpdateExpertProfileDto {
   preferredMode?: string;
 
   @IsOptional()
+  @ValidateIf((o) => o.resumeUrl !== null)
   @IsString()
   @MaxLength(500)
-  resumeUrl?: string;
+  resumeUrl?: string | null;
+
+  @IsOptional()
+  @ValidateIf((o) => o.profilePicture !== null)
+  @IsString()
+  @MaxLength(500)
+  profilePicture?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  fullName?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  phone?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  phoneNumber?: string;
 }
