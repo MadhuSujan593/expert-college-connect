@@ -273,11 +273,24 @@ const ExpertDashboard = () => {
           endDate: editingExperience.isCurrent ? undefined : editingExperience.endDate || undefined,
           isCurrent: editingExperience.isCurrent || false,
           description: editingExperience.description?.trim() || undefined,
-          skills: editingExperience.skills?.trim() 
-            ? (typeof editingExperience.skills === 'string' 
-                ? editingExperience.skills.split(',').map(skill => skill.trim()).filter(skill => skill.length > 0)
-                : editingExperience.skills)
-            : undefined,
+          skills: (() => {
+            if (!editingExperience.skills) return undefined;
+            
+            // If skills is already an array, return it directly
+            if (Array.isArray(editingExperience.skills)) {
+              return editingExperience.skills.filter(skill => skill && skill.trim().length > 0);
+            }
+            
+            // If skills is a string, split and process it
+            if (typeof editingExperience.skills === 'string') {
+              const trimmedSkills = editingExperience.skills.trim();
+              return trimmedSkills 
+                ? trimmedSkills.split(',').map(skill => skill.trim()).filter(skill => skill.length > 0)
+                : undefined;
+            }
+            
+            return undefined;
+          })(),
           achievements: editingExperience.achievements?.trim() || undefined
         };
 
