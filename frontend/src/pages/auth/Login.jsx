@@ -121,7 +121,7 @@ const Login = () => {
       // Show success message
       showToast(response.message || 'Login successful!', 'success');
 
-      // Navigation will be handled by the redirect in useEffect above
+      // Navigation will be handled by the AuthContext login method
       
     } catch (error) {
       console.error('Login error:', error);

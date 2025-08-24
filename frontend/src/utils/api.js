@@ -69,6 +69,12 @@ class ApiService {
     }
   }
 
+  // Check if user is authenticated
+  isAuthenticated() {
+    const token = localStorage.getItem('accessToken');
+    return !!token && !this.isTokenExpired(token);
+  }
+
   // Get token with automatic refresh
   async getValidToken() {
     let token = localStorage.getItem('accessToken');
@@ -514,11 +520,6 @@ class ApiService {
   }
 
   // Utility methods
-  isAuthenticated() {
-    const token = localStorage.getItem('accessToken');
-    return !!token && !this.isTokenExpired(token);
-  }
-
   getToken() {
     return localStorage.getItem('accessToken');
   }
