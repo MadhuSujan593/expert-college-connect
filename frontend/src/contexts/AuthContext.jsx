@@ -192,6 +192,37 @@ export const AuthProvider = ({ children }) => {
     return () => clearInterval(interval);
   }, [initialized, checkingAuth, isAuthenticated, user, checkAuthStatus, validateToken]); // Include memoized functions
 
+  // Auto-logout on inactivity (2 hours)
+  useEffect(() => {
+    if (isAuthenticated) {
+      let inactivityTimer;
+      
+      const resetTimer = () => {
+        clearTimeout(inactivityTimer);
+        // Logout after 2 hours of inactivity
+        inactivityTimer = setTimeout(() => {
+          console.log('🕐 Auto-logout due to inactivity (2 hours)');
+          logout();
+        }, 2 * 60 * 60 * 1000); // 2 hours
+      };
+
+      // Reset timer on user activity
+      const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+      events.forEach(event => {
+        document.addEventListener(event, resetTimer, true);
+      });
+
+      resetTimer(); // Start the timer
+
+      return () => {
+        clearTimeout(inactivityTimer);
+        events.forEach(event => {
+          document.removeEventListener(event, resetTimer, true);
+        });
+      };
+    }
+  }, [isAuthenticated, logout]);
+
   const value = useMemo(() => ({
     user,
     loading,
