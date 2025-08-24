@@ -115,26 +115,16 @@ const AppContent = () => {
   );
 };
 
-// Create a wrapper component to ensure proper context flow
-const AppWrapper = ({ children }) => {
-  console.log('AppWrapper rendering');
-  return (
-    <AuthProvider>
-      {children}
-    </AuthProvider>
-  );
-};
-
 function App() {
   console.log('App component rendering, setting up providers...');
   
   return (
     <QueryClientProvider client={queryClient}>
-      <AppWrapper>
+      <AuthProvider>
         <Router>
           <AppContent />
         </Router>
-      </AppWrapper>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
