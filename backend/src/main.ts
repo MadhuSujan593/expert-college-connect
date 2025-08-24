@@ -33,7 +33,7 @@ async function bootstrap() {
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: false, // Allow extra properties to pass through
-      transform: true,
+      transform: true, // Re-enable transform for JSON requests
       transformOptions: {
         enableImplicitConversion: true,
       },

@@ -1,16 +1,26 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, AlertCircle, Check, CheckCircle } from 'lucide-react';
 
 const Toast = ({ toast, hideToast }) => {
   const [progress, setProgress] = React.useState(100);
   const [isPaused, setIsPaused] = React.useState(false);
+  const timeoutRef = useRef(null);
+  const progressIntervalRef = useRef(null);
 
   // Reset progress when a new toast is shown
   useEffect(() => {
     if (toast.show) {
       setProgress(100);
       setIsPaused(false);
+      
+      // Clear any existing timeouts
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
     }
   }, [toast.show, toast.message]); // Reset when message changes (new toast)
 
@@ -19,26 +29,42 @@ const Toast = ({ toast, hideToast }) => {
       // Different timeout durations based on toast type
       const timeout = toast.type === 'error' ? 6000 : 4000; // Errors stay longer
       
+      // Set the main timeout for auto-hiding
+      timeoutRef.current = setTimeout(() => {
+        hideToast();
+      }, timeout);
+      
       // Progress bar animation
-      const progressInterval = setInterval(() => {
+      progressIntervalRef.current = setInterval(() => {
         setProgress(prev => {
           const decrement = 100 / (timeout / 100);
           const newProgress = Math.max(0, prev - decrement);
-          
-          // Auto hide when progress reaches 0
-          if (newProgress <= 0) {
-            hideToast();
-          }
-          
           return newProgress;
         });
       }, 100);
 
       return () => {
-        clearInterval(progressInterval);
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
+        if (progressIntervalRef.current) {
+          clearInterval(progressIntervalRef.current);
+        }
       };
     }
   }, [toast.show, toast.type, hideToast, isPaused]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+    };
+  }, []);
 
   if (!toast.show) return null;
 

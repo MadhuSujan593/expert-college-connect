@@ -5,7 +5,7 @@ import {
   Plus, Trash2, Save, X, CheckCircle, AlertCircle, TrendingUp, Calendar, MapPin,
   Briefcase, Globe, Mail, Phone, Search, MessageCircle, Shield, Bell, Video,
   Users, Building2, Badge, Target, Clock, Activity, Filter, Upload, Download,
-  Home, ChevronRight, Menu, Zap, TrendingDown, LogOut, RefreshCw
+  Home, ChevronRight, Menu, Zap, TrendingDown, LogOut, RefreshCw, Code
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../utils/api';
@@ -55,10 +55,51 @@ const ExpertDashboard = () => {
   // Service types
   const [serviceTypes, setServiceTypes] = useState([]);
   const [availableServiceTypes] = useState([
-    { id: 'webinar', name: 'Webinar', icon: Video, description: 'Online seminars and presentations' },
-    { id: 'workshop', name: 'Workshop', icon: Users, description: 'Interactive hands-on sessions' },
-    { id: 'teaching', name: 'Teaching', icon: BookOpen, description: 'Regular teaching sessions' },
-    { id: 'consulting', name: 'Consulting', icon: MessageCircle, description: 'One-on-one consultation' }
+    // Technology & Innovation Group
+    { 
+      id: 'tech_innovation', 
+      name: 'Technology & Innovation', 
+      icon: TrendingUp, 
+      description: 'AI, Cybersecurity, Software Development, Innovation & Design',
+      group: 'tech',
+      services: ['Data Science & AI', 'Cybersecurity', 'Software Development', 'Innovation & Design']
+    },
+    // Business & Marketing Group
+    { 
+      id: 'business_marketing', 
+      name: 'Business & Marketing', 
+      icon: Briefcase, 
+      description: 'Digital Marketing, Business Strategy, Finance, Consulting',
+      group: 'business',
+      services: ['Digital Marketing', 'Business Strategy', 'Finance', 'Consulting']
+    },
+                      // Academic & Professional Services Group
+                  {
+                    id: 'academic_professional',
+                    name: 'Academic & Professional',
+                    icon: BookOpen,
+                    description: 'Education, Research, Workshops, Guest Lectures, Mentoring, Question Paper Setting & Evaluation',
+                    group: 'academic',
+                    services: ['Education', 'Research Collaboration', 'Workshops', 'Guest Lectures', 'Mentoring', 'Curriculum Review', 'Industry Projects', 'Question Paper Setting', 'Question Paper Evaluation']
+                  },
+    // Training & Development Group
+    { 
+      id: 'training_development', 
+      name: 'Training & Development', 
+      icon: Users, 
+      description: 'Skill Development, Leadership, Public Speaking, Training Programs',
+      group: 'training',
+      services: ['Training & Development', 'Public Speaking', 'Leadership Development']
+    },
+    // Specialized Fields Group
+    { 
+      id: 'specialized_fields', 
+      name: 'Specialized Fields', 
+      icon: Activity, 
+      description: 'Healthcare, Engineering, Sustainability',
+      group: 'specialized',
+      services: ['Healthcare', 'Engineering', 'Sustainability']
+    }
   ]);
 
   // College search and contact
@@ -139,9 +180,15 @@ const ExpertDashboard = () => {
   const fetchServiceTypes = async () => {
     try {
       if (profile?.availableFor) {
-        const selectedTypes = availableServiceTypes.filter(ast => 
-          profile.availableFor.includes(ast.name)
-        ).map(ast => ({ id: ast.id, name: ast.name }));
+        // Check which service groups match the available services
+        const selectedTypes = availableServiceTypes.filter(ast => {
+          // Check if any of the services in this group are in the profile's availableFor
+          return ast.services.some(service => profile.availableFor.includes(service));
+        }).map(ast => ({ 
+          id: ast.id, 
+          name: ast.name,
+          services: ast.services 
+        }));
         setServiceTypes(selectedTypes);
       } else {
         setServiceTypes([]);
@@ -320,15 +367,23 @@ const ExpertDashboard = () => {
         updatedServiceTypes = serviceTypes.filter(st => st.id !== serviceTypeId);
       } else {
         const serviceType = availableServiceTypes.find(ast => ast.id === serviceTypeId);
-        updatedServiceTypes = [...serviceTypes, { id: serviceTypeId, name: serviceType.name }];
+        // When adding a service group, include all individual services in that group
+        updatedServiceTypes = [...serviceTypes, { 
+          id: serviceTypeId, 
+          name: serviceType.name,
+          services: serviceType.services 
+        }];
       }
       
+      // Flatten all services from selected groups for the API
+      const allServices = updatedServiceTypes.flatMap(st => st.services || [st.name]);
+      
       await api.updateExpertProfile({
-        availableFor: updatedServiceTypes.map(st => st.name)
+        availableFor: allServices
       });
       
       setServiceTypes(updatedServiceTypes);
-      showToast('success', `Service type ${isSelected ? 'removed' : 'added'} successfully!`);
+      showToast('success', `Service group ${isSelected ? 'removed' : 'added'} successfully!`);
     } catch (error) {
       console.error('Error updating service type:', error);
       showToast('error', 'Failed to update service type');
@@ -341,6 +396,16 @@ const ExpertDashboard = () => {
       year: 'numeric', 
       month: 'short' 
     });
+  };
+
+  // Helper function to get full profile picture URL
+  const getFullProfilePictureUrl = (profilePictureUrl) => {
+    if (!profilePictureUrl) return null;
+    if (profilePictureUrl.startsWith('http://') || profilePictureUrl.startsWith('https://')) {
+      return profilePictureUrl;
+    }
+    const baseUrl = 'http://localhost:3000';
+    return `${baseUrl}/${profilePictureUrl}`;
   };
 
   if (loading) {
@@ -433,11 +498,19 @@ const ExpertDashboard = () => {
             {/* Sidebar Header */}
             <div className="flex items-center justify-between px-6 py-6 border-b border-slate-200/60">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <Zap className="w-5 h-5 text-white" />
-                </div>
+                {profile?.profilePicture ? (
+                  <img 
+                    src={getFullProfilePictureUrl(profile.profilePicture)} 
+                    alt="Profile Picture" 
+                    className="w-10 h-10 rounded-xl object-cover shadow-lg"
+                  />
+                ) : (
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <User className="w-5 h-5 text-white" />
+                  </div>
+                )}
                 <div>
-                  <h1 className="text-lg font-bold text-slate-900">Dashboard</h1>
+                  <h1 className="text-lg font-bold text-slate-900">{profile?.user?.fullName || user?.fullName || 'Expert'}</h1>
                   <p className="text-xs text-slate-500">Expert Panel</p>
                 </div>
               </div>
@@ -447,32 +520,6 @@ const ExpertDashboard = () => {
               >
                 <X className="h-5 w-5" />
               </button>
-            </div>
-
-            {/* Profile Section */}
-            <div className="px-6 py-4 border-b border-slate-200/60">
-              <div className="flex items-center space-x-3">
-                <div className="relative">
-                  {profile?.profilePicture ? (
-                    <img
-                      src={profile.profilePicture}
-                      alt="Profile"
-                      className="h-12 w-12 rounded-xl object-cover ring-2 ring-slate-100"
-                    />
-                  ) : (
-                    <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
-                      <User className="h-6 w-6 text-white" />
-                    </div>
-                  )}
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white"></div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-slate-900 truncate">
-                    {profile?.user?.fullName || user?.email}
-                  </p>
-                  <p className="text-xs text-slate-500">Expert Account</p>
-                </div>
-              </div>
             </div>
 
             {/* Navigation */}
@@ -498,13 +545,7 @@ const ExpertDashboard = () => {
                 isActive={activeTab === 'experience'}
                 onClick={setActiveTab}
               />
-              <SidebarItem
-                id="services"
-                label="Services"
-                icon={Settings}
-                isActive={activeTab === 'services'}
-                onClick={setActiveTab}
-              />
+
               <SidebarItem
                 id="colleges"
                 label="Opportunities"
@@ -566,7 +607,6 @@ const ExpertDashboard = () => {
                     {activeTab === 'overview' && 'Dashboard Overview'}
                     {activeTab === 'profile' && 'Profile Management'}
                     {activeTab === 'experience' && 'Work Experience'}
-                    {activeTab === 'services' && 'Service Types'}
                     {activeTab === 'colleges' && 'Opportunities'}
                     {activeTab === 'ratings' && 'Reviews & Ratings'}
                   </h1>
@@ -598,8 +638,44 @@ const ExpertDashboard = () => {
                   animate={{ opacity: 1, y: 0 }}
                   className="space-y-6"
                 >
-                  {/* Stats Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+
+                  {/* Profile Completion Card */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div className="bg-white rounded-2xl border border-slate-200/60 p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="p-3 bg-emerald-100 rounded-xl">
+                          <CheckCircle className="h-6 w-6 text-emerald-600" />
+                        </div>
+                      </div>
+                      <h3 className="text-sm font-medium text-slate-600 mb-2">Profile Completeness</h3>
+                      <div className="text-3xl font-bold text-slate-900">
+                        {(() => {
+                          const completionFields = [
+                            { field: 'fullName', value: profile?.user?.fullName, label: 'Full Name' },
+                            { field: 'phone', value: profile?.user?.phone, label: 'Phone Number' },
+                            { field: 'jobTitle', value: profile?.jobTitle, label: 'Job Title' },
+                            { field: 'experience', value: profile?.experience, label: 'Years of Experience' },
+                            { field: 'location', value: profile?.location, label: 'Location' },
+                            { field: 'bio', value: profile?.bio, label: 'Bio' },
+                            { field: 'primaryExpertise', value: profile?.primaryExpertise, label: 'Primary Expertise' },
+                            { field: 'hourlyRate', value: profile?.hourlyRate, label: 'Hourly Rate' },
+                            { field: 'profilePicture', value: profile?.profilePicture, label: 'Profile Picture' },
+                            { field: 'resumeUrl', value: profile?.resumeUrl, label: 'Resume' },
+                            { field: 'skills', value: profile?.expertskill?.length >= 3, label: 'At least 3 Skills' },
+                            { field: 'workExperience', value: workExperiences?.length >= 1, label: 'At least 1 Work Experience' },
+                          ];
+
+                          const completedFields = completionFields.filter(field => {
+                            if (typeof field.value === 'boolean') return field.value;
+                            return field.value && field.value.toString().trim() !== '';
+                          });
+
+                          return Math.round((completedFields.length / completionFields.length) * 100);
+                        })()}%
+                      </div>
+                    </div>
+                    
                     <StatCard
                       icon={Eye}
                       title="Profile Views"
@@ -620,13 +696,6 @@ const ExpertDashboard = () => {
                       value={(stats.averageRating || 4.8).toFixed(1)}
                       change={`${stats.totalRatings || 23} reviews`}
                       color="purple"
-                    />
-                    <StatCard
-                      icon={DollarSign}
-                      title="This Month"
-                      value={`₹${(stats.totalEarnings || 45000).toLocaleString()}`}
-                      change="+18% this month"
-                      color="orange"
                     />
                   </div>
 
@@ -662,20 +731,7 @@ const ExpertDashboard = () => {
                           <p className="text-sm text-slate-600">Search college posts</p>
                         </div>
                       </motion.button>
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => setActiveTab('services')}
-                        className="group flex items-center space-x-4 p-5 bg-gradient-to-br from-violet-50 to-violet-100/50 rounded-xl hover:from-violet-100 hover:to-violet-200/50 transition-all duration-300"
-                      >
-                        <div className="p-3 bg-violet-600 rounded-xl group-hover:bg-violet-700 transition-colors">
-                          <Settings className="h-5 w-5 text-white" />
-                        </div>
-                        <div className="text-left">
-                          <p className="font-semibold text-slate-900">Manage Services</p>
-                          <p className="text-sm text-slate-600">Update service offerings</p>
-                        </div>
-                      </motion.button>
+
                     </div>
                   </div>
 
@@ -834,89 +890,7 @@ const ExpertDashboard = () => {
                         )}
                       </div>
 
-                      {/* Profile Completion */}
-                      <div className="space-y-4">
-                        <h3 className="font-semibold text-slate-900">Profile Completion</h3>
-                        <div className="bg-slate-50 rounded-xl p-4">
-                          {(() => {
-                            const completionFields = [
-                              { field: 'fullName', value: profile?.user?.fullName, label: 'Full Name' },
-                              { field: 'phone', value: profile?.user?.phone, label: 'Phone Number' },
-                              { field: 'jobTitle', value: profile?.jobTitle, label: 'Job Title' },
-                              { field: 'experience', value: profile?.experience, label: 'Years of Experience' },
-                              { field: 'location', value: profile?.location, label: 'Location' },
-                              { field: 'bio', value: profile?.bio, label: 'Bio' },
-                              { field: 'primaryExpertise', value: profile?.primaryExpertise, label: 'Primary Expertise' },
-                              { field: 'hourlyRate', value: profile?.hourlyRate, label: 'Hourly Rate' },
-                              { field: 'profilePicture', value: profile?.profilePicture, label: 'Profile Picture' },
-                              { field: 'resumeUrl', value: profile?.resumeUrl, label: 'Resume' },
-                              { field: 'skills', value: profile?.expertskill?.length >= 3, label: 'At least 3 Skills' },
-                              { field: 'workExperience', value: workExperiences?.length >= 1, label: 'At least 1 Work Experience' },
-                            ];
 
-                            const completedFields = completionFields.filter(field => {
-                              if (typeof field.value === 'boolean') return field.value;
-                              return field.value && field.value.toString().trim() !== '';
-                            });
-
-                            const completionPercentage = Math.round((completedFields.length / completionFields.length) * 100);
-                            const missingFields = completionFields.filter(field => {
-                              if (typeof field.value === 'boolean') return !field.value;
-                              return !field.value || field.value.toString().trim() === '';
-                            });
-
-                            return (
-                              <>
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="text-sm font-semibold text-slate-700">Profile Strength</span>
-                                  <span className={`text-sm font-bold ${
-                                    completionPercentage === 100 ? 'text-emerald-600' : 
-                                    completionPercentage >= 80 ? 'text-blue-600' : 
-                                    'text-orange-600'
-                                  }`}>
-                                    {completionPercentage}%
-                                  </span>
-                                </div>
-                                <div className="w-full bg-slate-200 rounded-full h-2">
-                                  <div 
-                                    className={`h-2 rounded-full transition-all duration-300 ${
-                                      completionPercentage === 100 ? 'bg-emerald-600' : 
-                                      completionPercentage >= 80 ? 'bg-blue-600' : 
-                                      'bg-orange-600'
-                                    }`}
-                                    style={{ width: `${completionPercentage}%` }}
-                                  ></div>
-                                </div>
-                                <div className="mt-3">
-                                  {completionPercentage === 100 ? (
-                                    <p className="text-xs text-emerald-600 font-medium">
-                                      Profile Complete! Your profile is fully optimized for visibility.
-                                    </p>
-                                  ) : (
-                                    <div className="space-y-1">
-                                      <p className="text-xs text-slate-600">
-                                        Missing fields to reach 100%:
-                                      </p>
-                                      <div className="flex flex-wrap gap-1">
-                                        {missingFields.slice(0, 3).map((field, index) => (
-                                          <span key={index} className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">
-                                            {field.label}
-                                          </span>
-                                        ))}
-                                        {missingFields.length > 3 && (
-                                          <span className="text-xs text-slate-500">
-                                            +{missingFields.length - 3} more
-                                          </span>
-                                        )}
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              </>
-                            );
-                          })()}
-                        </div>
-                      </div>
                     </div>
 
                     {/* Profile Form */}
@@ -971,14 +945,40 @@ const ExpertDashboard = () => {
 
                       <div>
                         <label className="block text-sm font-semibold text-slate-700 mb-2">Primary Expertise</label>
-                        <input
-                          type="text"
-                          value={isEditingProfile ? editedProfile.primaryExpertise || '' : profile?.primaryExpertise || ''}
+                        {isEditingProfile ? (
+                          <select
+                            value={editedProfile.primaryExpertise || ''}
                           onChange={(e) => setEditedProfile({ ...editedProfile, primaryExpertise: e.target.value })}
-                          disabled={!isEditingProfile}
-                          className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-500 transition-colors"
-                          placeholder="e.g., Full Stack Development, Machine Learning"
-                        />
+                            className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                          >
+                            <option value="">Select Primary Expertise</option>
+                            <option value="DATA_SCIENCE_AI">Data Science & AI</option>
+                            <option value="CYBERSECURITY">Cybersecurity</option>
+                            <option value="SOFTWARE_DEVELOPMENT">Software Development</option>
+                            <option value="DIGITAL_MARKETING">Digital Marketing</option>
+                            <option value="BUSINESS_STRATEGY">Business Strategy</option>
+                            <option value="HEALTHCARE">Healthcare</option>
+                            <option value="ENGINEERING">Engineering</option>
+                            <option value="FINANCE">Finance</option>
+                            <option value="EDUCATION">Education</option>
+                            <option value="RESEARCH_COLLABORATION">Research Collaboration</option>
+                            <option value="WORKSHOP">Workshop</option>
+                            <option value="GUEST_LECTURE">Guest Lecture</option>
+                            <option value="MENTORING">Mentoring</option>
+                            <option value="CURRICULUM_REVIEW">Curriculum Review</option>
+                            <option value="INDUSTRY_PROJECT">Industry Project</option>
+                            <option value="CONSULTING">Consulting</option>
+                            <option value="TRAINING_DEVELOPMENT">Training & Development</option>
+                            <option value="PUBLIC_SPEAKING">Public Speaking</option>
+                            <option value="LEADERSHIP_DEVELOPMENT">Leadership Development</option>
+                            <option value="INNOVATION_DESIGN">Innovation & Design</option>
+                            <option value="SUSTAINABILITY">Sustainability</option>
+                          </select>
+                        ) : (
+                          <p className="w-full px-4 py-3 bg-slate-50 text-slate-900 rounded-xl">
+                            {profile?.primaryExpertise || 'Not specified'}
+                          </p>
+                        )}
                       </div>
 
                       <div>
@@ -1110,7 +1110,7 @@ const ExpertDashboard = () => {
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                             onClick={handleAddSkill}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium shadow-lg shadow-blue-600/25"
+                            className="px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium shadow-lg shadow-blue-600/25"
                           >
                             Add Skill
                           </motion.button>
@@ -1163,6 +1163,61 @@ const ExpertDashboard = () => {
                           </motion.button>
                         </div>
                       )}
+                    </div>
+                  </div>
+
+                  {/* Services Section */}
+                  <div className="bg-white rounded-2xl border border-slate-200/60 p-6">
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold text-slate-900 mb-2">What are your primary services? *</h3>
+                      <p className="text-slate-600">Select the types of services you're available to provide</p>
+                    </div>
+                    
+                     
+                    
+                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {availableServiceTypes.map((serviceType) => {
+                        const isSelected = serviceTypes.some(st => st.id === serviceType.id);
+                        const Icon = serviceType.icon;
+                        
+                        return (
+                          <motion.div
+                            key={serviceType.id}
+                            whileHover={{ y: -2 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => handleServiceTypeToggle(serviceType.id)}
+                            className={`relative overflow-hidden rounded-lg border transition-all duration-300 cursor-pointer ${
+                              isSelected 
+                                ? 'border-blue-500 bg-blue-50 shadow-md' 
+                                : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
+                            }`}
+                          >
+                            <div className="p-4">
+                              <div className="flex items-center space-x-3">
+                                <div className={`p-2 rounded-lg transition-all duration-300 ${
+                                  isSelected 
+                                    ? 'bg-blue-500 text-white' 
+                                    : 'bg-slate-100 text-slate-600'
+                                }`}>
+                                  <Icon className="h-5 w-5" />
+                                </div>
+                                <div>
+                                  <h4 className={`text-base font-semibold transition-colors duration-300 ${
+                                    isSelected ? 'text-blue-900' : 'text-slate-900'
+                                  }`}>
+                                    {serviceType.name}
+                                  </h4>
+                                  <p className={`text-xs transition-colors duration-300 ${
+                                    isSelected ? 'text-blue-700' : 'text-slate-600'
+                                  }`}>
+                                    {serviceType.description}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
                     </div>
                   </div>
                 </motion.div>
@@ -1538,73 +1593,7 @@ const ExpertDashboard = () => {
                 </motion.div>
               )}
 
-              {/* Services Tab */}
-              {activeTab === 'services' && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="space-y-6"
-                >
-                  <div className="bg-white rounded-2xl border border-slate-200/60 p-6">
-                    <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-xl font-semibold text-slate-900">Service Types</h2>
-                      <p className="text-slate-600">Select the types of services you're available to provide</p>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {availableServiceTypes.map((serviceType) => {
-                        const isSelected = serviceTypes.some(st => st.id === serviceType.id);
-                        const Icon = serviceType.icon;
-                        
-                        return (
-                          <motion.div
-                            key={serviceType.id}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => handleServiceTypeToggle(serviceType.id)}
-                            className={`p-6 rounded-xl border-2 cursor-pointer transition-all duration-300 ${
-                              isSelected
-                                ? 'border-blue-500 bg-blue-50 shadow-lg shadow-blue-500/20'
-                                : 'border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50'
-                            }`}
-                          >
-                            <div className="flex items-center space-x-4">
-                              <div className={`p-3 rounded-xl ${
-                                isSelected ? 'bg-blue-600' : 'bg-slate-100'
-                              }`}>
-                                <Icon className={`h-6 w-6 ${
-                                  isSelected ? 'text-white' : 'text-slate-600'
-                                }`} />
-                              </div>
-                              <div className="flex-1">
-                                <h3 className={`font-semibold text-lg ${
-                                  isSelected ? 'text-blue-900' : 'text-slate-900'
-                                }`}>
-                                  {serviceType.name}
-                                </h3>
-                                <p className={`text-sm ${
-                                  isSelected ? 'text-blue-700' : 'text-blue-600'
-                                }`}>
-                                  {serviceType.description}
-                                </p>
-                              </div>
-                              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                                isSelected
-                                  ? 'border-blue-600 bg-blue-600'
-                                  : 'border-slate-300'
-                              }`}>
-                                {isSelected && (
-                                  <CheckCircle className="h-4 w-4 text-white" />
-                                )}
-                              </div>
-                            </div>
-                          </motion.div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </motion.div>
-              )}
+
 
               {/* Colleges Tab */}
               {activeTab === 'colleges' && (

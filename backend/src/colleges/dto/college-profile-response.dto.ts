@@ -1,9 +1,11 @@
+import { collegeprofile_institutionType } from '@prisma/client';
+
 export class CollegeProfileResponseDto {
   id: string;
   userId: string;
   institutionName: string;
   contactPersonName: string;
-  institutionType: string;
+  institutionType: collegeprofile_institutionType;
   accreditation?: string;
   website?: string;
   address?: string;
@@ -12,14 +14,18 @@ export class CollegeProfileResponseDto {
   country?: string;
   postalCode?: string;
   phone?: string;
+  logoUrl?: string;
+  description?: string;
   isProfileComplete: boolean;
   isVerified: boolean;
   verificationDate?: Date;
   createdAt: Date;
   updatedAt: Date;
-  user?: any;
-  requirements?: any[];
-  _count?: any;
-  totalRequirements?: number;
-  activeRequirements?: number;
+  profileCompleteness: number;
+  user: {
+    id: string;
+    email: string;
+    fullName: string;
+    profileImage?: string;
+  };
 }

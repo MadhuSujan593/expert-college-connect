@@ -1,7 +1,10 @@
 import { IsOptional, IsString, IsNumber, IsArray, Min, Max } from 'class-validator';
-import { Transform, Type } from 'class-transformer';
 
 export class SearchExpertsDto {
+  @IsOptional()
+  @IsString()
+  query?: string;
+
   @IsOptional()
   @IsString()
   expertise?: string;
@@ -12,36 +15,38 @@ export class SearchExpertsDto {
 
   @IsOptional()
   @IsString()
-  experience?: string;
+  serviceType?: string;
 
   @IsOptional()
-  @Transform(({ value }) => parseFloat(value))
   @IsNumber()
   @Min(0)
-  @Max(5)
-  minRating?: number;
-
-  @IsOptional()
-  @Transform(({ value }) => parseFloat(value))
-  @IsNumber()
-  @Min(0)
+  @Max(10000)
   maxHourlyRate?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(50)
+  minExperience?: number;
 
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  availableFor?: string[];
+  skills?: string[];
 
   @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(1)
-  page?: number = 1;
+  @IsString()
+  availability?: string;
 
   @IsOptional()
-  @Type(() => Number)
   @IsNumber()
   @Min(1)
   @Max(100)
-  limit?: number = 10;
+  page?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(50)
+  limit?: number;
 }

@@ -4,14 +4,20 @@ import apiService from '../utils/api';
 const AuthContext = createContext();
 
 export const useAuth = () => {
+  console.log('useAuth hook called');
   const context = useContext(AuthContext);
+  console.log('AuthContext value:', context);
+  
   if (!context) {
+    console.error('useAuth called outside of AuthProvider');
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };
 
 export const AuthProvider = ({ children }) => {
+  console.log('AuthProvider rendering, children:', children);
+  
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -19,13 +25,25 @@ export const AuthProvider = ({ children }) => {
   // Check if user is authenticated on app load
   useEffect(() => {
     checkAuthStatus();
-  }, []);
+    
+    // Set up periodic token validation (every 5 minutes)
+    const interval = setInterval(() => {
+      if (isAuthenticated) {
+        validateToken();
+      }
+    }, 5 * 60 * 1000); // 5 minutes
+
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
 
   const checkAuthStatus = async () => {
     try {
-      const token = apiService.getToken();
-      if (!token) {
-        setLoading(false);
+      setLoading(true);
+      
+      // Check if we have a valid token
+      if (!apiService.isAuthenticated()) {
+        setUser(null);
+        setIsAuthenticated(false);
         return;
       }
 
@@ -36,11 +54,30 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Auth check failed:', error);
       // Token might be expired or invalid
-      apiService.clearTokens();
-      setUser(null);
-      setIsAuthenticated(false);
+      handleAuthFailure();
     } finally {
       setLoading(false);
+    }
+  };
+
+  const validateToken = async () => {
+    try {
+      // This will automatically refresh the token if needed
+      await apiService.getProfile();
+    } catch (error) {
+      console.error('Token validation failed:', error);
+      handleAuthFailure();
+    }
+  };
+
+  const handleAuthFailure = () => {
+    apiService.clearTokens();
+    setUser(null);
+    setIsAuthenticated(false);
+    
+    // Redirect to login if not already there
+    if (window.location.pathname !== '/login') {
+      window.location.href = '/login';
     }
   };
 

@@ -614,12 +614,28 @@ export class AuthService {
    * Create User Session
    */
   private async createSession(userId: string, token: string) {
+    // Get session expiration from config or default to 2 hours
+    const sessionExpiration = this.configService.get('JWT_EXPIRES_IN', '2h');
+    let expiresInMs = 2 * 60 * 60 * 1000; // Default 2 hours
+    
+    // Parse the expiration time
+    if (sessionExpiration.includes('h')) {
+      const hours = parseInt(sessionExpiration.replace('h', ''));
+      expiresInMs = hours * 60 * 60 * 1000;
+    } else if (sessionExpiration.includes('m')) {
+      const minutes = parseInt(sessionExpiration.replace('m', ''));
+      expiresInMs = minutes * 60 * 1000;
+    } else if (sessionExpiration.includes('d')) {
+      const days = parseInt(sessionExpiration.replace('d', ''));
+      expiresInMs = days * 24 * 60 * 60 * 1000;
+    }
+    
     await this.prisma.session.create({
       data: {
         id: uuidv4(),
         userId,
         token,
-        expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes
+        expiresAt: new Date(Date.now() + expiresInMs),
         updatedAt: new Date(),
       },
     });

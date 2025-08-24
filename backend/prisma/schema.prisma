@@ -21,12 +21,14 @@ model collegeprofile {
   country           String?                        @db.VarChar(100)
   postalCode        String?                        @db.VarChar(20)
   phone             String?                        @db.VarChar(20)
+  logoUrl           String?                        @db.VarChar(500)
+  description       String?                        @db.Text
   isProfileComplete Boolean                        @default(false)
   isVerified        Boolean                        @default(false)
   verificationDate  DateTime?
   createdAt         DateTime                       @default(now())
   updatedAt         DateTime
-  user              user                           @relation(fields: [userId], references: [id], onDelete: Cascade, map: "CollegeProfile_userId_fkey")
+  user              user                           @relation(fields: [userId], references: [id], onDelete: Cascade, map: "CollegeProfile_userId_key")
   requirement       requirement[]
 
   @@index([city], map: "CollegeProfile_city_idx")

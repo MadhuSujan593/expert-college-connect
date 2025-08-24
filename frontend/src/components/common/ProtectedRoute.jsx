@@ -1,9 +1,20 @@
-import React from 'react';
-import { Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
 const ProtectedRoute = ({ children, requiredRole = null, redirectTo = '/login' }) => {
   const { isAuthenticated, user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  // Handle authentication failures
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      // Clear any stale tokens and redirect to login
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      navigate(redirectTo, { replace: true });
+    }
+  }, [isAuthenticated, loading, navigate, redirectTo]);
 
   // Show loading spinner while checking authentication
   if (loading) {

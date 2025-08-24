@@ -36,6 +36,8 @@ const queryClient = new QueryClient({
 });
 
 const AppContent = () => {
+  console.log('AppContent rendering');
+  
   const location = useLocation();
   const isAuthPage = ['/login', '/register', '/forgot-password'].some(path => 
     location.pathname === path || location.pathname.startsWith(path + '/')
@@ -113,14 +115,26 @@ const AppContent = () => {
   );
 };
 
+// Create a wrapper component to ensure proper context flow
+const AppWrapper = ({ children }) => {
+  console.log('AppWrapper rendering');
+  return (
+    <AuthProvider>
+      {children}
+    </AuthProvider>
+  );
+};
+
 function App() {
+  console.log('App component rendering, setting up providers...');
+  
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
+      <AppWrapper>
         <Router>
           <AppContent />
         </Router>
-      </AuthProvider>
+      </AppWrapper>
     </QueryClientProvider>
   );
 }
