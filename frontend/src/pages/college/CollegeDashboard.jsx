@@ -33,9 +33,11 @@ import { useAuth } from '../../contexts/AuthContext';
 import apiService from '../../utils/api';
 import Toast from '../../components/common/Toast';
 import FileUpload from '../../components/common/FileUpload';
+import EmailVerificationModal from '../../components/verification/EmailVerificationModal';
+import PhoneVerificationModal from '../../components/verification/PhoneVerificationModal';
 
 const CollegeDashboard = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, setUser } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -55,6 +57,26 @@ const CollegeDashboard = () => {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
 
+  // Verification states
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
+  const [showPhoneVerification, setShowPhoneVerification] = useState(false);
+  const [emailOtpSent, setEmailOtpSent] = useState(false);
+  const [phoneOtpSent, setPhoneOtpSent] = useState(false);
+  const [isEmailSending, setIsEmailSending] = useState(false);
+  const [isPhoneSending, setIsPhoneSending] = useState(false);
+  const [isEmailVerifying, setIsEmailVerifying] = useState(false);
+  const [isPhoneVerifying, setIsPhoneVerifying] = useState(false);
+
+  // Track if email/phone has changed during editing
+  const [emailChanged, setEmailChanged] = useState(false);
+  const [phoneChanged, setPhoneChanged] = useState(false);
+  const [originalEmail, setOriginalEmail] = useState('');
+  const [originalPhone, setOriginalPhone] = useState('');
+  
+  // Track current verification status for form fields
+  const [currentEmailVerified, setCurrentEmailVerified] = useState(false);
+  const [currentPhoneVerified, setCurrentPhoneVerified] = useState(false);
+
   // Helper function to convert relative URLs to full URLs
   const getFullLogoUrl = (logoUrl) => {
     if (!logoUrl) return null;
@@ -66,12 +88,379 @@ const CollegeDashboard = () => {
     return `${baseUrl}/${logoUrl}`;
   };
 
+  // Email verification handlers
+  const handleEmailVerification = async (otp) => {
+    try {
+      console.log('🔄 Verifying email OTP...');
+      setIsEmailVerifying(true);
+      
+      // Verify the OTP and update email in one call
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/auth/verify-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        },
+        body: JSON.stringify({ 
+          email: profileForm.email,
+          otp: otp,
+          isProfileUpdate: true,
+          userId: user?.id
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Email verified and updated successfully:', result);
+        
+        // Update local state
+        setCurrentEmailVerified(true);
+        setShowEmailVerification(false);
+        setEmailChanged(false);
+        
+        // Update the user object with the new verified email
+        if (user) {
+          const updatedUser = { ...user, email: profileForm.email, isEmailVerified: true };
+          console.log('🔄 Updating user state with new email:', updatedUser);
+          setUser(updatedUser);
+          
+          // Update the profile form to reflect the change
+          setProfileForm(prev => ({ ...prev, email: profileForm.email }));
+          
+          // Update the original email for change tracking
+          setOriginalEmail(profileForm.email);
+          
+          console.log('🔄 Email updated locally. Now refreshing profile data...');
+          
+          // Refresh the profile data to get the updated information
+          await fetchDashboardData();
+          
+          console.log('🔄 Profile data refreshed. Checking if email is updated...');
+          console.log('Current profileForm.email:', profileForm.email);
+          console.log('Current user?.email:', user?.email);
+          
+          showToast('success', 'Email verified and updated successfully!');
+          console.log('✅ Email verification and update successful');
+        }
+      } else {
+        const errorData = await response.json();
+        console.error('❌ Backend verification error:', errorData);
+        showToast('error', errorData.message || 'Email verification failed');
+      }
+    } catch (error) {
+      console.error('❌ Email verification error:', error);
+      showToast('error', 'Email verification failed. Please try again.');
+    } finally {
+      setIsEmailVerifying(false);
+    }
+  };
+
+  const handleSendEmailOtpForUpdate = async () => {
+    try {
+      console.log('🔄 Starting email OTP process...');
+      
+      // Check if email is unique before sending OTP
+      const isAvailable = await checkEmailAvailability(profileForm.email);
+      if (!isAvailable) {
+        showToast('error', 'This email is already in use by another account.');
+        return;
+      }
+      
+      console.log('✅ Email is available, sending OTP...');
+      
+      // For dashboard updates, we need to use a different approach
+      // since the user is already authenticated and we're updating their profile
+      setIsEmailSending(true);
+      
+      try {
+        // Call the backend API directly for dashboard email verification
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/auth/send-email-otp`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          },
+          body: JSON.stringify({ 
+            email: profileForm.email
+          }),
+        });
+
+        if (response.ok) {
+          setEmailOtpSent(true);
+          setShowEmailVerification(true);
+          showToast('success', 'Verification code sent to your email!');
+          console.log('✅ OTP sent successfully');
+        } else {
+          const errorData = await response.json();
+          console.error('❌ Backend error:', errorData);
+          showToast('error', errorData.message || 'Failed to send verification code');
+        }
+      } catch (apiError) {
+        console.error('❌ API call error:', apiError);
+        showToast('error', 'Failed to send verification code. Please try again.');
+      } finally {
+        setIsEmailSending(false);
+      }
+    } catch (error) {
+      console.error('❌ Error sending email OTP:', error);
+      showToast('error', 'Failed to send verification code. Please try again.');
+    }
+  };
+
+  // Phone verification handlers
+  const handlePhoneVerification = async (otp) => {
+    try {
+      console.log('🔄 Verifying phone OTP...');
+      setIsPhoneVerifying(true);
+      
+      // Verify the OTP and update phone in one call
+      const requestBody = { 
+        phone: profileForm.phone,
+        otp: otp,
+        isProfileUpdate: true,
+        userId: user?.id
+      };
+      
+      console.log('🔄 Sending phone verification request:', requestBody);
+      
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/auth/verify-phone`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Phone verified and updated successfully:', result);
+        console.log('🔄 Backend response details:', {
+          message: result.message,
+          isPreRegistration: result.isPreRegistration
+        });
+        
+        // Update local state
+        setCurrentPhoneVerified(true);
+        setShowPhoneVerification(false);
+        setPhoneChanged(false);
+        
+        // Update the user object with the new verified phone
+        if (user) {
+          const updatedUser = { ...user, phone: profileForm.phone, isPhoneVerified: true };
+          console.log('🔄 Updating user state with new phone:', updatedUser);
+          setUser(updatedUser);
+          
+          // Update the profile form to reflect the change
+          setProfileForm(prev => ({ ...prev, phone: profileForm.phone }));
+          
+          // Update the original phone for change tracking
+          setOriginalPhone(profileForm.phone);
+          
+          console.log('🔄 Phone number updated locally. Now refreshing profile data...');
+          
+          // Refresh the profile data to get the updated information
+          await fetchDashboardData();
+          
+          console.log('🔄 Profile data refreshed. Checking if phone number is updated...');
+          console.log('Current profileForm.phone:', profileForm.phone);
+          console.log('Current user?.phone:', updatedUser.phone);
+          
+          showToast('success', 'Phone number verified and updated successfully!');
+          console.log('✅ Phone verification and update successful');
+        }
+      } else {
+        const errorData = await response.json();
+        console.error('❌ Backend verification error:', errorData);
+        showToast('error', errorData.message || 'Phone verification failed');
+      }
+    } catch (error) {
+      console.error('❌ Phone verification error:', error);
+      showToast('error', 'Phone verification failed. Please try again.');
+    } finally {
+      setIsPhoneVerifying(false);
+    }
+  };
+
+  const handleSendPhoneOtpForUpdate = async () => {
+    try {
+      console.log('🔄 Starting phone OTP process...');
+      
+      // For dashboard updates, we need to use a different approach
+      // since the user is already authenticated and we're updating their profile
+      setIsPhoneSending(true);
+      
+      try {
+        // Call the backend API directly for dashboard phone verification
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/auth/send-phone-otp`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          },
+          body: JSON.stringify({ 
+            phone: profileForm.phone
+          }),
+        });
+
+        if (response.ok) {
+          setPhoneOtpSent(true);
+          setShowPhoneVerification(true);
+          showToast('success', 'Verification code sent to your phone!');
+          console.log('✅ OTP sent successfully');
+        } else {
+          const errorData = await response.json();
+          console.error('❌ Backend error:', errorData);
+          showToast('error', errorData.message || 'Failed to send verification code');
+        }
+      } catch (apiError) {
+        console.error('❌ API call error:', apiError);
+        showToast('error', 'Failed to send verification code. Please try again.');
+      } finally {
+        setIsPhoneSending(false);
+      }
+    } catch (error) {
+      console.error('❌ Error sending phone OTP:', error);
+      showToast('error', 'Failed to send verification code. Please try again.');
+    }
+  };
+
+  // Check email availability
+  const checkEmailAvailability = async (email) => {
+    try {
+      // Import the checkAvailability function from verificationUtils
+      const { checkAvailability } = await import('../../utils/verificationUtils');
+      const result = await checkAvailability('email', email);
+      return result.available;
+    } catch (error) {
+      console.error('Error checking email availability:', error);
+      return false;
+    }
+  };
+
+  // Email validation function
+  const isValidEmail = (email) => {
+    if (!email) return false;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // Phone validation function
+  const isValidPhone = (phone) => {
+    if (!phone) return false;
+    // Remove all non-digit characters except +
+    const cleanPhone = phone.replace(/[^\d+]/g, '');
+    // Check if it starts with + (international) or just digits (local)
+    if (cleanPhone.startsWith('+')) {
+      // International format: +[country code][number] (total 7-15 digits)
+      const phoneWithoutPlus = cleanPhone.substring(1);
+      return phoneWithoutPlus.length >= 7 && phoneWithoutPlus.length <= 15;
+    } else {
+      // Local format: just digits (10-15 digits)
+      return cleanPhone.length >= 10 && cleanPhone.length <= 15;
+    }
+  };
+
+  // Handle input changes and track modifications
+  const handleProfileInputChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Track if email or phone has changed
+    if (name === 'email') {
+      if (value !== originalEmail) {
+        setEmailChanged(true);
+        // Hide OTP modal when email changes
+        setShowEmailVerification(false);
+        setEmailOtpSent(false);
+      } else if (value === originalEmail) {
+        setEmailChanged(false);
+        // Hide OTP modal when email is set back to original
+        setShowEmailVerification(false);
+        setEmailOtpSent(false);
+        // Reset verification states when email is set back to original verified email
+        if (user?.isEmailVerified) {
+          setCurrentEmailVerified(true);
+        }
+      }
+    }
+    
+    if (name === 'phone') {
+      if (value !== originalPhone) {
+        setPhoneChanged(true);
+        // Hide OTP modal when phone changes
+        setShowPhoneVerification(false);
+        setPhoneOtpSent(false);
+      } else if (value === originalPhone) {
+        setPhoneChanged(false);
+        // Hide OTP modal when phone is set back to original
+        setShowPhoneVerification(false);
+        setPhoneOtpSent(false);
+        // Reset verification states when phone is set back to original verified phone
+        if (user?.isPhoneVerified) {
+          setCurrentPhoneVerified(true);
+        }
+      }
+    }
+    
+    setProfileForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Handle cancelling profile editing
+  const handleCancelEditing = () => {
+    setEditingProfile(false);
+    setEmailChanged(false);
+    setPhoneChanged(false);
+    
+    // Reset verification states
+    setShowEmailVerification(false);
+    setShowPhoneVerification(false);
+    setEmailOtpSent(false);
+    setPhoneOtpSent(false);
+    setIsEmailSending(false);
+    setIsPhoneSending(false);
+    setIsEmailVerifying(false);
+    setIsPhoneVerifying(false);
+    
+    // Reset profileForm to original values
+    setProfileForm(prev => ({
+      ...prev,
+      email: originalEmail,
+      phone: originalPhone
+    }));
+  };
+
   // Debug: Log profile changes
   useEffect(() => {
     console.log('🔍 Profile state changed:', profile);
     console.log('🔍 ProfileForm state changed:', profileForm);
     console.log('🔍 LogoPreview state changed:', logoPreview);
-  }, [profile, profileForm, logoPreview]);
+    console.log('🔍 User object from AuthContext:', user);
+    console.log('🔍 User verification status:', {
+      isEmailVerified: user?.isEmailVerified,
+      isPhoneVerified: user?.isPhoneVerified,
+      hasEmail: !!user?.email,
+      hasPhone: !!user?.phone
+    });
+  }, [profile, profileForm, logoPreview, user]);
+
+  // Sync profileForm with user data when user changes
+  useEffect(() => {
+    if (user) {
+      console.log('🔄 User object changed, syncing profileForm...');
+      console.log('🔄 New user phone:', user.phone);
+      console.log('🔄 New user email:', user.email);
+      
+      setProfileForm(prev => ({
+        ...prev,
+        phone: user.phone || prev.phone,
+        email: user.email || prev.email
+      }));
+      
+      // Also update current verification status
+      setCurrentEmailVerified(user.isEmailVerified || false);
+      setCurrentPhoneVerified(user.isPhoneVerified || false);
+    }
+  }, [user]);
 
   // Initialize logoPreview when profile is loaded
   useEffect(() => {
@@ -107,9 +496,16 @@ const CollegeDashboard = () => {
       // Debug: Log the profile data received from backend
       console.log('=== PROFILE DATA RECEIVED FROM BACKEND ===');
       console.log('Full profile data:', profileData);
+      console.log('Email field value:', profileData.email);
+      console.log('Email field type:', typeof profileData.email);
+      console.log('Email field truthy check:', !!profileData.email);
       console.log('Phone field value:', profileData.phone);
       console.log('Phone field type:', typeof profileData.phone);
       console.log('Phone field truthy check:', !!profileData.phone);
+      console.log('=== USER DATA FROM AUTH CONTEXT ===');
+      console.log('User object:', user);
+      console.log('User email:', user?.email);
+      console.log('User email verification:', user?.isEmailVerified);
       
       setProfile(profileData);
       setStats(statsData);
@@ -119,6 +515,7 @@ const CollegeDashboard = () => {
       const formData = {
         institutionName: profileData.institutionName || '',
         contactPersonName: profileData.contactPersonName || '',
+        email: user?.email || profileData.email || '',
         institutionType: profileData.institutionType || 'UNIVERSITY',
         accreditation: profileData.accreditation || '',
         website: profileData.website || '',
@@ -127,10 +524,18 @@ const CollegeDashboard = () => {
         state: profileData.state || '',
         country: profileData.country || '',
         postalCode: profileData.postalCode || '',
-        phone: profileData.phone || '',
+        phone: user?.phone || profileData.phone || '', // Phone comes from user object, not profile
         logoUrl: profileData.logoUrl || '',
         description: profileData.description || '',
       };
+      
+      // Set original values for tracking changes
+      setOriginalEmail(formData.email);
+      setOriginalPhone(formData.phone);
+      
+      // Set current verification status
+      setCurrentEmailVerified(user?.isEmailVerified || false);
+      setCurrentPhoneVerified(user?.isPhoneVerified || false);
       
       // Debug: Log the form data being set
       console.log('=== FORM DATA BEING SET ===');
@@ -151,6 +556,40 @@ const CollegeDashboard = () => {
       // Debug: Log the profile form data
       console.log('Profile form data being sent:', profileForm);
       
+      // Check if email or phone has changed and require verification
+      if (emailChanged) {
+        if (!profileForm.email || !isValidEmail(profileForm.email)) {
+          showToast('error', 'Please enter a valid email address before saving changes');
+          return;
+        }
+        if (!currentEmailVerified) {
+          showToast('error', 'Please verify your new email address before saving changes');
+          return;
+        }
+      }
+      
+      if (phoneChanged) {
+        if (!profileForm.phone || !isValidPhone(profileForm.phone)) {
+          showToast('error', 'Please enter a valid phone number before saving changes');
+          return;
+        }
+        if (!currentPhoneVerified) {
+          showToast('error', 'Please verify your new phone number before saving changes');
+          return;
+        }
+      }
+
+      // Check if existing email or phone needs verification (only if not changed and not set back to original verified values)
+      if (!user?.isEmailVerified && !emailChanged && profileForm.email !== originalEmail) {
+        showToast('error', 'Please verify your email address before saving changes');
+        return;
+      }
+      
+      if (!user?.isPhoneVerified && !phoneChanged && profileForm.phone !== originalPhone) {
+        showToast('error', 'Please verify your phone number before saving changes');
+        return;
+      }
+      
       // Create a clean profile data object (similar to expert profile updates)
       const profileData = { ...profileForm };
       
@@ -167,6 +606,13 @@ const CollegeDashboard = () => {
       const updatedProfile = await apiService.updateCollegeProfile(profileData);
       setProfile(updatedProfile);
       setEditingProfile(false);
+      
+      // Reset change tracking
+      setEmailChanged(false);
+      setPhoneChanged(false);
+      setOriginalEmail(profileData.email);
+      setOriginalPhone(profileData.phone);
+      
       showToast('success', 'Profile updated successfully!');
       const statsData = await apiService.getCollegeDashboardStats();
       setStats(statsData);
@@ -374,7 +820,7 @@ const CollegeDashboard = () => {
 
           {/* Scrollable Content */}
           <main className="flex-1 overflow-y-auto bg-slate-50">
-            <div className="p-6 space-y-6">
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
               {/* Overview Tab */}
               {activeTab === 'overview' && (
         <motion.div
@@ -383,7 +829,7 @@ const CollegeDashboard = () => {
                   className="space-y-6"
                 >
                   {/* Stats Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                     <StatCard
                       icon={CheckCircle}
                       title="Profile Completeness"
@@ -510,11 +956,34 @@ const CollegeDashboard = () => {
                    profileForm={profileForm}
                    setProfileForm={setProfileForm}
                    onUpdate={handleProfileUpdate}
+                   onCancel={handleCancelEditing}
                    logoFile={logoFile}
                    setLogoFile={setLogoFile}
                    showToast={showToast}
                    setProfile={setProfile}
                    getFullLogoUrl={getFullLogoUrl}
+                   user={user}
+                   emailChanged={emailChanged}
+                   phoneChanged={phoneChanged}
+                   originalEmail={originalEmail}
+                   originalPhone={originalPhone}
+                   onEmailVerification={handleEmailVerification}
+                   onPhoneVerification={handlePhoneVerification}
+                   onSendEmailOtp={handleSendEmailOtpForUpdate}
+                   onSendPhoneOtp={handleSendPhoneOtpForUpdate}
+                   isEmailSending={isEmailSending}
+                   isPhoneSending={isPhoneSending}
+                   isEmailVerifying={isEmailVerifying}
+                   isPhoneVerifying={isPhoneVerifying}
+                   emailOtpSent={emailOtpSent}
+                   phoneOtpSent={phoneOtpSent}
+                   showEmailVerification={showEmailVerification}
+                   showPhoneVerification={showPhoneVerification}
+                   setShowEmailVerification={setShowEmailVerification}
+                   setShowPhoneVerification={setShowPhoneVerification}
+                   handleProfileInputChange={handleProfileInputChange}
+                   currentEmailVerified={currentEmailVerified}
+                   currentPhoneVerified={currentPhoneVerified}
                  />
                )}
 
@@ -607,6 +1076,8 @@ const CollegeDashboard = () => {
           hideToast={hideToast}
         />
       )}
+
+      {/* Verification Modals - Now handled inline in ProfileTab */}
   </div>
 );
 };
@@ -619,12 +1090,42 @@ const ProfileTab = ({
   profileForm, 
   setProfileForm, 
   onUpdate,
+  onCancel,
   logoFile,
   setLogoFile,
   showToast,
   setProfile,
-  getFullLogoUrl
+  getFullLogoUrl,
+  user,
+  emailChanged,
+  phoneChanged,
+  originalEmail,
+  originalPhone,
+  onEmailVerification,
+  onPhoneVerification,
+  onSendEmailOtp,
+  onSendPhoneOtp,
+  isEmailSending,
+  isPhoneSending,
+  isEmailVerifying,
+  isPhoneVerifying,
+  emailOtpSent,
+  phoneOtpSent,
+  showEmailVerification,
+  showPhoneVerification,
+  setShowEmailVerification,
+  setShowPhoneVerification,
+  handleProfileInputChange,
+  currentEmailVerified,
+  currentPhoneVerified
 }) => {
+  console.log('🔄 ProfileTab rendered with props:', {
+    editingProfile,
+    onUpdate: !!onUpdate,
+    onCancel: !!onCancel,
+    profile: !!profile,
+    user: !!user
+  });
   const [logoPreview, setLogoPreview] = useState(profile?.logoUrl || null);
   const [logoUploading, setLogoUploading] = useState(false);
 
@@ -633,9 +1134,65 @@ const ProfileTab = ({
     setLogoPreview(profile?.logoUrl || null);
   }, [profile?.logoUrl]);
 
+  // Sync profileForm with profile data and user data when they change
+  useEffect(() => {
+    if (profile && user) {
+      console.log('🔄 ProfileTab: Syncing profileForm with profile and user data');
+      console.log('🔄 Current profileForm:', profileForm);
+      console.log('🔄 Profile data:', profile);
+      console.log('🔄 User data:', user);
+      
+      setProfileForm(prev => {
+        const updatedForm = {
+          ...prev,
+          email: user.email || profile.email || prev.email || '',
+          phone: user.phone || profile.phone || prev.phone || '',
+          institutionName: profile.institutionName || prev.institutionName || '',
+          contactPersonName: profile.contactPersonName || prev.contactPersonName || '',
+          institutionType: profile.institutionType || prev.institutionType || 'UNIVERSITY',
+          accreditation: profile.accreditation || prev.accreditation || '',
+          website: profile.website || prev.website || '',
+          address: profile.address || prev.address || '',
+          city: profile.city || prev.city || '',
+          state: profile.state || prev.state || '',
+          country: profile.country || prev.country || '',
+          postalCode: profile.postalCode || prev.postalCode || '',
+          logoUrl: profile.logoUrl || prev.logoUrl || '',
+          description: profile.description || prev.description || '',
+        };
+        
+        console.log('🔄 Updated profileForm:', updatedForm);
+        return updatedForm;
+      });
+    }
+  }, [profile, user, setProfileForm]);
+
+  // Email validation function
+  const isValidEmail = (email) => {
+    if (!email) return false;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // Phone validation function
+  const isValidPhone = (phone) => {
+    if (!phone) return false;
+    // Remove all non-digit characters except +
+    const cleanPhone = phone.replace(/[^\d+]/g, '');
+    // Check if it starts with + (international) or just digits (local)
+    if (cleanPhone.startsWith('+')) {
+      // International format: +[country code][number] (total 7-15 digits)
+      const phoneWithoutPlus = cleanPhone.substring(1);
+      return phoneWithoutPlus.length >= 7 && phoneWithoutPlus.length <= 15;
+    } else {
+      // Local format: just digits (10-15 digits)
+      return cleanPhone.length >= 10 && cleanPhone.length <= 15;
+    }
+  };
+
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setProfileForm(prev => ({ ...prev, [name]: value }));
+    // Use the parent's input change handler for verification tracking
+    handleProfileInputChange(e);
   };
 
   const handleLogoRemove = async () => {
@@ -682,123 +1239,149 @@ const ProfileTab = ({
   };
 
   const handleSave = async () => {
-    // Logo upload is now handled automatically by FileUpload component
-    // We just need to update the profile
-    onUpdate();
+    // Call the parent's update function
+    if (onUpdate) {
+      onUpdate();
+    } else {
+      console.error('onUpdate prop not provided to ProfileTab');
+    }
   };
 
   return (
     <div className="space-y-8">
       {/* Basic Information */}
-      <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
-        <div className="flex items-center justify-between mb-6">
+      <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-gray-100">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <h3 className="text-lg font-semibold text-gray-900">Institution Information</h3>
-          <button
-            onClick={() => editingProfile ? handleSave() : setEditingProfile(true)}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => {
+              if (editingProfile) {
+                console.log('🔄 Cancel button clicked, setting editingProfile to false...');
+                onCancel();
+              } else {
+                console.log('🔄 Edit button clicked, setting editingProfile to true...');
+                setEditingProfile(true);
+              }
+            }}
+            className={`flex items-center justify-center space-x-2 px-4 py-2 rounded-xl font-medium transition-all duration-200 w-auto min-w-fit ${
+              editingProfile
+                ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/25'
+            }`}
           >
-            {editingProfile ? <Save className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
-            <span>{editingProfile ? 'Save Changes' : 'Edit Profile'}</span>
-          </button>
+            {editingProfile ? <X className="h-4 w-4" /> : <Edit3 className="h-4 w-4" />}
+            <span className="whitespace-nowrap">{editingProfile ? 'Cancel' : 'Edit Profile'}</span>
+          </motion.button>
         </div>
+        
+        {/* Verification Warning */}
+        {editingProfile && (
+          (emailChanged || phoneChanged) || 
+          (!user?.isEmailVerified && !emailChanged) || 
+          (!user?.isPhoneVerified && !phoneChanged)
+        ) && (
+          <div className="mb-6 p-3 sm:p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <div className="flex items-start space-x-2 sm:space-x-3">
+              <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-medium text-amber-800">Verification Required</h4>
+                <p className="text-sm text-amber-700 mt-1">
+                  {emailChanged && phoneChanged 
+                    ? 'You have changed both email and phone number. Please verify both before saving changes.'
+                    : emailChanged 
+                    ? 'You have changed your email address. Please verify it before saving changes.'
+                    : phoneChanged
+                    ? 'You have changed your phone number. Please verify it before saving changes.'
+                    : !user?.isEmailVerified && !user?.isPhoneVerified
+                    ? 'Please verify your email address and phone number before saving changes.'
+                    : !user?.isEmailVerified
+                    ? 'Please verify your email address before saving changes.'
+                    : 'Please verify your phone number before saving changes.'
+                  }
+                </p>
+                <div className="mt-2 space-y-1">
+                  {phoneChanged && !isValidPhone(profileForm.phone) && (
+                    <p className="text-xs text-red-600">⚠️ Please enter a valid phone number to proceed with verification</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Logo Upload Section */}
-        <div className="mb-8">
-          {editingProfile ? (
-            <div>
-              <FileUpload
-                onFileSelect={async (file) => {
-                  console.log('=== LOGO UPLOAD STARTED ===');
-                  console.log('File selected:', file);
-                  console.log('Current profile state:', profile);
-                  console.log('Current profileForm state:', profileForm);
+        <div className="mb-6 sm:mb-8">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3 sm:mb-4">Institution Logo</label>
+            <FileUpload
+              isEditing={editingProfile}
+              onFileSelect={async (file) => {
+                console.log('=== LOGO UPLOAD STARTED ===');
+                console.log('File selected:', file);
+                console.log('Current profile state:', profile);
+                console.log('Current profileForm state:', profileForm);
+                
+                // Automatically upload the logo immediately (like expert profile)
+                try {
+                  setLogoUploading(true);
+                  console.log('Calling uploadCollegeLogo API...');
+                  const response = await apiService.uploadCollegeLogo(file);
+                  console.log('Logo upload API response:', response);
+                  console.log('Response type:', typeof response);
+                  console.log('Response keys:', response ? Object.keys(response) : 'null/undefined');
                   
-                  // Automatically upload the logo immediately (like expert profile)
-                  try {
-                    setLogoUploading(true);
-                    console.log('Calling uploadCollegeLogo API...');
-                    const response = await apiService.uploadCollegeLogo(file);
-                    console.log('Logo upload API response:', response);
-                    console.log('Response type:', typeof response);
-                    console.log('Response keys:', response ? Object.keys(response) : 'null/undefined');
+                  if (response && response.logoUrl) {
+                    console.log('✅ Logo URL received:', response.logoUrl);
                     
-                    if (response && response.logoUrl) {
-                      console.log('✅ Logo URL received:', response.logoUrl);
-                      
-                      // Update the profile form with the new logo URL
-                      setProfileForm(prev => {
-                        const updated = { ...prev, logoUrl: response.logoUrl };
-                        console.log('Updated profileForm:', updated);
-                        return updated;
-                      });
-                      
-                      setLogoPreview(response.logoUrl);
-                      setLogoFile(null);
-                      
-                      // Update the main profile state
-                      setProfile(prev => {
-                        const updated = { ...prev, logoUrl: response.logoUrl };
-                        console.log('Updated profile state:', updated);
-                        return updated;
-                      });
-                      
-                      console.log('✅ State updates completed');
-                      showToast('success', 'Logo uploaded successfully!');
-                    } else {
-                      console.error('❌ No logoUrl in response:', response);
-                      showToast('error', 'Logo upload failed - no URL received');
-                    }
-                  } catch (error) {
-                    console.error('❌ Logo upload error:', error);
-                    showToast('error', 'Failed to upload logo');
+                    // Update the profile form with the new logo URL
+                    setProfileForm(prev => {
+                      const updated = { ...prev, logoUrl: response.logoUrl };
+                      console.log('Updated profileForm:', updated);
+                      return updated;
+                    });
                     
-                    // Reset on error
+                    setLogoPreview(response.logoUrl);
                     setLogoFile(null);
-                    setLogoPreview(profile?.logoUrl || null);
-                  } finally {
-                    setLogoUploading(false);
+                    
+                    // Update the main profile state
+                    setProfile(prev => {
+                      const updated = { ...prev, logoUrl: response.logoUrl };
+                      console.log('Updated profile state:', updated);
+                      return updated;
+                    });
+                    
+                    console.log('✅ State updates completed');
+                    showToast('success', 'Logo uploaded successfully!');
+                  } else {
+                    console.error('❌ No logoUrl in response:', response);
+                    showToast('error', 'Logo upload failed - no URL received');
                   }
-                }}
-                onRemove={() => {
-                  console.log('FileUpload onRemove callback triggered');
-                  handleLogoRemove();
-                }}
-                accept="image/*"
-                maxSize={2}
-                type="image"
-                currentFile={getFullLogoUrl(profile?.logoUrl)}
-                label="Institution Logo"
-                description="Upload your institution logo (PNG, JPG, GIF up to 2MB)"
-                uploading={logoUploading}
-              />
-              
-              {/* Remove the separate upload button since upload is now automatic */}
-            </div>
-          ) : (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-4">Institution Logo</label>
-              {profile?.logoUrl ? (
-                <div className="flex items-center space-x-4">
-                  <img 
-                    src={getFullLogoUrl(profile.logoUrl)} 
-                    alt="Institution Logo" 
-                    className="w-24 h-24 object-cover rounded-xl border-2 border-gray-200"
-                  />
-                  <div>
-                    <p className="text-sm text-gray-900">Logo uploaded</p>
-                    <p className="text-xs text-gray-500">Click Edit Profile to change</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="w-24 h-24 bg-gray-100 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center">
-                  <Building2 className="w-8 h-8 text-gray-400" />
-                </div>
-              )}
-            </div>
-          )}
+                } catch (error) {
+                  console.error('❌ Logo upload error:', error);
+                  showToast('error', 'Failed to upload logo');
+                  
+                  // Reset on error
+                  setLogoFile(null);
+                  setLogoPreview(profile?.logoUrl || null);
+                } finally {
+                  setLogoUploading(false);
+                }
+              }}
+              onRemove={() => {
+                console.log('FileUpload onRemove callback triggered');
+                handleLogoRemove();
+              }}
+              accept="image/*"
+              maxSize={5}
+              type="image"
+              currentFile={getFullLogoUrl(profile?.logoUrl)}
+            />
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Institution Name</label>
             {editingProfile ? (
@@ -810,7 +1393,12 @@ const ProfileTab = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             ) : (
-              <p className="text-gray-900">{profile?.institutionName || 'Not specified'}</p>
+              <input
+                type="text"
+                value={profile?.institutionName || 'Not specified'}
+                disabled={true}
+                className="w-full px-3 py-2 bg-gray-50 text-gray-900 rounded-lg border border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
+              />
             )}
           </div>
 
@@ -825,27 +1413,80 @@ const ProfileTab = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             ) : (
-              <p className="text-gray-900">{profile?.contactPersonName || 'Not specified'}</p>
-            )}
-          </div>
-
-          {/* Description field - Full width, after Institution Name */}
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-            {editingProfile ? (
-              <textarea
-                name="description"
-                value={profileForm.description || ''}
-                onChange={handleInputChange}
-                rows={3}
-                placeholder="Brief description of your institution..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              <input
+                type="text"
+                value={profile?.contactPersonName || 'Not specified'}
+                disabled={true}
+                className="w-full px-3 py-2 bg-gray-50 text-gray-900 rounded-lg border border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
               />
-            ) : (
-              <p className="text-gray-900">{profile?.description || 'Not specified'}</p>
             )}
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                          <div className="relative">
+                {editingProfile ? (
+                  <div className="space-y-2">
+                    <div className="flex flex-col md:flex-row gap-2">
+                      <input
+                        type="email"
+                        name="email"
+                        value={profileForm.email || ''}
+                        onChange={handleProfileInputChange}
+                        className="flex-1 px-3 py-2 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Enter email address"
+                      />
+                      {(emailChanged || !user?.isEmailVerified) && (
+                        <button
+                          type="button"
+                          onClick={onSendEmailOtp}
+                          disabled={isEmailSending || !isValidEmail(profileForm.email)}
+                          className="w-full md:w-auto px-3 md:px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap"
+                        >
+                          {isEmailSending ? 'Sending...' : 'Verify Email'}
+                        </button>
+                      )}
+                    </div>
+                    {profileForm.email && !isValidEmail(profileForm.email) && (
+                      <span className="text-xs text-red-600">Please enter a valid email address</span>
+                    )}
+                    
+                    {/* Email Verification Modal - Inline */}
+                    <EmailVerificationModal
+                      isOpen={showEmailVerification}
+                      email={profileForm.email}
+                      isVerifying={isEmailVerifying}
+                      onVerify={onEmailVerification}
+                      onClose={() => setShowEmailVerification(false)}
+                      onSendOtp={onSendEmailOtp}
+                      isVerified={currentEmailVerified}
+                      isSending={isEmailSending}
+                      otpSent={emailOtpSent}
+                    />
+                  </div>
+              ) : (
+                <input
+                  type="email"
+                  value={user?.email || profile?.email || 'Not specified'}
+                  disabled={true}
+                  className="w-full px-2 py-2 pr-12 bg-gray-50 text-gray-900 rounded-lg border border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
+                />
+              )}
+              {currentEmailVerified && profileForm.email && !emailChanged && user?.isEmailVerified && (
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                  <CheckCircle className="h-5 w-5 text-emerald-600" />
+                </div>
+              )}
+            </div>
+            {(user?.email || profile?.email) && (!currentEmailVerified || emailChanged) && !(profileForm.email === originalEmail && user?.isEmailVerified) && (
+              <p className="text-xs text-amber-600 mt-1 flex items-center space-x-1">
+                <AlertCircle className="h-3 w-3" />
+                <span>{emailChanged ? 'New email needs verification' : 'Email not verified'}</span>
+              </p>
+            )}
+          </div>
+
+          {/* Institution Type field - Next to Email */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Institution Type</label>
             {editingProfile ? (
@@ -863,9 +1504,34 @@ const ProfileTab = ({
                 <option value="OTHER">Other</option>
               </select>
             ) : (
-              <p className="text-gray-900 capitalize">
-                {profile?.institutionType?.toLowerCase() || 'Not specified'}
-              </p>
+              <input
+                type="text"
+                value={profile?.institutionType ? profile.institutionType.toLowerCase() : 'Not specified'}
+                disabled={true}
+                className="w-full px-3 py-2 bg-gray-50 text-gray-900 rounded-lg border border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
+              />
+            )}
+          </div>
+
+          {/* Description field - Full width, after Institution Name */}
+          <div className="lg:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+            {editingProfile ? (
+              <textarea
+                name="description"
+                value={profileForm.description || ''}
+                onChange={handleInputChange}
+                rows={3}
+                placeholder="Brief description of your institution..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              />
+            ) : (
+              <textarea
+                value={profile?.description || 'Not specified'}
+                disabled={true}
+                rows={3}
+                className="w-full px-3 py-2 bg-gray-50 text-gray-900 rounded-lg border border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 transition-colors resize-none"
+              />
             )}
           </div>
 
@@ -880,7 +1546,12 @@ const ProfileTab = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             ) : (
-              <p className="text-gray-900">{profile?.accreditation || 'Not specified'}</p>
+              <input
+                type="text"
+                value={profile?.accreditation || 'Not specified'}
+                disabled={true}
+                className="w-full px-3 py-2 bg-gray-50 text-gray-900 rounded-lg border border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
+              />
             )}
           </div>
 
@@ -895,30 +1566,76 @@ const ProfileTab = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             ) : (
-              <p className="text-gray-900">
-                {profile?.website ? (
-                  <a href={profile.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                    {profile.website}
-                  </a>
-                ) : (
-                  'Not specified'
-                )}
-              </p>
+              <input
+                type="text"
+                value={profile?.website || 'Not specified'}
+                disabled={true}
+                className="w-full px-3 py-2 bg-gray-50 text-gray-900 rounded-lg border border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
+              />
             )}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-            {editingProfile ? (
-              <input
-                type="tel"
-                name="phone"
-                value={profileForm.phone || ''}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            ) : (
-              <p className="text-gray-900">{profile?.phone || 'Not specified'}</p>
+            <div className="relative">
+              {editingProfile ? (
+                <div className="space-y-2">
+                  <div className="flex flex-col md:flex-row gap-2">
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={profileForm.phone || ''}
+                      onChange={handleProfileInputChange}
+                      className="flex-1 px-3 py-2 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter phone number"
+                    />
+                    {(phoneChanged || !user?.isPhoneVerified) && (
+                      <button
+                        type="button"
+                        onClick={onSendPhoneOtp}
+                        disabled={isPhoneSending || !isValidPhone(profileForm.phone)}
+                        className="w-full md:w-auto px-3 md:px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap"
+                      >
+                        {isPhoneSending ? 'Sending...' : 'Verify Phone'}
+                      </button>
+                    )}
+                  </div>
+                  {profileForm.phone && !isValidPhone(profileForm.phone) && (
+                    <span className="text-xs text-red-600">Please enter a valid phone number</span>
+                  )}
+                  
+                  {/* Phone Verification Modal - Inline */}
+                  <PhoneVerificationModal
+                    isOpen={showPhoneVerification}
+                    phone={profileForm.phone}
+                    isVerifying={isPhoneVerifying}
+                    onVerify={onPhoneVerification}
+                    onClose={() => setShowPhoneVerification(false)}
+                    onSendOtp={onSendPhoneOtp}
+                    isVerified={currentPhoneVerified}
+                    isSending={isPhoneSending}
+                    otpSent={phoneOtpSent}
+                  />
+                </div>
+              ) : (
+                <input
+                  type="text"
+                  value={profile?.phone || 'Not specified'}
+                  disabled={true}
+                  className="w-full px-3 py-2 pr-12 bg-gray-50 text-gray-900 rounded-lg border border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
+                />
+              )}
+              {currentPhoneVerified && profileForm.phone && !phoneChanged && user?.isPhoneVerified && (
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                  <CheckCircle className="h-5 w-5 text-emerald-600" />
+                </div>
+              )}
+            </div>
+            {profile?.phone && (user?.isPhoneVerified === false || phoneChanged) && !(profileForm.phone === originalPhone && user?.isPhoneVerified) && (
+              <p className="text-xs text-amber-600 mt-1 flex items-center space-x-1">
+                <AlertCircle className="h-3 w-3" />
+                <span>{phoneChanged ? 'New phone number needs verification' : 'Phone number not verified'}</span>
+              </p>
             )}
           </div>
 
@@ -933,12 +1650,17 @@ const ProfileTab = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
             ) : (
-              <p className="text-gray-900">{profile?.address || 'Not specified'}</p>
+              <textarea
+                value={profile?.address || 'Not specified'}
+                disabled={true}
+                rows={2}
+                className="w-full px-3 py-2 bg-gray-50 text-gray-900 rounded-lg border border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 transition-colors resize-none"
+              />
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
+            <label className="block text-gray-700 mb-2">City</label>
             {editingProfile ? (
               <input
                 type="text"
@@ -948,7 +1670,12 @@ const ProfileTab = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             ) : (
-              <p className="text-gray-900">{profile?.city || 'Not specified'}</p>
+              <input
+                type="text"
+                value={profile?.city || 'Not specified'}
+                disabled={true}
+                className="w-full px-3 py-2 bg-gray-50 text-gray-900 rounded-lg border border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
+              />
             )}
           </div>
 
@@ -963,7 +1690,12 @@ const ProfileTab = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             ) : (
-              <p className="text-gray-900">{profile?.state || 'Not specified'}</p>
+              <input
+                type="text"
+                value={profile?.state || 'Not specified'}
+                disabled={true}
+                className="w-full px-3 py-2 bg-gray-50 text-gray-900 rounded-lg border border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
+              />
             )}
           </div>
 
@@ -978,7 +1710,12 @@ const ProfileTab = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             ) : (
-              <p className="text-gray-900">{profile?.country || 'Not specified'}</p>
+              <input
+                type="text"
+                value={profile?.country || 'Not specified'}
+                disabled={true}
+                className="w-full px-3 py-2 bg-gray-50 text-gray-900 rounded-lg border border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
+              />
             )}
           </div>
 
@@ -993,29 +1730,38 @@ const ProfileTab = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             ) : (
-              <p className="text-gray-900">{profile?.postalCode || 'Not specified'}</p>
+              <input
+                type="text"
+                value={profile?.postalCode || 'Not specified'}
+                disabled={true}
+                className="w-full px-3 py-2 bg-gray-50 text-gray-900 rounded-lg border border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
+              />
             )}
           </div>
         </div>
 
         {editingProfile && (
-          <div className="mt-6 flex space-x-4">
-            <button
-              onClick={handleSave}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Save Changes
-            </button>
-            <button
-               onClick={() => {
-                 setEditingProfile(false);
-                 setLogoFile(null);
-                 setLogoPreview(profile?.logoUrl || null);
-               }}
-              className="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+          <div className="mt-6 flex flex-col sm:flex-row justify-end gap-3">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => {
+                setEditingProfile(false);
+                setLogoFile(null);
+                setLogoPreview(profile?.logoUrl || null);
+              }}
+              className="px-6 py-2 text-slate-700 bg-slate-200 rounded-xl hover:bg-slate-300 transition-colors font-medium w-full sm:w-auto"
             >
               Cancel
-            </button>
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleSave}
+              className="px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium shadow-lg shadow-blue-600/25 w-full sm:w-auto"
+            >
+              Save Changes
+            </motion.button>
           </div>
         )}
       </div>

@@ -85,14 +85,18 @@ export class CollegeProfileService {
     // Validate required fields
     this.validateProfileData(updateData);
 
+    // Prepare college profile update data (exclude user fields)
+    const { userEmail, userPhone, updateUserEmail, updateUserPhone, ...collegeProfileData } = updateData;
+
+    // Update college profile
     const updatedProfile = await this.prisma.collegeprofile.update({
       where: { userId },
       data: {
-        ...updateData,
+        ...collegeProfileData,
         updatedAt: new Date(),
         isProfileComplete: this.checkProfileCompleteness({
           ...existingProfile,
-          ...updateData,
+          ...collegeProfileData,
         }),
       },
       include: {
@@ -102,14 +106,95 @@ export class CollegeProfileService {
             email: true,
             fullName: true,
             profileImage: true,
+            phone: true, // Include phone field
+            isPhoneVerified: true, // Include phone verification status
           },
         },
       },
     });
 
+    // Update user information if requested
+    if (updateUserEmail && userEmail) {
+      // Check if email is already taken by another user
+      const existingUser = await this.prisma.user.findFirst({
+        where: { 
+          email: userEmail, 
+          isActive: true, 
+          isDeleted: false,
+          id: { not: userId } // Exclude current user
+        }
+      });
+
+      if (existingUser) {
+        throw new BadRequestException('This email is already in use by another account');
+      }
+
+      // Update user's email and set it as verified
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { 
+          email: userEmail,
+          isEmailVerified: true,
+          emailVerifiedAt: new Date(),
+          updatedAt: new Date()
+        }
+      });
+    }
+
+    if (updateUserPhone && userPhone) {
+      // Check if phone is already taken by another user
+      const existingUser = await this.prisma.user.findFirst({
+        where: { 
+          phone: userPhone, 
+          isActive: true, 
+          isDeleted: false,
+          id: { not: userId } // Exclude current user
+        }
+      });
+
+      if (existingUser) {
+        throw new BadRequestException('This phone number is already in use by another account');
+      }
+
+      // Update user's phone and set it as verified
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { 
+          phone: userPhone,
+          isPhoneVerified: true,
+          phoneVerifiedAt: new Date(),
+          updatedAt: new Date()
+        }
+      });
+    }
+
+    // Fetch updated user data if user information was updated
+    let finalProfile = updatedProfile;
+    if (updateUserEmail || updateUserPhone) {
+      const refreshedProfile = await this.prisma.collegeprofile.findUnique({
+        where: { userId },
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              fullName: true,
+              profileImage: true,
+              phone: true, // Include phone field
+              isPhoneVerified: true, // Include phone verification status
+            },
+          },
+        },
+      });
+      
+      if (refreshedProfile) {
+        finalProfile = refreshedProfile;
+      }
+    }
+
     return {
-      ...updatedProfile,
-      profileCompleteness: this.calculateProfileCompleteness(updatedProfile),
+      ...finalProfile,
+      profileCompleteness: this.calculateProfileCompleteness(finalProfile),
     };
   }
 

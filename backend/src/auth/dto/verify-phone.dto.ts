@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, Matches } from 'class-validator';
+import { IsString, IsNotEmpty, Matches, IsOptional, IsBoolean } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class VerifyPhoneDto {
@@ -19,4 +19,22 @@ export class VerifyPhoneDto {
   @IsString({ message: 'OTP must be a string' })
   @IsNotEmpty({ message: 'OTP is required' })
   otp: string;
+
+  @ApiProperty({
+    description: 'Whether this is for profile update (existing user changing phone)',
+    example: false,
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isProfileUpdate?: boolean;
+
+  @ApiProperty({
+    description: 'User ID for profile updates',
+    example: 'user123',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  userId?: string;
 } 

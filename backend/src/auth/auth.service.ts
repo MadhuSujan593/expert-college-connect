@@ -466,8 +466,14 @@ export class AuthService {
    * Verify Email
    */
   async verifyEmail(verifyEmailDto: VerifyEmailDto): Promise<VerificationResponse> {
-    const { email, otp } = verifyEmailDto;
+    const { email, otp, isProfileUpdate, userId } = verifyEmailDto;
 
+    // For profile updates, we need to handle differently
+    if (isProfileUpdate && userId) {
+      return this.verifyEmailForProfileUpdate(email, otp, userId);
+    }
+
+    // Original logic for pre-registration verification
     // First, check if email is already registered by another user
     const existingUser = await this.prisma.user.findUnique({
       where: { email, isActive: true, isDeleted: false }
@@ -521,11 +527,81 @@ export class AuthService {
   }
 
   /**
+   * Verify Email for Profile Update (existing user changing email)
+   */
+  private async verifyEmailForProfileUpdate(email: string, otp: string, userId: string): Promise<VerificationResponse> {
+    // Check if the user exists
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId, isActive: true, isDeleted: false }
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    // Check if email is already taken by another user
+    const existingUserWithEmail = await this.prisma.user.findFirst({
+      where: { 
+        email, 
+        isActive: true, 
+        isDeleted: false,
+        id: { not: userId } // Exclude current user
+      }
+    });
+
+    if (existingUserWithEmail) {
+      throw new BadRequestException('This email is already in use by another account');
+    }
+
+    // Look for verification record
+    const verificationRecord = await this.prisma.emailverification.findFirst({
+      where: {
+        email,
+        otp,
+        isUsed: false,
+        expiresAt: { gt: new Date() },
+      },
+    });
+
+    if (!verificationRecord) {
+      throw new BadRequestException('Invalid or expired OTP');
+    }
+
+    // Update user's email and verification status
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { 
+        email: email,
+        isEmailVerified: true, 
+        emailVerifiedAt: new Date(),
+        updatedAt: new Date()
+      }
+    });
+
+    // Mark OTP as used
+    await this.prisma.emailverification.update({
+      where: { id: verificationRecord.id },
+      data: { isUsed: true, usedAt: new Date() }
+    });
+
+    return { 
+      message: 'Email updated and verified successfully',
+      isPreRegistration: false
+    };
+  }
+
+  /**
    * Verify Phone
    */
   async verifyPhone(verifyPhoneDto: VerifyPhoneDto): Promise<VerificationResponse> {
-    const { phone, otp } = verifyPhoneDto;
+    const { phone, otp, isProfileUpdate, userId } = verifyPhoneDto;
 
+    // For profile updates, we need to handle differently
+    if (isProfileUpdate && userId) {
+      return this.verifyPhoneForProfileUpdate(phone, otp, userId);
+    }
+
+    // Original logic for pre-registration verification
     // First, try to find an existing user
     const existingUser = await this.prisma.user.findUnique({
       where: { phone, isActive: true, isDeleted: false }
@@ -575,6 +651,70 @@ export class AuthService {
         ? 'Phone number verified successfully' 
         : 'Phone number verified successfully. You can now create your account.',
       isPreRegistration: !existingUser
+    };
+  }
+
+  /**
+   * Verify Phone for Profile Update (existing user changing phone)
+   */
+  private async verifyPhoneForProfileUpdate(phone: string, otp: string, userId: string): Promise<VerificationResponse> {
+    // Check if the user exists
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId, isActive: true, isDeleted: false }
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    // Check if phone is already taken by another user
+    const existingUserWithPhone = await this.prisma.user.findFirst({
+      where: { 
+        phone, 
+        isActive: true, 
+        isDeleted: false,
+        id: { not: userId } // Exclude current user
+      }
+    });
+
+    if (existingUserWithPhone) {
+      throw new BadRequestException('This phone number is already in use by another account');
+    }
+
+    // Look for verification record
+    const verificationRecord = await this.prisma.phoneverification.findFirst({
+      where: {
+        phone,
+        otp,
+        isUsed: false,
+        expiresAt: { gt: new Date() },
+      },
+    });
+
+    if (!verificationRecord) {
+      throw new BadRequestException('Invalid or expired OTP');
+    }
+
+    // Update user's phone and verification status
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { 
+        phone: phone,
+        isPhoneVerified: true, 
+        phoneVerifiedAt: new Date(),
+        updatedAt: new Date()
+      }
+    });
+
+    // Mark OTP as used
+    await this.prisma.phoneverification.update({
+      where: { id: verificationRecord.id },
+      data: { isUsed: true, usedAt: new Date() }
+    });
+
+    return { 
+      message: 'Phone number updated and verified successfully',
+      isPreRegistration: false
     };
   }
 
@@ -1066,4 +1206,6 @@ export class AuthService {
       throw new BadRequestException(error.message || 'Failed to send test email');
     }
   }
+
+
 } 

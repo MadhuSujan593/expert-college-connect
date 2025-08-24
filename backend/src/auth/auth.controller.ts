@@ -103,4 +103,6 @@ export class AuthController {
   async checkAvailability(@Body() body: { type: 'email' | 'phone'; value: string }) {
     return this.authService.checkAvailability(body.type, body.value);
   }
+
+
 } 

@@ -231,7 +231,8 @@ export const AuthProvider = ({ children }) => {
     logout,
     checkAuthStatus,
     getDashboardRoute,
-  }), [user, loading, isAuthenticated, login, logout, checkAuthStatus, getDashboardRoute]);
+    setUser,
+  }), [user, loading, isAuthenticated, login, logout, checkAuthStatus, getDashboardRoute, setUser]);
 
   return (
     <AuthContext.Provider value={value}>

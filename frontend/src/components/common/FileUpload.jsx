@@ -33,7 +33,8 @@ const FileUpload = ({
   currentFile = null,
   label,
   description,
-  className = ''
+  className = '',
+  isEditing = false
 }) => {
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -153,43 +154,56 @@ const FileUpload = ({
 
       {/* Current File Display */}
       {currentFile && !selectedFile && (
-        <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
-          <div className="flex items-center space-x-3">
-            <CheckCircle className="w-5 h-5 text-green-600" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-green-900">Current file uploaded</p>
-              <p className="text-xs text-green-700">
-                {type === 'image' ? 'Profile picture' : 'Resume'} is set
-              </p>
-              {(() => {
-                // Extract filename from URL
-                const filename = currentFile.split('/').pop() || '';
-                // Decode filename in case it has special characters
-                const decodedFilename = decodeURIComponent(filename);
-                
-                // Make filename more user-friendly
-                let displayName = decodedFilename;
-                
-                // If it's a generated filename (timestamp-random.ext), show just the extension info
-                if (/^\d+-\d+\.(jpg|jpeg|png|gif|pdf|doc|docx)$/i.test(decodedFilename)) {
-                  const extension = decodedFilename.split('.').pop()?.toUpperCase();
-                  displayName = `${type === 'image' ? 'Profile Picture' : 'Resume'}.${extension}`;
-                }
-                
-                return (
-                  <p className="text-xs text-gray-600 truncate mt-1" title={decodedFilename}>
-                    📁 {displayName}
-                  </p>
-                );
-              })()}
+        <div className="space-y-4">
+          {/* Image Preview for Image Type */}
+          {type === 'image' && (
+            <div className="relative w-full max-w-32 h-32">
+              <div className="relative overflow-hidden rounded-2xl border-2 border-slate-200 shadow-lg w-full h-full">
+                <img 
+                  src={currentFile} 
+                  alt="Profile Picture" 
+                  className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300" />
+              </div>
+              
+                              {/* Remove Button Overlay - Only Visible When Editing */}
+                {isEditing && (
+                  <button
+                    onClick={handleRemove}
+                    className="absolute top-2 right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110 z-10"
+                    title="Remove profile picture"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
             </div>
-          </div>
-          <button
-            onClick={handleRemove}
-            className="text-green-600 hover:text-green-800 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          )}
+          
+          {/* Document Preview for Document Type */}
+          {type === 'document' && (
+            <div className="relative w-full max-w-48 h-32">
+              <div className="relative overflow-hidden rounded-2xl border-2 border-slate-200 shadow-lg bg-gradient-to-br from-slate-50 to-white w-full h-full">
+                <div className="flex flex-col items-center justify-center h-full space-y-2">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <File className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="text-sm font-semibold text-slate-800 text-center">Resume Uploaded</h3>
+                </div>
+                
+                {/* Remove Button Overlay - Only Visible When Editing */}
+                {isEditing && (
+                  <button
+                    onClick={handleRemove}
+                    className="absolute top-2 right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110 z-10"
+                    title="Remove resume"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -204,7 +218,9 @@ const FileUpload = ({
       {/* File Upload Area */}
       {(!currentFile || selectedFile) && (
         <div
-          className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${
+          className={`relative border-2 border-dashed rounded-2xl p-4 transition-colors ${
+            type === 'document' ? 'w-48 h-32' : 'w-32 h-32'
+          } ${
             dragActive
               ? 'border-blue-500 bg-blue-50'
               : selectedFile
@@ -226,10 +242,10 @@ const FileUpload = ({
 
           {selectedFile ? (
             <div className="text-center">
-              <div className="flex items-center justify-center mb-3">
+              <div className="flex items-center justify-center mb-2">
                 {getFileIcon()}
               </div>
-              <p className="text-sm font-medium text-gray-900">{selectedFile.name}</p>
+              <p className="text-xs font-medium text-gray-900 truncate">{selectedFile.name}</p>
               <p className="text-xs text-gray-500">{formatFileSize(selectedFile.size)}</p>
               
               {/* Only show manual upload buttons if onFileSelect is not provided (manual upload mode) */}
@@ -268,13 +284,12 @@ const FileUpload = ({
             </div>
           ) : (
             <div className="text-center">
-              <Upload className="mx-auto h-12 w-12 text-gray-400" />
-              <div className="mt-4">
-                <p className="text-sm text-gray-600">
+              <Upload className="mx-auto h-8 w-8 text-gray-400" />
+              <div className="mt-2">
+                <p className="text-xs text-gray-600">
                   <span className="font-medium text-blue-600 hover:text-blue-500 cursor-pointer">
                     Click to upload
-                  </span>{' '}
-                  or drag and drop
+                  </span>
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
                   {type === 'image' 

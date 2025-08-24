@@ -1,7 +1,8 @@
-import { IsOptional, IsString, IsEnum, IsUrl } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsUrl, IsEmail, IsBoolean } from 'class-validator';
 import { collegeprofile_institutionType } from '@prisma/client';
 
 export class UpdateCollegeProfileDto {
+  // College Profile Fields
   @IsOptional()
   @IsString()
   institutionName?: string;
@@ -53,4 +54,21 @@ export class UpdateCollegeProfileDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  // User Information Fields (for email/phone updates)
+  @IsOptional()
+  @IsEmail()
+  userEmail?: string;
+
+  @IsOptional()
+  @IsString()
+  userPhone?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  updateUserEmail?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  updateUserPhone?: boolean;
 }
