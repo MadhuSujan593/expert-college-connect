@@ -65,12 +65,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         throw new UnauthorizedException('User not found or inactive');
       }
 
-      // Check if email is verified (required for all authenticated operations)
-      if (!user.isEmailVerified) {
-        throw new UnauthorizedException('Email not verified');
-      }
 
-      // Check if token is still valid in sessions
+     
       const session = await this.prisma.session.findFirst({
         where: {
           userId,
@@ -80,8 +76,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       });
 
       if (!session) {
+        console.log('❌ JWT Strategy - Session not found or expired for user:', userId);
+        console.log('🔍 JWT Strategy - Available sessions for user:', await this.prisma.session.findMany({
+          where: { userId },
+          select: { id: true, isActive: true, expiresAt: true, createdAt: true }
+        }));
         throw new UnauthorizedException('Session expired or invalid');
       }
+
 
       // Add user info to request
       request.user = {
@@ -99,7 +101,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       }
       
       // Log unexpected errors
-      console.error('JWT validation error:', error);
       throw new UnauthorizedException('Token validation failed');
     }
   }

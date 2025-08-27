@@ -208,72 +208,88 @@ export class AuthService {
    * User Login
    */
   async login(loginDto: LoginDto): Promise<LoginResponse> {
-    const { identifier, password } = loginDto;
+    try {
+      
+      const { identifier, password } = loginDto;
 
-    // Determine if identifier is email or phone
-    const isEmail = identifier.includes('@');
-    const isPhone = /^\+?[\d\s\-\(\)]+$/.test(identifier);
+      // Determine if identifier is email or phone
+      const isEmail = identifier.includes('@');
+      const isPhone = /^\+?[\d\s\-\(\)]+$/.test(identifier);
 
-    if (!isEmail && !isPhone) {
-      throw new BadRequestException('Please enter a valid email address or phone number');
-    }
-
-    // Find user by email or phone
-    const user = await this.prisma.user.findFirst({
-      where: {
-        OR: [
-          { email: isEmail ? identifier : undefined },
-          { phone: isPhone ? identifier : undefined }
-        ],
-        isActive: true,
-        isDeleted: false,
-      },
-      include: {
-        expertprofile: true,
-        collegeprofile: true,
+      if (!isEmail && !isPhone) {
+        throw new BadRequestException('Please enter a valid email address or phone number');
       }
-    });
 
-    if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      
+
+      // Find user by email or phone
+      const user = await this.prisma.user.findFirst({
+        where: {
+          OR: [
+            { email: isEmail ? identifier : undefined },
+            { phone: isPhone ? identifier : undefined }
+          ],
+          isActive: true,
+          isDeleted: false,
+        },
+        include: {
+          expertprofile: true,
+          collegeprofile: true,
+        }
+      });
+
+      if (!user) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+
+      console.log('✅ Auth Service - User found:', { id: user.id, email: user.email, role: user.role });
+
+      // Verify password
+      const isPasswordValid = await this.verifyPassword(password, user.password);
+      if (!isPasswordValid) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+
+
+      
+
+      // Update last login
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { lastLoginAt: new Date() }
+      });
+
+      console.log('✅ Auth Service - Last login updated');
+
+      // Generate tokens
+      console.log('🔍 Auth Service - Generating tokens for user:', user.id);
+      const tokens = await this.generateTokens(user.id);
+      console.log('✅ Auth Service - Tokens generated successfully');
+      
+      // Create session
+      console.log('🔍 Auth Service - Creating session for user:', user.id);
+      await this.createSession(user.id, tokens.accessToken);
+      console.log('✅ Auth Service - Session created successfully');
+
+      return {
+        user: {
+          id: user.id,
+          email: user.email,
+          phone: user.phone,
+          fullName: user.fullName,
+          role: user.role,
+          isEmailVerified: user.isEmailVerified,
+          isPhoneVerified: user.isPhoneVerified,
+          expertProfile: user.expertprofile,
+          collegeProfile: user.collegeprofile,
+        },
+        tokens,
+        message: 'Login successful',
+      };
+    } catch (error) {
+      console.error('❌ Auth Service - Login failed:', error);
+      throw error;
     }
-
-    // Verify password
-    const isPasswordValid = await this.verifyPassword(password, user.password);
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    // Note: Email verification is optional, so we don't block login if email is not verified
-    // Users can still login even without verifying their email/phone
-
-    // Update last login
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date() }
-    });
-
-    // Generate tokens
-    const tokens = await this.generateTokens(user.id);
-    
-    // Create session
-    await this.createSession(user.id, tokens.accessToken);
-
-    return {
-      user: {
-        id: user.id,
-        email: user.email,
-        phone: user.phone,
-        fullName: user.fullName,
-        role: user.role,
-        isEmailVerified: user.isEmailVerified,
-        isPhoneVerified: user.isPhoneVerified,
-        expertProfile: user.expertprofile,
-        collegeProfile: user.collegeprofile,
-      },
-      tokens,
-      message: 'Login successful',
-    };
   }
 
   /**
@@ -722,63 +738,84 @@ export class AuthService {
    * Generate JWT Tokens
    */
   private async generateTokens(userId: string) {
-    const payload = { sub: userId, type: 'access' };
-    const refreshPayload = { sub: userId, type: 'refresh' };
+    try {
+      
+      const payload = { sub: userId, type: 'access' };
+      const refreshPayload = { sub: userId, type: 'refresh' };
 
-    const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(payload, {
-        secret: this.configService.get('JWT_SECRET'),
-        expiresIn: this.configService.get('JWT_EXPIRES_IN', '15m'),
-      }),
-      this.jwtService.signAsync(refreshPayload, {
-        secret: this.configService.get('JWT_REFRESH_SECRET'),
-        expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN', '7d'),
-      }),
-    ]);
+      const jwtExpiresIn = this.configService.get('JWT_EXPIRES_IN', '2h');
+      const refreshExpiresIn = this.configService.get('JWT_REFRESH_EXPIRES_IN', '7d');
+      
+      
+      const [accessToken, refreshToken] = await Promise.all([
+        this.jwtService.signAsync(payload, {
+          secret: this.configService.get('JWT_SECRET'),
+          expiresIn: jwtExpiresIn,
+        }),
+        this.jwtService.signAsync(refreshPayload, {
+          secret: this.configService.get('JWT_REFRESH_SECRET'),
+          expiresIn: refreshExpiresIn,
+        }),
+      ]);
 
-    // Store refresh token
-    await this.prisma.refreshtoken.create({
-      data: {
-        id: uuidv4(),
-        userId,
-        token: refreshToken,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-        updatedAt: new Date(),
-      },
-    });
+      // Store refresh token
+      const refreshTokenRecord = await this.prisma.refreshtoken.create({
+        data: {
+          id: uuidv4(),
+          userId,
+          token: refreshToken,
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+          updatedAt: new Date(),
+        },
+      });
 
-    return { accessToken, refreshToken };
+      return { accessToken, refreshToken };
+    } catch (error) {
+      console.error('❌ Auth Service - Failed to generate tokens:', error);
+      throw error;
+    }
   }
 
   /**
    * Create User Session
    */
   private async createSession(userId: string, token: string) {
-    // Get session expiration from config or default to 2 hours
-    const sessionExpiration = this.configService.get('JWT_EXPIRES_IN', '2h');
-    let expiresInMs = 2 * 60 * 60 * 1000; // Default 2 hours
-    
-    // Parse the expiration time
-    if (sessionExpiration.includes('h')) {
-      const hours = parseInt(sessionExpiration.replace('h', ''));
-      expiresInMs = hours * 60 * 60 * 1000;
-    } else if (sessionExpiration.includes('m')) {
-      const minutes = parseInt(sessionExpiration.replace('m', ''));
-      expiresInMs = minutes * 60 * 1000;
-    } else if (sessionExpiration.includes('d')) {
-      const days = parseInt(sessionExpiration.replace('d', ''));
-      expiresInMs = days * 24 * 60 * 60 * 1000;
+    try {
+      
+      // Get session expiration from config or default to match token expiration
+      const sessionExpiration = this.configService.get('JWT_EXPIRES_IN', '2h');
+      let expiresInMs = 2 * 60 * 60 * 1000; // Default 2 hours to match token expiration
+      
+      // Parse the expiration time
+      if (sessionExpiration.includes('h')) {
+        const hours = parseInt(sessionExpiration.replace('h', ''));
+        expiresInMs = hours * 60 * 60 * 1000;
+      } else if (sessionExpiration.includes('m')) {
+        const minutes = parseInt(sessionExpiration.replace('m', ''));
+        expiresInMs = minutes * 60 * 1000;
+      } else if (sessionExpiration.includes('d')) {
+        const days = parseInt(sessionExpiration.replace('d', ''));
+        expiresInMs = days * 24 * 60 * 60 * 1000;
+      }
+      
+      const expiresAt = new Date(Date.now() + expiresInMs);
+      
+      const session = await this.prisma.session.create({
+        data: {
+          id: uuidv4(),
+          userId,
+          token,
+          expiresAt,
+          updatedAt: new Date(),
+        },
+      });
+      
+      
+      return session;
+    } catch (error) {
+      console.error('❌ Auth Service - Failed to create session:', error);
+      throw error;
     }
-    
-    await this.prisma.session.create({
-      data: {
-        id: uuidv4(),
-        userId,
-        token,
-        expiresAt: new Date(Date.now() + expiresInMs),
-        updatedAt: new Date(),
-      },
-    });
   }
 
   /**
