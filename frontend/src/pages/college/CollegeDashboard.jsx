@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Home, 
@@ -16,7 +16,6 @@ import {
   Filter, 
   MapPin,
   Calendar, 
-  DollarSign, 
   Clock,
   CheckCircle, 
   Award, 
@@ -27,7 +26,9 @@ import {
   Menu,
   ChevronRight,
   AlertCircle,
-  Shield
+  Shield,
+  Mail,
+  Phone
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import apiService from '../../utils/api';
@@ -35,6 +36,8 @@ import Toast from '../../components/common/Toast';
 import FileUpload from '../../components/common/FileUpload';
 import EmailVerificationModal from '../../components/verification/EmailVerificationModal';
 import PhoneVerificationModal from '../../components/verification/PhoneVerificationModal';
+import VerificationRequirementModal from '../../components/common/VerificationRequirementModal';
+import RequirementCard from '../../components/common/RequirementCard';
 
 const CollegeDashboard = () => {
   const { user, logout, setUser } = useAuth();
@@ -77,6 +80,10 @@ const CollegeDashboard = () => {
   const [currentEmailVerified, setCurrentEmailVerified] = useState(false);
   const [currentPhoneVerified, setCurrentPhoneVerified] = useState(false);
 
+  // Verification requirement modal state
+  const [showVerificationRequirement, setShowVerificationRequirement] = useState(false);
+  const [verificationFeatureName, setVerificationFeatureName] = useState("Requirements Creation");
+
   // Helper function to convert relative URLs to full URLs
   const getFullLogoUrl = (logoUrl) => {
     if (!logoUrl) return null;
@@ -86,6 +93,39 @@ const CollegeDashboard = () => {
     // Convert relative path to full URL
     const baseUrl = 'http://localhost:3000';
     return `${baseUrl}/${logoUrl}`;
+  };
+
+  // Check if user can access requirements creation
+  const canAccessRequirements = () => {
+    return user?.isEmailVerified || user?.isPhoneVerified;
+  };
+
+  // Handle requirements access attempt
+  const handleRequirementsAccess = () => {
+    if (canAccessRequirements()) {
+      setActiveTab('requirements');
+    } else {
+      setVerificationFeatureName("Requirements Creation");
+      setShowVerificationRequirement(true);
+    }
+  };
+
+  // Refresh requirements after posting
+  const refreshRequirements = () => {
+    fetchRequirements();
+  };
+
+  // Wrapper functions for verification from RequirementsTab
+  const handleVerifyEmailFromRequirements = () => {
+    setActiveTab('profile');
+    setEditingProfile(true);
+    setShowEmailVerification(true);
+  };
+
+  const handleVerifyPhoneFromRequirements = () => {
+    setActiveTab('profile');
+    setEditingProfile(true);
+    setShowPhoneVerification(true);
   };
 
   // Email verification handlers
@@ -485,6 +525,31 @@ const CollegeDashboard = () => {
     fetchDashboardData();
   }, []);
 
+  // Fetch requirements from backend
+  const fetchRequirements = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/requirements/recent`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        }
+      });
+
+      if (response.ok) {
+        const requirements = await response.json();
+        setRecentRequirements(requirements);
+        setStats(prev => ({
+          ...prev,
+          totalRequirements: requirements.length
+        }));
+      } else {
+        console.error('Failed to fetch requirements');
+      }
+    } catch (error) {
+      console.error('Error fetching requirements:', error);
+    }
+  };
+
+  // Fetch dashboard data
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
@@ -627,6 +692,13 @@ const CollegeDashboard = () => {
     showToast('success', 'Logged out successfully!');
   };
 
+  useEffect(() => {
+    if (user) {
+      fetchDashboardData();
+      fetchRequirements();
+    }
+  }, [user]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -755,23 +827,39 @@ const CollegeDashboard = () => {
                 label="Requirements"
                 icon={FileText}
                 isActive={activeTab === 'requirements'}
-                onClick={setActiveTab}
+                onClick={handleRequirementsAccess}
               />
               <SidebarItem
                 id="experts"
                 label="Expert Directory"
                 icon={Users}
                 isActive={activeTab === 'experts'}
-                onClick={setActiveTab}
+                onClick={(tabId) => {
+                  if (tabId === 'experts' && !canAccessRequirements()) {
+                    setVerificationFeatureName("Expert Directory");
+                    setShowVerificationRequirement(true);
+                  } else {
+                    setActiveTab(tabId);
+                  }
+                }}
               />
               <SidebarItem
                 id="ratings"
                 label="Ratings & Trust"
                 icon={Award}
                 isActive={activeTab === 'ratings'}
-                onClick={setActiveTab}
+                onClick={(tabId) => {
+                  if (tabId === 'ratings' && !canAccessRequirements()) {
+                    setVerificationFeatureName("Ratings & Trust");
+                    setShowVerificationRequirement(true);
+                  } else {
+                    setActiveTab(tabId);
+                  }
+                }}
               />
             </nav>
+
+
 
             {/* Logout Button */}
             <div className="px-6 py-4 border-t border-slate-200/60 mt-auto">
@@ -863,7 +951,7 @@ const CollegeDashboard = () => {
                       <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        onClick={() => setActiveTab('requirements')}
+                        onClick={handleRequirementsAccess}
                         className="group flex items-center space-x-4 p-5 bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl hover:from-blue-100 hover:to-blue-200/50 transition-all duration-300"
                       >
                         <div className="p-3 bg-blue-600 rounded-xl group-hover:bg-blue-700 transition-colors">
@@ -885,7 +973,7 @@ const CollegeDashboard = () => {
           </div>
                         <div className="text-left">
                           <p className="font-semibold text-slate-900">Find Experts</p>
-                          <p className="text-sm text-slate-600">Search expert directory</p>
+                          <p className="text-sm text-slate-600">Search for qualified experts</p>
         </div>
                       </motion.button>
                       <motion.button
@@ -895,52 +983,69 @@ const CollegeDashboard = () => {
                         className="group flex items-center space-x-4 p-5 bg-gradient-to-br from-violet-50 to-violet-100/50 rounded-xl hover:from-violet-100 hover:to-violet-200/50 transition-all duration-300"
                       >
                         <div className="p-3 bg-violet-600 rounded-xl group-hover:bg-violet-700 transition-colors">
-                          <Building2 className="h-5 w-5 text-white" />
+                          <Edit3 className="h-5 w-5 text-white" />
             </div>
                         <div className="text-left">
                           <p className="font-semibold text-slate-900">Update Profile</p>
-                          <p className="text-sm text-slate-600">Manage institution info</p>
+                          <p className="text-sm text-slate-600">Keep information current</p>
           </div>
                       </motion.button>
       </div>
     </div>
 
+                
+
     {/* Recent Requirements */}
-                  <div className="bg-white rounded-2xl border border-slate-200/60 p-6">
-                    <h3 className="text-lg font-semibold text-slate-900 mb-6">Recent Requirements</h3>
-      <div className="space-y-4">
-        {recentRequirements.length > 0 ? (
-          recentRequirements.map((requirement) => (
-                          <motion.div
-                            key={requirement.id}
-                            whileHover={{ x: 4 }}
-                            className="flex items-center space-x-4 p-4 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                                      <div className="space-y-6">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold text-slate-900">Recent Requirements</h3>
+                        {recentRequirements.length > 0 && (
+                          <button
+                            onClick={() => setActiveTab('requirements')}
+                            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                           >
-                            <div className="p-2.5 bg-blue-100 rounded-xl">
-                              <FileText className="h-4 w-4 text-blue-600" />
-                            </div>
-                <div className="flex-1">
-                              <p className="text-sm font-semibold text-slate-900">{requirement.title}</p>
-                              <p className="text-xs text-slate-500">{requirement.category}</p>
-                </div>
-                {requirement.isUrgent && (
-                  <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">
-                    Urgent
-                  </span>
-                )}
-                          </motion.div>
-          ))
-        ) : (
+                            View All
+                          </button>
+                        )}
+                      </div>
+                      
+                      <div className="space-y-4">
+                        {recentRequirements.length === 0 ? (
           <div className="text-center py-8">
             <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-            <p className="text-gray-500">No requirements posted yet</p>
+                            <p className="text-gray-500 mb-3">No requirements posted yet</p>
+                            {canAccessRequirements() ? (
+                              <button 
+                                onClick={handleRequirementsAccess}
+                                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                              >
+                                Post your first requirement
+                              </button>
+                            ) : (
+                              <div className="space-y-3">
                           <button 
                             onClick={() => setActiveTab('requirements')}
-                            className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                           >
               Post your first requirement
             </button>
           </div>
+                            )}
+                          </div>
+                        ) : (
+                          <>
+                            {/* Show only latest 2 requirements */}
+                            {recentRequirements.slice(0, 2).map((requirement, index) => (
+                              <RequirementCard
+                                key={requirement.id}
+                                requirement={requirement}
+                                index={index}
+                                showActions={false}
+                                compact={true}
+                                onClick={() => setActiveTab('requirements')}
+                              />
+                            ))}
+                          </>
         )}
       </div>
     </div>
@@ -989,17 +1094,83 @@ const CollegeDashboard = () => {
 
               {/* Requirements Tab */}
               {activeTab === 'requirements' && (
-                <RequirementsTab recentRequirements={recentRequirements} />
+                <>
+                  <RequirementsTab 
+                    recentRequirements={recentRequirements} 
+                    user={user} 
+                    onVerifyEmail={handleVerifyEmailFromRequirements} 
+                    onVerifyPhone={handleVerifyPhoneFromRequirements}
+                    onPostRequirement={refreshRequirements}
+                    showToast={showToast}
+                    setActiveTab={setActiveTab}
+                  />
+
+
+                </>
               )}
 
               {/* Experts Tab */}
               {activeTab === 'experts' && (
+                canAccessRequirements() ? (
                 <ExpertsTab />
+                ) : (
+                  <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+                    <div className="text-center py-8">
+                      <Users className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-500 mb-3">Verification required to access Expert Directory</p>
+                      <div className="space-y-2">
+                        {!user?.isEmailVerified && (
+                          <button
+                            onClick={handleVerifyEmailFromRequirements}
+                            className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700"
+                          >
+                            Verify Email
+                          </button>
+                        )}
+                        {!user?.isPhoneVerified && (
+                          <button
+                            onClick={handleVerifyPhoneFromRequirements}
+                            className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700"
+                          >
+                            Verify Phone
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
               )}
 
               {/* Ratings Tab */}
               {activeTab === 'ratings' && (
+                canAccessRequirements() ? (
                 <RatingsTab />
+                ) : (
+                  <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+                    <div className="text-center py-8">
+                      <Star className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-500 mb-3">Verification required to access Ratings & Trust</p>
+                      <div className="space-y-2">
+                        {!user?.isEmailVerified && (
+                          <button
+                            onClick={handleVerifyEmailFromRequirements}
+                            className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700"
+                          >
+                            Verify Email
+                          </button>
+                        )}
+                        {!user?.isPhoneVerified && (
+                          <button
+                            onClick={handleVerifyPhoneFromRequirements}
+                            className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700"
+                          >
+                            Verify Phone
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
               )}
           </div>
           </main>
@@ -1077,7 +1248,50 @@ const CollegeDashboard = () => {
         />
       )}
 
-      {/* Verification Modals - Now handled inline in ProfileTab */}
+      {/* Verification Modals */}
+      <EmailVerificationModal
+        isOpen={showEmailVerification}
+        email={profileForm.email || user?.email}
+        isVerifying={isEmailVerifying}
+        onVerify={handleEmailVerification}
+        onClose={() => setShowEmailVerification(false)}
+        onSendOtp={handleSendEmailOtpForUpdate}
+        isVerified={currentEmailVerified}
+        isSending={isEmailSending}
+        otpSent={emailOtpSent}
+      />
+
+      <PhoneVerificationModal
+        isOpen={showPhoneVerification}
+        phone={profileForm.phone || user?.phone}
+        isVerifying={isPhoneVerifying}
+        onVerify={handlePhoneVerification}
+        onClose={() => setShowPhoneVerification(false)}
+        onSendOtp={handleSendPhoneOtpForUpdate}
+        isVerified={currentPhoneVerified}
+        isSending={isPhoneSending}
+        otpSent={phoneOtpSent}
+      />
+
+      {/* Verification Requirement Modal */}
+      <VerificationRequirementModal
+        isOpen={showVerificationRequirement}
+        onClose={() => setShowVerificationRequirement(false)}
+        onVerifyEmail={() => {
+          setShowVerificationRequirement(false);
+          setActiveTab('profile');
+          setEditingProfile(true);
+          setShowEmailVerification(true);
+        }}
+        onVerifyPhone={() => {
+          setShowVerificationRequirement(false);
+          setActiveTab('profile');
+          setEditingProfile(true);
+          setShowPhoneVerification(true);
+        }}
+        user={user}
+        featureName={verificationFeatureName}
+      />
   </div>
 );
 };
@@ -1454,7 +1668,7 @@ const ProfileTab = ({
                     {/* Email Verification Modal - Inline */}
                     <EmailVerificationModal
                       isOpen={showEmailVerification}
-                      email={profileForm.email}
+                      email={profileForm.email || user?.email}
                       isVerifying={isEmailVerifying}
                       onVerify={onEmailVerification}
                       onClose={() => setShowEmailVerification(false)}
@@ -1607,7 +1821,7 @@ const ProfileTab = ({
                   {/* Phone Verification Modal - Inline */}
                   <PhoneVerificationModal
                     isOpen={showPhoneVerification}
-                    phone={profileForm.phone}
+                    phone={profileForm.phone || user?.phone}
                     isVerifying={isPhoneVerifying}
                     onVerify={onPhoneVerification}
                     onClose={() => setShowPhoneVerification(false)}
@@ -1770,7 +1984,11 @@ const ProfileTab = ({
 };
 
 // Requirements Tab Component - Enhanced with form
-const RequirementsTab = ({ recentRequirements }) => {
+const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhone, onPostRequirement, showToast, setActiveTab }) => {
+  // Check if user can access requirements creation
+  const canAccessRequirements = () => {
+    return user?.isEmailVerified || user?.isPhoneVerified;
+  };
   const [showForm, setShowForm] = useState(false);
   const [requirementForm, setRequirementForm] = useState({
     title: '',
@@ -1781,6 +1999,78 @@ const RequirementsTab = ({ recentRequirements }) => {
     isUrgent: false,
     requirements: ''
   });
+  const [allRequirements, setAllRequirements] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(1);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [editingRequirement, setEditingRequirement] = useState(null);
+  const [showEditForm, setShowEditForm] = useState(false);
+
+  // Load initial requirements
+  useEffect(() => {
+    loadRequirements();
+  }, []);
+
+  const loadRequirements = async (pageNum = 1, append = false) => {
+    try {
+      setLoading(true);
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/requirements?page=${pageNum}&limit=8`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          }
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (append) {
+          setAllRequirements(prev => [...prev, ...data.requirements]);
+        } else {
+          setAllRequirements(data.requirements);
+        }
+        setHasMore(data.hasMore);
+        setPage(pageNum);
+      } else {
+        showToast('error', 'Failed to load requirements');
+      }
+    } catch (error) {
+      console.error('Error loading requirements:', error);
+      showToast('error', 'Failed to load requirements');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadMore = async () => {
+    if (isLoadingMore || !hasMore) return;
+    
+    setIsLoadingMore(true);
+    await loadRequirements(page + 1, true);
+    setIsLoadingMore(false);
+  };
+
+  const loadRecentRequirements = async () => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/requirements/recent`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          }
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setRecentRequirements(data);
+      }
+    } catch (error) {
+      console.error('Error loading recent requirements:', error);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -1790,11 +2080,187 @@ const RequirementsTab = ({ recentRequirements }) => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: Implement API call
-    console.log('New requirement:', requirementForm);
+    
+    try {
+      // Prepare the data, handling empty deadline properly
+      const formData = { ...requirementForm };
+      
+      // If deadline is empty string, set it to undefined to avoid validation issues
+      if (formData.deadline === '') {
+        formData.deadline = undefined;
+      }
+      
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/requirements`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Requirement created successfully:', result);
+        
+        // Reset form and close
     setShowForm(false);
+        setRequirementForm({
+          title: '',
+          category: '',
+          description: '',
+          budget: '',
+          deadline: '',
+          isUrgent: false,
+          requirements: ''
+        });
+        
+        // Refresh requirements list
+        if (onPostRequirement) {
+          onPostRequirement();
+        }
+        
+        // Reload requirements
+        loadRequirements(1, false);
+        
+        // Show success message
+        showToast('success', 'Requirement created successfully!');
+      } else {
+        const errorData = await response.json();
+        console.error('❌ Backend error:', errorData);
+        showToast('error', errorData.message || 'Failed to create requirement');
+      }
+    } catch (error) {
+      console.error('❌ Error creating requirement:', error);
+      showToast('error', 'Failed to create requirement. Please try again.');
+    }
+  };
+
+  const handleEdit = (requirement) => {
+    setEditingRequirement(requirement);
+    setRequirementForm({
+      title: requirement.title,
+      category: requirement.category,
+      description: requirement.description,
+      budget: requirement.budget?.toString() || '',
+      deadline: requirement.deadline ? new Date(requirement.deadline).toISOString().split('T')[0] : '',
+      isUrgent: requirement.isUrgent,
+      requirements: ''
+    });
+    setShowEditForm(true);
+    setShowForm(false);
+  };
+
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    
+    console.log('🔍 [FRONTEND] UPDATE BUTTON CLICKED');
+    console.log('🔍 [FRONTEND] editingRequirement:', editingRequirement);
+    console.log('🔍 [FRONTEND] requirementForm:', requirementForm);
+    
+    if (!editingRequirement || !editingRequirement.id) {
+      console.error('❌ [FRONTEND] No editing requirement found!');
+      showToast('error', 'No requirement selected for editing');
+      return;
+    }
+    
+    try {
+      const formData = { ...requirementForm };
+      
+      // If deadline is empty string, set it to undefined
+      if (formData.deadline === '') {
+        formData.deadline = undefined;
+      }
+      
+      const apiUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/requirements/${editingRequirement.id}`;
+      console.log('🔍 [FRONTEND] About to send PATCH request');
+      console.log('🔍 [FRONTEND] API URL:', apiUrl);
+      console.log('🔍 [FRONTEND] Request data:', formData);
+      console.log('🔍 [FRONTEND] Access token exists:', !!localStorage.getItem('accessToken'));
+      
+      const response = await fetch(apiUrl, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        },
+        body: JSON.stringify(formData),
+      });
+
+      console.log('🔍 [FRONTEND] Response received');
+      console.log('🔍 [FRONTEND] Response status:', response.status);
+      console.log('🔍 [FRONTEND] Response ok:', response.ok);
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ [FRONTEND] Requirement updated successfully:', result);
+        
+        // Reset form and close
+        setShowEditForm(false);
+        setEditingRequirement(null);
+        setRequirementForm({
+          title: '',
+          category: '',
+          description: '',
+          budget: '',
+          deadline: '',
+          isUrgent: false,
+          requirements: ''
+        });
+        
+        // Refresh requirements list
+        showToast('success', 'Requirement updated successfully!');
+        loadRequirements(1, false);
+        loadRecentRequirements();
+      } else {
+        const errorData = await response.json();
+        console.error('❌ [FRONTEND] Backend error:', errorData);
+        showToast('error', `Error: ${errorData.message || 'Failed to update requirement'}`);
+      }
+    } catch (error) {
+      console.error('❌ [FRONTEND] Network/Request error:', error);
+      console.error('❌ [FRONTEND] Error name:', error.name);
+      console.error('❌ [FRONTEND] Error message:', error.message);
+      showToast('error', 'Failed to update requirement');
+    }
+  };
+
+  const handleDelete = async (requirementId) => {
+    if (!window.confirm('Are you sure you want to delete this requirement?')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/requirements/${requirementId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        },
+      });
+
+      if (response.ok) {
+        console.log('✅ Requirement deleted successfully');
+        
+        // Refresh requirements list
+        showToast('success', 'Requirement deleted successfully!');
+        loadRequirements(1, false);
+        loadRecentRequirements();
+      } else {
+        const errorData = await response.json();
+        console.error('❌ Backend error:', errorData);
+        showToast('error', `Error: ${errorData.message || 'Failed to delete requirement'}`);
+      }
+    } catch (error) {
+      console.error('❌ Error deleting requirement:', error);
+      showToast('error', 'Failed to delete requirement');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setShowEditForm(false);
+    setEditingRequirement(null);
     setRequirementForm({
       title: '',
       category: '',
@@ -1807,43 +2273,109 @@ const RequirementsTab = ({ recentRequirements }) => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-  <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
-    <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">Academic Requirements Management</h3>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
+      {/* Premium Header Section */}
+      <div className="relative overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-[0.03]">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `
+              radial-gradient(circle at 20% 80%, #3B82F6 1px, transparent 1px),
+              radial-gradient(circle at 80% 20%, #6366F1 1px, transparent 1px),
+              radial-gradient(circle at 40% 40%, #8B5CF6 1px, transparent 1px)
+            `,
+            backgroundSize: '60px 60px'
+          }}></div>
+        </div>
+        
+        {/* Glassmorphism Header */}
+        <div className="relative backdrop-blur-xl bg-white/70 border border-white/20 rounded-2xl shadow-xl p-4 sm:p-6 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">Streamline your academic requirements with enterprise-grade tools</p>
+              </div>
+            </div>
+            
           <button 
             onClick={() => setShowForm(!showForm)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            {showForm ? 'Cancel' : 'Post New Requirement'}
+              disabled={!canAccessRequirements()}
+              className={`relative group w-full sm:w-auto px-4 sm:px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform ${
+                canAccessRequirements()
+                  ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl hover:-translate-y-0.5'
+                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+              }`}
+            >
+              {showForm ? (
+                <span className="flex items-center justify-center sm:justify-start gap-2 text-sm">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Cancel
+                </span>
+              ) : (
+                <span className="flex items-center justify-center sm:justify-start gap-2 text-sm">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Create Requirement
+                </span>
+              )}
       </button>
+          </div>
     </div>
 
-        {/* Add Requirement Form */}
+        {/* Premium Form */}
         {showForm && (
-          <form onSubmit={handleSubmit} className="bg-gray-50 rounded-lg p-6 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Requirement Title *</label>
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="relative backdrop-blur-xl bg-white/80 border border-white/30 rounded-xl shadow-lg p-4 mb-4"
+          >
+            {/* Form Background Pattern */}
+            <div className="absolute inset-0 opacity-[0.02] rounded-xl">
+              <div className="absolute inset-0" style={{
+                backgroundImage: `
+                  linear-gradient(45deg, #3B82F6 1px, transparent 1px),
+                  linear-gradient(-45deg, #6366F1 1px, transparent 1px)
+                `,
+                backgroundSize: '40px 40px'
+              }}></div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="relative z-10 space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-slate-700 uppercase tracking-wide">
+                    Requirement Title *
+                  </label>
                 <input
                   type="text"
                   name="title"
                   value={requirementForm.title}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g., Data Science Workshop"
+                    className="w-full px-3 py-2 bg-white/50 backdrop-blur-sm border border-slate-200/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 placeholder:text-slate-400"
+                    placeholder="e.g., Advanced Data Science Workshop"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+                
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-slate-700 uppercase tracking-wide">
+                    Category *
+                  </label>
                                  <select
                    name="category"
                    value={requirementForm.category}
                    onChange={handleInputChange}
                    required
-                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 bg-white/50 backdrop-blur-sm border border-slate-200/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300"
                  >
                    <option value="">Select Category</option>
                    <optgroup label="Technology & Innovation">
@@ -1883,128 +2415,334 @@ const RequirementsTab = ({ recentRequirements }) => {
               </div>
             </div>
 
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-slate-700 uppercase tracking-wide">
+                  Description *
+                </label>
             <textarea
                 name="description"
                 value={requirementForm.description}
                 onChange={handleInputChange}
                 required
-              rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Describe your requirement in detail..."
+                  rows={2}
+                  className="w-full px-3 py-2 bg-white/50 backdrop-blur-sm border border-slate-200/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 placeholder:text-slate-400 resize-none"
+                  placeholder="Provide a comprehensive description of your requirement..."
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                             <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-2">Budget (₹)</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-slate-700 uppercase tracking-wide">
+                    Budget (₹)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500 font-medium text-sm">₹</span>
                  <input
                    type="number"
                    name="budget"
                    value={requirementForm.budget}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full pl-8 pr-3 py-2 bg-white/50 backdrop-blur-sm border border-slate-200/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 placeholder:text-slate-400"
                    placeholder="0"
                  />
                </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Deadline</label>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-slate-700 uppercase tracking-wide">
+                    Deadline
+                  </label>
                 <input
                   type="date"
                   name="deadline"
                   value={requirementForm.deadline}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 bg-white/50 backdrop-blur-sm border border-slate-200/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300"
                 />
               </div>
-              <div className="flex items-center">
+                
+                <div className="flex items-center space-x-3 pt-6">
+                  <div className="relative">
                 <input
                   type="checkbox"
                   name="isUrgent"
                   checked={requirementForm.isUrgent}
                   onChange={handleInputChange}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      className="w-4 h-4 text-blue-600 focus:ring-blue-500/50 border-slate-300 rounded transition-all duration-200"
                 />
-                <label className="ml-2 text-sm text-gray-700">Mark as Urgent</label>
+                  </div>
+                  <label className="text-sm font-semibold text-slate-700">Mark as Urgent</label>
               </div>
         </div>
 
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Specific Requirements</label>
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-slate-700 uppercase tracking-wide">
+                  Specific Requirements
+                </label>
             <textarea
                 name="requirements"
                 value={requirementForm.requirements}
               onChange={handleInputChange}
                 rows={2}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Any specific skills, experience, or qualifications needed..."
+                  className="w-full px-3 py-2 bg-white/50 backdrop-blur-sm border border-slate-200/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 placeholder:text-slate-400 resize-none"
+                  placeholder="Specify any particular skills, experience, or qualifications needed..."
             />
         </div>
 
-            <div className="flex space-x-4">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
             <button
                 type="submit"
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-                Post Requirement
+                  className="relative group px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold shadow-lg hover:bg-blue-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+                >
+                  <span className="flex items-center justify-center gap-2 text-sm">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Create Requirement
+                  </span>
             </button>
+                
             <button
                 type="button"
                 onClick={() => setShowForm(false)}
-              className="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                  className="px-6 py-2 bg-slate-100 text-slate-700 rounded-lg font-semibold hover:bg-slate-200 transition-all duration-300 border border-slate-200"
             >
               Cancel
             </button>
           </div>
           </form>
+          </motion.div>
         )}
 
-        {/* Recent Requirements List */}
+        {/* Requirements Edit Modal */}
+        {showEditForm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-2xl bg-white rounded-xl shadow-2xl"
+            >
+              <div className="flex items-center justify-between p-6 border-b border-slate-200">
+                <h3 className="text-xl font-bold text-slate-900">Edit Requirement</h3>
+                <button
+                  onClick={handleCancelEdit}
+                  className="p-2 text-slate-400 hover:text-slate-600 transition-colors rounded-lg hover:bg-slate-100"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <form onSubmit={handleUpdate} className="p-6 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Title</label>
+                    <input
+                      type="text"
+                      name="title"
+                      value={requirementForm.title}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Category</label>
+                    <select
+                      name="category"
+                      value={requirementForm.category}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    >
+                      <option value="">Select Category</option>
+                      <option value="DATA_SCIENCE_AI">Data Science & AI</option>
+                      <option value="CYBERSECURITY">Cybersecurity</option>
+                      <option value="SOFTWARE_DEVELOPMENT">Software Development</option>
+                      <option value="INNOVATION">Innovation & Design</option>
+                      <option value="DIGITAL_MARKETING">Digital Marketing</option>
+                      <option value="BUSINESS_STRATEGY">Business Strategy</option>
+                      <option value="FINANCE">Finance</option>
+                      <option value="CONSULTING">Consulting</option>
+                      <option value="EDUCATION">Education</option>
+                      <option value="RESEARCH">Research Collaboration</option>
+                      <option value="WORKSHOP">Workshop</option>
+                      <option value="GUEST_LECTURE">Guest Lecture</option>
+                      <option value="MENTORING">Mentoring</option>
+                      <option value="CURRICULUM_REVIEW">Curriculum Review</option>
+                      <option value="INDUSTRY_PROJECT">Industry Project</option>
+                      <option value="QUESTION_PAPER_SETTING">Question Paper Setting</option>
+                      <option value="QUESTION_PAPER_EVALUATION">Question Paper Evaluation</option>
+                      <option value="TRAINING">Training & Development</option>
+                      <option value="PUBLIC_SPEAKING">Public Speaking</option>
+                      <option value="LEADERSHIP">Leadership Development</option>
+                      <option value="HEALTHCARE">Healthcare</option>
+                      <option value="ENGINEERING">Engineering</option>
+                      <option value="SUSTAINABILITY">Sustainability</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>
+                  <textarea
+                    name="description"
+                    value={requirementForm.description}
+                    onChange={handleInputChange}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Budget (₹)</label>
+                    <input
+                      type="number"
+                      name="budget"
+                      value={requirementForm.budget}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Enter budget amount"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Deadline</label>
+                    <input
+                      type="date"
+                      name="deadline"
+                      value={requirementForm.deadline}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="isUrgent"
+                    checked={requirementForm.isUrgent}
+                    onChange={handleInputChange}
+                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                  />
+                  <label className="ml-2 text-sm text-slate-700">Mark as Urgent</label>
+                </div>
+                
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="submit"
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                  >
+                    Update Requirement
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    className="px-6 py-2 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Compact Requirements List - Only this section is made smaller */}
         <div className="space-y-4">
-          {recentRequirements.length > 0 ? (
-            recentRequirements.map((requirement) => (
-              <div key={requirement.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h4 className="font-medium text-gray-900 mb-1">{requirement.title}</h4>
-                    <p className="text-sm text-gray-600 mb-2">{requirement.category}</p>
-                    <div className="flex items-center space-x-4 text-xs text-gray-500">
-                                             {requirement.budget && (
-                         <span className="flex items-center">
-                           <DollarSign className="w-3 h-3 mr-1" />
-                           ₹{requirement.budget}
-                         </span>
-                       )}
-                      {requirement.deadline && (
-                        <span className="flex items-center">
-                          <Clock className="w-3 h-3 mr-1" />
-                          {new Date(requirement.deadline).toLocaleDateString()}
-                        </span>
-                      )}
+          {/* List Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+            <div className="flex items-center gap-3">
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900">All Requirements</h2>
+              <div className="px-2 sm:px-3 py-1 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-full">
+                <span className="text-xs sm:text-sm font-semibold text-blue-800">{allRequirements.length} requirements</span>
                     </div>
                   </div>
-                  {requirement.isUrgent && (
-                    <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">
-                      Urgent
-                    </span>
+            
+            {allRequirements.length > 0 && (
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Sorted by latest first</span>
+              </div>
                   )}
                 </div>
+
+          {loading && allRequirements.length === 0 ? (
+            <div className="text-center py-8 sm:py-12">
+              <div className="relative">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3 sm:mb-4"></div>
+                <div className="absolute inset-0 w-10 h-10 sm:w-12 sm:h-12 border-4 border-transparent border-t-indigo-600 rounded-full animate-spin mx-auto" style={{ animationDelay: '0.1s' }}></div>
               </div>
-            ))
-          ) : (
-            <div className="text-center py-8">
-              <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-              <p className="text-gray-500">No requirements posted yet</p>
+              <p className="text-slate-600 font-medium text-sm">Loading your requirements...</p>
+            </div>
+          ) : allRequirements.length === 0 ? (
+            <div className="text-center py-8 sm:py-12">
+              <div className="relative">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4 shadow-lg">
+                  <svg className="w-7 h-7 sm:w-8 sm:h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 rounded-2xl blur-lg"></div>
+              </div>
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-2">No requirements yet</h3>
+              <p className="text-slate-600 mb-4 sm:mb-6 max-w-sm mx-auto text-xs sm:text-sm">Start building your academic requirements portfolio to connect with top experts</p>
               <button 
                 onClick={() => setShowForm(true)}
-                className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                className="px-5 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm"
               >
-                Post your first requirement
+                Create Your First Requirement
               </button>
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:gap-4">
+                                          {allRequirements.map((requirement, index) => (
+                              <RequirementCard
+                                key={requirement.id}
+                                requirement={requirement}
+                                index={index}
+                                showActions={true}
+                                compact={false}
+                                onEdit={() => handleEdit(requirement)}
+                                onDelete={() => handleDelete(requirement.id)}
+                              />
+                            ))}
+              
+              {/* Compact Load More Button */}
+              {hasMore && (
+                <div className="text-center pt-4 sm:pt-6">
+                  <button
+                    onClick={loadMore}
+                    disabled={isLoadingMore}
+                    className="group relative w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-slate-100 to-slate-200 text-slate-700 rounded-xl font-semibold hover:from-slate-200 hover:to-slate-300 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed border border-slate-300/50 hover:border-slate-400/50 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                  >
+                    {isLoadingMore ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
+                        <span className="text-sm">Loading more...</span>
+                      </div>
+                    ) : (
+                      <span className="flex items-center justify-center gap-2 text-sm">
+                        <svg className="w-4 h-4 group-hover:rotate-180 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                        Load More Requirements
+                      </span>
+                    )}
+                  </button>
+        </div>
+              )}
             </div>
           )}
         </div>
+
+        
       </div>
     </div>
   );

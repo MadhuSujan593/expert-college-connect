@@ -189,7 +189,7 @@ model refreshtoken {
 }
 
 model requirement {
-  id               String                 @id
+  id               String                 @id @default(cuid())
   collegeProfileId String
   title            String                 @db.VarChar(255)
   description      String                 @db.Text

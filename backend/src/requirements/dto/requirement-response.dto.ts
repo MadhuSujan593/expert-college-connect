@@ -2,6 +2,7 @@ import { requirement_budgetType } from '@prisma/client';
 
 export class RequirementResponseDto {
   id: string;
+  collegeProfileId: string;
   title: string;
   description: string;
   category: string;
@@ -11,15 +12,6 @@ export class RequirementResponseDto {
   deadline?: Date;
   isUrgent: boolean;
   isActive: boolean;
-  department?: string;
-  course?: string;
-  studentCount?: number;
-  additionalRequirements?: string;
-  preferredExpertise?: string;
-  preferredLocation?: string;
   createdAt: Date;
   updatedAt: Date;
-  collegeProfileId: string;
-  collegeName?: string;
-  contactPersonName?: string;
 }
