@@ -38,6 +38,7 @@ import EmailVerificationModal from '../../components/verification/EmailVerificat
 import PhoneVerificationModal from '../../components/verification/PhoneVerificationModal';
 import VerificationRequirementModal from '../../components/common/VerificationRequirementModal';
 import RequirementCard from '../../components/common/RequirementCard';
+import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
 
 const CollegeDashboard = () => {
   const { user, logout, setUser } = useAuth();
@@ -53,6 +54,7 @@ const CollegeDashboard = () => {
     upcomingDeadlines: 0
   });
   const [recentRequirements, setRecentRequirements] = useState([]);
+  const [allRequirements, setAllRequirements] = useState([]);
   const [editingProfile, setEditingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState({});
   const [logoFile, setLogoFile] = useState(null);
@@ -84,6 +86,68 @@ const CollegeDashboard = () => {
   const [showVerificationRequirement, setShowVerificationRequirement] = useState(false);
   const [verificationFeatureName, setVerificationFeatureName] = useState("Requirements Creation");
 
+  // Delete confirmation modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [requirementToDelete, setRequirementToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Delete functions
+  const handleDelete = async (requirementId) => {
+    // Find the requirement to get its title for the modal
+    const requirement = allRequirements?.find(req => req.id === requirementId);
+    if (requirement) {
+      setRequirementToDelete(requirement);
+      setShowDeleteModal(true);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!requirementToDelete) return;
+    
+    setIsDeleting(true);
+    
+    try {
+      console.log('🗑️ Deleting requirement:', requirementToDelete.id);
+      console.log('🔑 Using token:', localStorage.getItem('accessToken') ? 'Token exists' : 'No token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/requirements/${requirementToDelete.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        },
+      });
+      console.log('📡 Delete response status:', response.status);
+      console.log('📡 Delete response ok:', response.ok);
+
+      if (response.ok) {
+        console.log('✅ Requirement deleted successfully');
+        
+        // Refresh requirements list
+        showToast('success', 'Requirement deleted successfully!');
+        console.log('🔄 Calling refreshRequirements...');
+        refreshRequirements();
+        
+        // Close modal and reset state
+        setShowDeleteModal(false);
+        setRequirementToDelete(null);
+      } else {
+        const errorData = await response.json();
+        console.error('❌ Backend error:', errorData);
+        showToast('error', `Error: ${errorData.message || 'Failed to delete requirement'}`);
+      }
+    } catch (error) {
+      console.error('❌ Error deleting requirement:', error);
+      showToast('error', 'Failed to delete requirement');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setRequirementToDelete(null);
+    setIsDeleting(false);
+  };
+
   // Helper function to convert relative URLs to full URLs
   const getFullLogoUrl = (logoUrl) => {
     if (!logoUrl) return null;
@@ -98,6 +162,11 @@ const CollegeDashboard = () => {
   // Check if user can access requirements creation
   const canAccessRequirements = () => {
     return user?.isEmailVerified || user?.isPhoneVerified;
+  };
+
+  // Check if user can access expert directory (only requires authentication)
+  const canAccessExperts = () => {
+    return !!user; // Only requires user to be logged in
   };
 
   // Handle requirements access attempt
@@ -528,18 +597,36 @@ const CollegeDashboard = () => {
   // Fetch requirements from backend
   const fetchRequirements = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/requirements/recent`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-        }
-      });
+      console.log('🔄 fetchRequirements called - fetching both recent and all requirements...');
+      // Fetch both recent requirements and all requirements
+      const [recentResponse, allResponse] = await Promise.all([
+        fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/requirements/recent`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          }
+        }),
+        fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/requirements?page=1&limit=8`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          }
+        })
+      ]);
 
-      if (response.ok) {
-        const requirements = await response.json();
-        setRecentRequirements(requirements);
+      if (recentResponse.ok && allResponse.ok) {
+        const [recentRequirements, allRequirementsData] = await Promise.all([
+          recentResponse.json(),
+          allResponse.json()
+        ]);
+        
+        console.log('📊 Recent requirements fetched:', recentRequirements.length);
+        console.log('📊 All requirements fetched:', allRequirementsData.requirements.length);
+        console.log('📊 All requirements data:', allRequirementsData.requirements);
+        
+        setRecentRequirements(recentRequirements);
+        setAllRequirements(allRequirementsData.requirements);
         setStats(prev => ({
           ...prev,
-          totalRequirements: requirements.length
+          totalRequirements: recentRequirements.length
         }));
       } else {
         console.error('Failed to fetch requirements');
@@ -835,7 +922,7 @@ const CollegeDashboard = () => {
                 icon={Users}
                 isActive={activeTab === 'experts'}
                 onClick={(tabId) => {
-                  if (tabId === 'experts' && !canAccessRequirements()) {
+                  if (tabId === 'experts' && !canAccessExperts()) {
                     setVerificationFeatureName("Expert Directory");
                     setShowVerificationRequirement(true);
                   } else {
@@ -1103,6 +1190,10 @@ const CollegeDashboard = () => {
                     onPostRequirement={refreshRequirements}
                     showToast={showToast}
                     setActiveTab={setActiveTab}
+                    onDelete={handleDelete}
+                    allRequirements={allRequirements}
+                    setAllRequirements={setAllRequirements}
+                    refreshRequirements={refreshRequirements}
                   />
 
 
@@ -1111,8 +1202,12 @@ const CollegeDashboard = () => {
 
               {/* Experts Tab */}
               {activeTab === 'experts' && (
-                canAccessRequirements() ? (
-                <ExpertsTab />
+                canAccessExperts() ? (
+                  <>
+                    {console.log('Rendering ExpertsTab, user:', user)}
+                    {console.log('User object structure:', JSON.stringify(user, null, 2))}
+                    <ExpertsTab user={user} key={`experts-${user?.id || 'no-user'}`} />
+                  </>
                 ) : (
                   <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
                     <div className="text-center py-8">
@@ -1143,8 +1238,8 @@ const CollegeDashboard = () => {
 
               {/* Ratings Tab */}
               {activeTab === 'ratings' && (
-                canAccessRequirements() ? (
-                <RatingsTab />
+                canAccessExperts() ? (
+                <RatingsTab user={user} key={`ratings-${user?.id || 'no-user'}`} />
                 ) : (
                   <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
                     <div className="text-center py-8">
@@ -1291,6 +1386,17 @@ const CollegeDashboard = () => {
         }}
         user={user}
         featureName={verificationFeatureName}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={cancelDelete}
+        onConfirm={confirmDelete}
+        title="Delete Requirement"
+        message="Are you sure you want to delete this requirement? This action will remove it from your dashboard and cannot be undone."
+        itemName={requirementToDelete?.title}
+        isLoading={isDeleting}
       />
   </div>
 );
@@ -1984,7 +2090,7 @@ const ProfileTab = ({
 };
 
 // Requirements Tab Component - Enhanced with form
-const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhone, onPostRequirement, showToast, setActiveTab }) => {
+const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhone, onPostRequirement, showToast, setActiveTab, onDelete, allRequirements, setAllRequirements, refreshRequirements }) => {
   // Check if user can access requirements creation
   const canAccessRequirements = () => {
     return user?.isEmailVerified || user?.isPhoneVerified;
@@ -1999,7 +2105,6 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
     isUrgent: false,
     requirements: ''
   });
-  const [allRequirements, setAllRequirements] = useState([]);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
@@ -2213,7 +2318,6 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
         // Refresh requirements list
         showToast('success', 'Requirement updated successfully!');
         loadRequirements(1, false);
-        loadRecentRequirements();
       } else {
         const errorData = await response.json();
         console.error('❌ [FRONTEND] Backend error:', errorData);
@@ -2227,36 +2331,7 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
     }
   };
 
-  const handleDelete = async (requirementId) => {
-    if (!window.confirm('Are you sure you want to delete this requirement?')) {
-      return;
-    }
-    
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/requirements/${requirementId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-        },
-      });
 
-      if (response.ok) {
-        console.log('✅ Requirement deleted successfully');
-        
-        // Refresh requirements list
-        showToast('success', 'Requirement deleted successfully!');
-        loadRequirements(1, false);
-        loadRecentRequirements();
-      } else {
-        const errorData = await response.json();
-        console.error('❌ Backend error:', errorData);
-        showToast('error', `Error: ${errorData.message || 'Failed to delete requirement'}`);
-      }
-    } catch (error) {
-      console.error('❌ Error deleting requirement:', error);
-      showToast('error', 'Failed to delete requirement');
-    }
-  };
 
   const handleCancelEdit = () => {
     setShowEditForm(false);
@@ -2710,7 +2785,7 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
                                 showActions={true}
                                 compact={false}
                                 onEdit={() => handleEdit(requirement)}
-                                onDelete={() => handleDelete(requirement.id)}
+                                onDelete={() => onDelete(requirement.id)}
                               />
                             ))}
               
@@ -2749,77 +2824,27 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
 };
 
 // Experts Tab Component
-const ExpertsTab = () => {
+const ExpertsTab = ({ user }) => {
+  // Validate user prop
+  if (!user) {
+    console.error('ExpertsTab: user prop is undefined');
+    return (
+      <div className="text-center py-12">
+        <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Loading...</h3>
+        <p className="text-gray-600 mb-4">Please wait while we load your information.</p>
+      </div>
+    );
+  }
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [experts, setExperts] = useState([
-    {
-      id: 1,
-      name: 'Dr. Sarah Johnson',
-      expertise: 'Data Science & AI',
-      company: 'Google',
-      rating: 4.8,
-      reviews: 24,
-      hourlyRate: 150,
-      availableFor: ['Workshops', 'Mentoring', 'Guest Lectures'],
-      verified: true
-    },
-    {
-      id: 2,
-      name: 'Prof. Michael Chen',
-      expertise: 'Cybersecurity',
-      company: 'Stanford University',
-      rating: 4.9,
-      reviews: 31,
-      hourlyRate: 200,
-      availableFor: ['Curriculum Review', 'Research Collaboration'],
-      verified: true
-    },
-    {
-      id: 3,
-      name: 'Dr. Emily Rodriguez',
-      expertise: 'Digital Marketing',
-      company: 'Meta',
-      rating: 4.7,
-      reviews: 18,
-      hourlyRate: 120,
-      availableFor: ['Workshops', 'Consulting', 'Training'],
-      verified: true
-    },
-    {
-      id: 4,
-      name: 'Prof. David Kim',
-      expertise: 'Business Strategy',
-      company: 'McKinsey & Company',
-      rating: 4.9,
-      reviews: 42,
-      hourlyRate: 250,
-      availableFor: ['Consulting', 'Mentoring', 'Guest Lectures'],
-      verified: true
-    },
-    {
-      id: 5,
-      name: 'Dr. Lisa Wang',
-      expertise: 'Healthcare',
-      company: 'Johns Hopkins Hospital',
-      rating: 4.8,
-      reviews: 29,
-      hourlyRate: 180,
-      availableFor: ['Research Collaboration', 'Workshops', 'Consulting'],
-      verified: true
-    },
-    {
-      id: 6,
-      name: 'Prof. James Wilson',
-      expertise: 'Sustainability',
-      company: 'MIT',
-      rating: 4.6,
-      reviews: 15,
-      hourlyRate: 160,
-      availableFor: ['Research Collaboration', 'Workshops', 'Industry Projects'],
-      verified: true
-    }
-  ]);
+  const [selectedCategory, setSelectedCategory] = useState('All Categories');
+  const [experts, setExperts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [filters, setFilters] = useState({
+    page: 1,
+    limit: 12
+  });
 
   const categories = [
     'All Categories',
@@ -2833,57 +2858,152 @@ const ExpertsTab = () => {
   // Helper function to get services for a category group
   const getServicesForCategory = (category) => {
     const categoryMap = {
-      'Technology & Innovation': ['Data Science & AI', 'Cybersecurity', 'Software Development', 'Innovation & Design'],
-      'Business & Marketing': ['Digital Marketing', 'Business Strategy', 'Finance', 'Consulting'],
-      'Academic & Professional': ['Education', 'Research Collaboration', 'Workshops', 'Guest Lectures', 'Mentoring', 'Curriculum Review', 'Industry Projects', 'Question Paper Setting', 'Question Paper Evaluation'],
-      'Training & Development': ['Training & Development', 'Public Speaking', 'Leadership Development'],
-      'Specialized Fields': ['Healthcare', 'Engineering', 'Sustainability']
+      'Technology & Innovation': ['Data Science', 'AI', 'Cybersecurity', 'Software Development', 'Machine Learning', 'Python', 'Java', 'JavaScript', 'React', 'Node.js', 'Cloud Computing', 'DevOps'],
+      'Business & Marketing': ['Digital Marketing', 'Business Strategy', 'Finance', 'Consulting', 'Marketing', 'Sales', 'Business Development', 'Project Management', 'Strategy', 'Analytics'],
+      'Academic & Professional': ['Education', 'Research', 'Workshops', 'Lectures', 'Mentoring', 'Curriculum', 'Teaching', 'Academic Writing', 'Research Methods', 'Assessment'],
+      'Training & Development': ['Training', 'Development', 'Public Speaking', 'Leadership', 'Soft Skills', 'Communication', 'Team Building', 'Coaching', 'Mentoring', 'Workshop Facilitation'],
+      'Specialized Fields': ['Healthcare', 'Engineering', 'Sustainability', 'Medicine', 'Nursing', 'Civil Engineering', 'Mechanical Engineering', 'Environmental Science', 'Biotechnology']
     };
     return categoryMap[category] || [];
   };
 
-  const filteredExperts = experts.filter(expert => {
-    const matchesSearch = expert.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         expert.expertise.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    let matchesCategory = true;
-    if (selectedCategory && selectedCategory !== 'All Categories') {
-      const categoryServices = getServicesForCategory(selectedCategory);
-      matchesCategory = categoryServices.some(service => 
-        expert.expertise.includes(service) || 
-        expert.availableFor.some(available => available.includes(service))
-      );
+  // Fetch experts from API
+  const fetchExperts = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const searchFilters = { ...filters };
+      
+      // Add search query if provided
+      if (searchQuery.trim()) {
+        searchFilters.query = searchQuery.trim();
+      }
+      
+      // Add category filter if selected
+      if (selectedCategory && selectedCategory !== 'All Categories') {
+        // For category filtering, we'll search by category name in multiple fields
+        // This is more flexible than trying to match specific skills
+        if (searchQuery.trim()) {
+          // If user has typed something, combine it with category
+          searchFilters.query = `${searchQuery.trim()} ${selectedCategory}`;
+        } else {
+          // If no search query, just search by category
+          searchFilters.query = selectedCategory;
+        }
+        // Remove skills filter as it's too restrictive
+        delete searchFilters.skills;
+      }
+      
+      console.log('Searching experts with filters:', searchFilters);
+      console.log('API service instance:', apiService);
+      console.log('API base URL:', apiService.baseURL);
+      
+      const response = await apiService.searchExperts(searchFilters);
+      console.log('Search response:', response);
+      console.log('Response experts:', response?.experts);
+      console.log('Setting experts to:', response?.experts || []);
+      setExperts(response?.experts || []);
+    } catch (err) {
+      console.error('Error fetching experts:', err);
+      
+      // Handle authentication errors specifically
+      if (err.message.includes('Authentication expired') || err.message.includes('Unauthorized')) {
+        setError('Your session has expired. Please refresh the page and try again.');
+      } else {
+        setError('Failed to load experts. Please try again.');
+      }
+      setExperts([]);
+    } finally {
+      setLoading(false);
     }
-    
-    return matchesSearch && matchesCategory;
-  });
+  }, [searchQuery, selectedCategory, filters]);
+
+  // Fetch experts on component mount and when filters change
+  useEffect(() => {
+    console.log('ExpertsTab mounted, user prop:', user);
+    console.log('User authentication status:', {
+      isAuthenticated: !!user,
+      hasAccessToken: !!localStorage.getItem('accessToken'),
+      user: user
+    });
+    console.log('Initial experts state:', experts);
+    console.log('About to call fetchExperts...');
+    fetchExperts();
+  }, [fetchExperts, user]);
+
+  // Handle search with debouncing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilters(prev => ({ ...prev, page: 1 }));
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Handle category change
+  const handleCategoryChange = (category) => {
+    setSelectedCategory(category);
+    setFilters(prev => ({ ...prev, page: 1 }));
+  };
+
+  // Handle contact expert
+  const handleContactExpert = (expert) => {
+    // TODO: Implement contact functionality
+    console.log('Contact expert:', expert);
+  };
+
+  // Handle view profile
+  const handleViewProfile = (expert) => {
+    // TODO: Implement view profile functionality
+    console.log('View profile:', expert);
+  };
+
+  // Loading skeleton
+  const ExpertSkeleton = () => (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 animate-pulse">
+      <div className="flex items-start space-x-4 mb-4">
+        <div className="w-16 h-16 bg-gray-200 rounded-full"></div>
+        <div className="flex-1 space-y-2">
+          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+          <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+        </div>
+      </div>
+      <div className="space-y-3">
+        <div className="h-3 bg-gray-200 rounded"></div>
+        <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+        <div className="h-8 bg-gray-200 rounded"></div>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+
+
       {/* Search and Filters */}
-  <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Expert Directory</h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Search Experts</label>
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-3">
+        <div className="flex flex-col sm:flex-row gap-3">
+          {/* Search Input */}
+          <div className="flex-1">
             <div className="relative">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by name, expertise, or company..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Search experts by name, expertise, skills, or company..."
+                className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500 transition-all duration-200"
               />
-              <Users className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-    </div>
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+
+          {/* Category Filter */}
+          <div className="sm:w-40">
             <select
               value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onChange={(e) => handleCategoryChange(e.target.value)}
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 transition-all duration-200"
             >
               {categories.map(category => (
                 <option key={category} value={category}>{category}</option>
@@ -2891,71 +3011,227 @@ const ExpertsTab = () => {
             </select>
           </div>
         </div>
+      </div>
+
+
+
+      {/* Results Section */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-3">
+        {/* Results Header */}
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">
+              {loading ? 'Loading experts...' : `${experts.length} Expert${experts.length !== 1 ? 's' : ''} Found`}
+            </h3>
+            {searchQuery && (
+              <p className="text-xs text-gray-600 mt-0.5">
+                Results for "{searchQuery}"
+              </p>
+            )}
+          </div>
+          {experts.length > 0 && (
+            <div className="text-xs text-gray-500">
+              Showing {experts.length} of {experts.length} experts
+            </div>
+          )}
+        </div>
+
+        {/* Error State */}
+        {error && (
+          <div className="text-center py-12">
+            <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Something went wrong</h3>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button
+              onClick={fetchExperts}
+              className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium"
+            >
+              Try Again
+            </button>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <ExpertSkeleton key={i} />
+            ))}
+          </div>
+        )}
+
+        {/* No Results State */}
+        {!loading && !error && experts.length === 0 && (
+          <div className="text-center py-12">
+            <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No experts found</h3>
+            <p className="text-gray-600 mb-4">
+              {searchQuery 
+                ? `No experts match your search for "${searchQuery}". Try adjusting your search terms.`
+                : 'No experts are currently available. Please check back later.'
+              }
+            </p>
+            {searchQuery && (
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedCategory('All Categories');
+                }}
+                className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium"
+              >
+                Clear Search
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Experts Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredExperts.map(expert => (
-            <div key={expert.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <h4 className="font-semibold text-gray-900">{expert.name}</h4>
-                  <p className="text-sm text-gray-600">{expert.expertise}</p>
-                  <p className="text-xs text-gray-500">{expert.company}</p>
+        {!loading && !error && experts.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+            {experts.map(expert => (
+              <motion.div
+                key={expert.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className="group bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:border-blue-200 transition-all duration-200"
+              >
+                {/* Expert Header - Compact */}
+                <div className="p-3 pb-2">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-xs">
+                      {expert.user?.fullName?.charAt(0) || 'E'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors">
+                        {expert.user?.fullName || 'Expert Name'}
+                      </h4>
+                      <p className="text-xs text-gray-600 truncate">
+                        {expert.jobTitle || 'Professional'}
+                      </p>
+                    </div>
+                    {expert.isVerified && (
+                      <div className="bg-blue-100 p-1 rounded-full group-hover:bg-blue-200 transition-colors flex-shrink-0">
+                        <Shield className="w-3 h-3 text-blue-600" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Company & Location - Compact */}
+                  <div className="space-y-1 mb-2">
+                    <p className="text-xs text-gray-600 flex items-center">
+                      <Building2 className="w-3 h-3 mr-1 flex-shrink-0" />
+                      <span className="truncate">{expert.company || 'Company not specified'}</span>
+                    </p>
+                    {expert.location && (
+                      <p className="text-xs text-gray-600 flex items-center">
+                        <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
+                        <span className="truncate">{expert.location}</span>
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Rating - Compact */}
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center">
+                      {[...Array(5)].map((_, i) => (
+                        <Star 
+                          key={i} 
+                          className={`w-3 h-3 ${i < Math.floor(expert.averageRating || 0) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
+                        />
+                      ))}
+                    </div>
+                    <span className="text-xs text-gray-500">
+                      {expert.averageRating ? `${expert.averageRating.toFixed(1)}` : 'No ratings'}
+                    </span>
+                  </div>
+
+                  {/* Hourly Rate - Compact */}
+                  {expert.hourlyRate && (
+                    <div className="mb-2">
+                      <p className="text-sm font-semibold text-gray-900">
+                        ${parseFloat(expert.hourlyRate).toFixed(0)}<span className="text-xs font-normal text-gray-600">/hr</span>
+                      </p>
+                    </div>
+                  )}
                 </div>
-                {expert.verified && (
-                  <div className="bg-blue-100 p-1 rounded-full">
-                    <Shield className="w-4 h-4 text-blue-600" />
+
+                {/* Skills - Compact */}
+                {expert.expertskill && expert.expertskill.length > 0 && (
+                  <div className="px-4 pb-3">
+                    <div className="flex flex-wrap gap-1.5">
+                      {expert.expertskill.slice(0, 2).map(skill => (
+                        <span key={skill.id} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-md border border-blue-200">
+                          {skill.skillName}
+                        </span>
+                      ))}
+                      {expert.expertskill.length > 2 && (
+                        <span className="px-2 py-1 bg-gray-50 text-gray-600 text-xs rounded-md border border-gray-200">
+                          +{expert.expertskill.length - 2}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 )}
-              </div>
 
-              <div className="flex items-center mb-3">
-                <div className="flex items-center">
-                  {[...Array(5)].map((_, i) => (
-                    <Star 
-                      key={i} 
-                      className={`w-4 h-4 ${i < Math.floor(expert.rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
-                    />
-                  ))}
+                {/* Available For - Compact */}
+                {expert.availableFor && Array.isArray(expert.availableFor) && expert.availableFor.length > 0 && (
+                  <div className="px-4 pb-3">
+                    <div className="flex flex-wrap gap-1.5">
+                      {expert.availableFor.slice(0, 1).map(service => (
+                        <span key={service} className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded-md border border-green-200">
+                          {service}
+                        </span>
+                      ))}
+                      {expert.availableFor.length > 1 && (
+                        <span className="px-2 py-1 bg-gray-50 text-gray-600 text-xs rounded-md border border-gray-200">
+                          +{expert.availableFor.length - 1} more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Buttons - Compact */}
+                <div className="px-4 pb-4">
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleContactExpert(expert)}
+                      className="flex-1 px-3 py-2 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Contact
+                    </button>
+                    <button
+                      onClick={() => handleViewProfile(expert)}
+                      className="px-3 py-2 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-200 transition-colors"
+                    >
+                      Profile
+                    </button>
+                  </div>
                 </div>
-                <span className="ml-2 text-sm text-gray-600">{expert.rating} ({expert.reviews})</span>
-              </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
 
-              <div className="mb-3">
-                <p className="text-sm text-gray-700">
-                  <span className="font-medium">${expert.hourlyRate}</span>/hour
-                </p>
-              </div>
-
-              <div className="mb-4">
-                <p className="text-xs text-gray-600 mb-2">Available for:</p>
-                <div className="flex flex-wrap gap-1">
-                  {expert.availableFor.map(service => (
-                    <span key={service} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                      {service}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex space-x-2">
-                <button className="flex-1 px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors">
-                  Contact
-                </button>
-                <button className="px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors">
-                  Request Rating
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* Load More Button */}
+        {!loading && !error && experts.length > 0 && experts.length >= filters.limit && (
+          <div className="text-center mt-8">
+            <button
+              onClick={() => setFilters(prev => ({ ...prev, page: prev.page + 1, limit: prev.limit + 12 }))}
+              className="px-8 py-3 bg-white text-blue-600 border border-blue-200 rounded-xl hover:bg-blue-50 transition-colors font-medium"
+            >
+              Load More Experts
+            </button>
+          </div>
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
 };
 
 // Ratings Tab Component
-const RatingsTab = () => {
+const RatingsTab = ({ user }) => {
   const [receivedRatings] = useState([
     {
       id: 1,

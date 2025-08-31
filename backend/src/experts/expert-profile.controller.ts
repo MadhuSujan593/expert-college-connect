@@ -22,6 +22,7 @@ import { UpdateExpertProfileDto, CreateExpertSkillDto, SearchExpertsDto, CreateW
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { FileUploadService } from '../common/services/file-upload.service';
+import { PrismaService } from '../prisma/prisma.service';
 import type { Request } from 'express';
 
 @Controller('expert-profiles')
@@ -30,6 +31,7 @@ export class ExpertProfileController {
   constructor(
     private readonly expertProfileService: ExpertProfileService,
     private readonly fileUploadService: FileUploadService,
+    private readonly prisma: PrismaService,
   ) {}
 
   @Get('profile')
@@ -424,9 +426,118 @@ export class ExpertProfileController {
   }
 
   @Get('search')
-  @UseGuards() // Remove auth guard for public search
+  @UseGuards(JwtAuthGuard) // Add JWT auth guard for authenticated search
   async searchExperts(@Query() filters: SearchExpertsDto) {
-    return this.expertProfileService.searchExperts(filters);
+    try {
+      console.log('Search experts called with filters:', filters);
+      const result = await this.expertProfileService.searchExperts(filters);
+      console.log('Search result:', { count: result.experts?.length || 0, total: result.total });
+      return result;
+    } catch (error) {
+      console.error('Error in searchExperts controller:', error);
+      throw error;
+    }
+  }
+
+  // Test endpoint to debug expert data
+  @Get('debug/experts')
+  @UseGuards(JwtAuthGuard)
+  async debugExperts() {
+    try {
+      // Get all users with EXPERT role
+      const expertUsers = await this.prisma.user.findMany({
+        where: {
+          role: 'EXPERT',
+          isActive: true,
+          isDeleted: false,
+        },
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          role: true,
+          expertprofile: {
+            select: {
+              id: true,
+              jobTitle: true,
+              company: true,
+              isVerified: true,
+            }
+          }
+        }
+      });
+
+      // Get all expert profiles
+      const allExpertProfiles = await this.prisma.expertprofile.findMany({
+        include: {
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              role: true,
+            }
+          },
+          expertskill: {
+            select: {
+              skillName: true,
+            }
+          }
+        }
+      });
+
+      // Test search for "Training & Development"
+      const testSearch = await this.prisma.expertprofile.findMany({
+        where: {
+          OR: [
+            { jobTitle: { contains: 'Training' } },
+            { company: { contains: 'Training' } },
+            { expertskill: { some: { skillName: { contains: 'Training' } } } },
+            // Test availableFor JSON search
+            { availableFor: { path: '$[*]', string_contains: 'Training' } },
+            { availableFor: { path: '$[*]', string_contains: 'Development' } },
+          ],
+        },
+        include: {
+          user: {
+            select: {
+              fullName: true,
+            }
+          },
+          expertskill: {
+            select: {
+              skillName: true,
+            }
+          }
+        }
+      });
+
+      // Simple test: get all expert profiles with basic info
+      const simpleProfiles = await this.prisma.expertprofile.findMany({
+        take: 5,
+        include: {
+          user: {
+            select: {
+              fullName: true,
+              role: true,
+            }
+          }
+        }
+      });
+
+      return {
+        expertUsers,
+        allExpertProfiles,
+        expertUsersCount: expertUsers.length,
+        expertProfilesCount: allExpertProfiles.length,
+        testSearch,
+        testSearchCount: testSearch.length,
+        simpleProfiles,
+        simpleProfilesCount: simpleProfiles.length
+      };
+    } catch (error) {
+      console.error('Error in debugExperts:', error);
+      throw error;
+    }
   }
 
   @Get(':id')

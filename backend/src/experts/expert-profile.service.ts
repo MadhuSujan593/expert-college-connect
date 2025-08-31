@@ -510,22 +510,26 @@ export class ExpertProfileService {
    * Search experts with filters
    */
   async searchExperts(filters: {
+    query?: string;
     expertise?: string;
     location?: string;
     experience?: string;
     minRating?: number;
     maxHourlyRate?: number;
     availableFor?: string[];
+    skills?: string;
     page?: number;
     limit?: number;
   }) {
     const {
+      query,
       expertise,
       location,
       experience,
       minRating,
       maxHourlyRate,
       availableFor,
+      skills,
       page = 1,
       limit = 10,
     } = filters;
@@ -533,18 +537,45 @@ export class ExpertProfileService {
     const skip = (page - 1) * limit;
 
     const whereConditions: any = {
-      isVerified: true,
       user: {
         isActive: true,
         isDeleted: false,
+        role: 'EXPERT', // Only get users with EXPERT role
       },
     };
 
-    if (expertise) {
+    // Handle search query (searches across multiple fields)
+    if (query) {
+      console.log('Searching for original query:', query);
+      
+      // Don't convert to lowercase yet - search as-is first
+      whereConditions.OR = [
+        { jobTitle: { contains: query } },
+        { company: { contains: query } },
+        { user: { fullName: { contains: query } } },
+        { primaryExpertise: { contains: query } },
+        { bio: { contains: query } },
+        { expertskill: { some: { skillName: { contains: query } } } },
+      ];
+    } else if (expertise) {
       whereConditions.OR = [
         { primaryExpertise: { contains: expertise } },
-        { skills: { some: { skillName: { contains: expertise } } } },
+        { expertskill: { some: { skillName: { contains: expertise } } } },
       ];
+    }
+
+    // Handle skills filter
+    if (skills && skills.trim()) {
+      const skillsArray = skills.split(',').map(skill => skill.trim()).filter(skill => skill.length > 0);
+      if (skillsArray.length > 0) {
+        whereConditions.expertskill = {
+          some: {
+            skillName: {
+              in: skillsArray
+            }
+          }
+        };
+      }
     }
 
     if (location) {
@@ -559,20 +590,209 @@ export class ExpertProfileService {
       whereConditions.hourlyRate = { lte: maxHourlyRate };
     }
 
-    if (availableFor && availableFor.length > 0) {
-      // This would need to be adjusted based on how availableFor is stored
-      whereConditions.availableFor = { hasSome: availableFor };
-    }
+    // Note: availableFor filtering is temporarily disabled due to JSON storage complexity
+    // TODO: Implement proper JSON array filtering for availableFor field
 
-    const [experts, total] = await Promise.all([
-      this.prisma.expertprofile.findMany({
-        where: whereConditions,
+    console.log('Search where conditions:', JSON.stringify(whereConditions, null, 2));
+    console.log('Search query:', query);
+    
+    // Simple test: let's see if we can find ANY expert profiles first
+    const testProfiles = await this.prisma.expertprofile.findMany({
+      take: 3,
+      include: {
+        user: {
+          select: {
+            fullName: true,
+            role: true,
+          },
+        },
+      },
+    });
+    console.log('Test profiles found:', testProfiles.map(p => ({
+      name: p.user?.fullName,
+      role: p.user?.role,
+      jobTitle: p.jobTitle,
+      availableFor: p.availableFor,
+    })));
+    
+    // Test: try to find profiles with "Training" in any field
+    const trainingProfiles = await this.prisma.expertprofile.findMany({
+      where: {
+        OR: [
+          { jobTitle: { contains: 'Training' } },
+          { company: { contains: 'Training' } },
+          { primaryExpertise: { contains: 'Training' } },
+        ],
+      },
+      include: {
+        user: {
+          select: {
+            fullName: true,
+          },
+        },
+      },
+    });
+    console.log('Profiles with "Training":', trainingProfiles.map(p => ({
+      name: p.user?.fullName,
+      jobTitle: p.jobTitle,
+      company: p.company,
+      primaryExpertise: p.primaryExpertise,
+    })));
+    
+    // First, let's check how many users with EXPERT role exist
+    const expertUsersCount = await this.prisma.user.count({
+      where: {
+        role: 'EXPERT',
+        isActive: true,
+        isDeleted: false,
+      },
+    });
+    console.log(`Found ${expertUsersCount} users with EXPERT role`);
+    
+    // Let's also check how many expert profiles exist
+    const totalExpertProfiles = await this.prisma.expertprofile.count();
+    console.log(`Total expert profiles in database: ${totalExpertProfiles}`);
+    
+    // Let's check what expert profiles exist without any filters
+    const allProfiles = await this.prisma.expertprofile.findMany({
+      take: 5,
+      include: {
+        user: {
+          select: {
+            fullName: true,
+            role: true,
+          },
+        },
+        expertskill: {
+          select: {
+            skillName: true,
+          },
+        },
+      },
+    });
+    console.log('Sample expert profiles:', allProfiles.map(p => ({
+      name: p.user?.fullName,
+      role: p.user?.role,
+      jobTitle: p.jobTitle,
+      company: p.company,
+      skills: p.expertskill.map(s => s.skillName),
+    })));
+    
+    let experts, total;
+    
+    try {
+      [experts, total] = await Promise.all([
+        this.prisma.expertprofile.findMany({
+          where: whereConditions,
+          include: {
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+                profileImage: true,
+                email: true,
+                phone: true,
+                isEmailVerified: true,
+                isPhoneVerified: true,
+              },
+            },
+            expertskill: true,
+            rating: {
+              select: { rating: true },
+            },
+            _count: {
+              select: { rating: true },
+            },
+          },
+          skip,
+          take: limit,
+          orderBy: { createdAt: 'desc' },
+        }),
+        this.prisma.expertprofile.count({ where: whereConditions }),
+      ]);
+    } catch (error) {
+      console.error('Error in search query:', error);
+      console.log('Falling back to basic search...');
+      
+      // Fallback: just get all expert profiles
+      [experts, total] = await Promise.all([
+        this.prisma.expertprofile.findMany({
+          where: {
+            user: {
+              isActive: true,
+              isDeleted: false,
+              role: 'EXPERT',
+            },
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+                profileImage: true,
+                email: true,
+                phone: true,
+                isEmailVerified: true,
+                isPhoneVerified: true,
+              },
+            },
+            expertskill: true,
+            rating: {
+              select: { rating: true },
+            },
+            _count: {
+              select: { rating: true },
+            },
+          },
+          skip,
+          take: limit,
+          orderBy: { createdAt: 'desc' },
+        }),
+        this.prisma.expertprofile.count({
+          where: {
+            user: {
+              isActive: true,
+              isDeleted: false,
+              role: 'EXPERT',
+            },
+          },
+        }),
+      ]);
+    }
+    
+        console.log(`Found ${experts.length} expert profiles out of ${total} total`);
+    console.log('Expert profiles found:', experts.map(e => ({
+      id: e.id,
+      userId: e.userId,
+      userFullName: e.user?.fullName,
+      jobTitle: e.jobTitle,
+      company: e.company,
+      availableFor: e.availableFor
+    })));
+    
+    // If no results found and we have a search query, let's try searching in availableFor field manually
+    if (experts.length === 0 && query) {
+      console.log('No results found, trying manual availableFor search...');
+      
+      // Get all expert profiles and filter manually
+      const allExperts = await this.prisma.expertprofile.findMany({
+        where: {
+          user: {
+            isActive: true,
+            isDeleted: false,
+            role: 'EXPERT',
+          },
+        },
         include: {
           user: {
             select: {
               id: true,
               fullName: true,
               profileImage: true,
+              email: true,
+              phone: true,
+              isEmailVerified: true,
+              isPhoneVerified: true,
             },
           },
           expertskill: true,
@@ -583,13 +803,38 @@ export class ExpertProfileService {
             select: { rating: true },
           },
         },
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-      }),
-      this.prisma.expertprofile.count({ where: whereConditions }),
-    ]);
-
+      });
+      
+      console.log(`Got ${allExperts.length} total experts for manual filtering`);
+      
+      // Filter manually by checking if availableFor contains the search query
+      const manuallyFiltered = allExperts.filter(expert => {
+        if (!expert.availableFor) return false;
+        
+        try {
+          // Parse availableFor JSON
+          const availableServices = Array.isArray(expert.availableFor) 
+            ? expert.availableFor 
+            : JSON.parse(expert.availableFor as string);
+          
+          // Check if any service contains the search query
+          return availableServices.some(service => 
+            service.toLowerCase().includes(query.toLowerCase())
+          );
+        } catch (e) {
+          console.log('Error parsing availableFor:', e);
+          return false;
+        }
+      });
+      
+      console.log(`Manually filtered found ${manuallyFiltered.length} experts`);
+      
+      if (manuallyFiltered.length > 0) {
+        experts = manuallyFiltered.slice(skip, skip + limit);
+        total = manuallyFiltered.length;
+      }
+    }
+    
     // Filter by minimum rating if specified
     let filteredExperts = experts;
     if (minRating) {

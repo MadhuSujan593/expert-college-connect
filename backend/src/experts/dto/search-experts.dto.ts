@@ -30,9 +30,8 @@ export class SearchExpertsDto {
   minExperience?: number;
 
   @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  skills?: string[];
+  @IsString()
+  skills?: string;
 
   @IsOptional()
   @IsString()

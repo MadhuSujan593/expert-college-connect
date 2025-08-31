@@ -75,6 +75,24 @@ class ApiService {
     return !!token && !this.isTokenExpired(token);
   }
 
+  // Test backend connection
+  async testConnection() {
+    try {
+      const response = await fetch(`${this.baseURL}/health`, {
+        method: 'GET',
+        headers: this.getHeaders(false),
+      });
+      
+      if (response.ok) {
+        return { success: true, status: response.status };
+      } else {
+        return { success: false, status: response.status, error: 'Backend responded with error' };
+      }
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
   // Get token with automatic refresh
   async getValidToken() {
     let token = localStorage.getItem('accessToken');
@@ -280,12 +298,40 @@ class ApiService {
   }
 
   async searchExperts(filters = {}) {
-    const queryParams = new URLSearchParams(filters).toString();
-    const response = await fetch(`${this.baseURL}/expert-profiles/search?${queryParams}`, {
-      method: 'GET',
-      headers: this.getHeaders(),
-    });
-    return this.handleResponse(response);
+    try {
+      console.log('API: searchExperts called with filters:', filters);
+      
+      // Handle array parameters properly
+      const queryParams = new URLSearchParams();
+      
+      Object.entries(filters).forEach(([key, value]) => {
+        if (Array.isArray(value)) {
+          // For array values, append each item with the same key
+          value.forEach(item => queryParams.append(key, item));
+        } else if (value !== undefined && value !== null && value !== '') {
+          queryParams.append(key, value);
+        }
+      });
+      
+      const queryString = queryParams.toString();
+      console.log('API: Query params:', queryString);
+      
+      const headers = await this.getAuthHeaders();
+      console.log('API: Auth headers:', headers);
+      
+      const response = await fetch(`${this.baseURL}/expert-profiles/search?${queryString}`, {
+        method: 'GET',
+        headers,
+      });
+      
+      console.log('API: Response status:', response.status);
+      console.log('API: Response ok:', response.ok);
+      
+      return this.handleResponse(response);
+    } catch (error) {
+      console.error('API: searchExperts error:', error);
+      throw error;
+    }
   }
 
   // College profile endpoints

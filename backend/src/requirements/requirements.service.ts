@@ -78,17 +78,23 @@ export class RequirementsService {
 
     const skip = (page - 1) * limit;
 
-    const [requirements, total] = await Promise.all([
-      this.prisma.requirement.findMany({
-        where: { collegeProfileId: collegeProfile.id },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-      }),
-      this.prisma.requirement.count({
-        where: { collegeProfileId: collegeProfile.id },
-      })
-    ]);
+          const [requirements, total] = await Promise.all([
+        this.prisma.requirement.findMany({
+          where: { 
+            collegeProfileId: collegeProfile.id,
+            isActive: true  // Only show active requirements
+          },
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit,
+        }),
+        this.prisma.requirement.count({
+          where: { 
+            collegeProfileId: collegeProfile.id,
+            isActive: true  // Count only active requirements
+          },
+        })
+      ]);
 
     return {
       requirements,
