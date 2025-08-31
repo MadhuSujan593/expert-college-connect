@@ -125,7 +125,19 @@ const Login = () => {
       
     } catch (error) {
       console.error('Login error:', error);
-      showToast(error.message || 'Login failed. Please check your credentials.', 'error');
+      
+      // Provide more specific error messages based on the error
+      let errorMessage = error.message;
+      
+      if (error.message.includes('Invalid credentials')) {
+        errorMessage = 'Invalid email/phone or password. Please check your credentials and try again.';
+      } else if (error.message.includes('Network') || error.message.includes('fetch')) {
+        errorMessage = 'Unable to connect to the server. Please check your internet connection and try again.';
+      } else if (error.message.includes('Failed to fetch')) {
+        errorMessage = 'Server connection failed. Please try again later.';
+      }
+      
+      showToast(errorMessage, 'error');
     }
   };
 

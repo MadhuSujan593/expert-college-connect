@@ -42,7 +42,11 @@ import DeleteConfirmationModal from '../../components/common/DeleteConfirmationM
 
 const CollegeDashboard = () => {
   const { user, logout, setUser } = useAuth();
-  const [activeTab, setActiveTab] = useState('overview');
+  // Get active tab from URL or default to 'overview'
+  const [activeTab, setActiveTab] = useState(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('tab') || 'overview';
+  });
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
@@ -90,6 +94,30 @@ const CollegeDashboard = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [requirementToDelete, setRequirementToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Tab management with URL persistence
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    
+    // Update URL without page reload
+    const url = new URL(window.location);
+    url.searchParams.set('tab', tabId);
+    window.history.pushState({}, '', url);
+  };
+
+  // Listen for browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabFromUrl = urlParams.get('tab');
+      if (tabFromUrl && tabFromUrl !== activeTab) {
+        setActiveTab(tabFromUrl);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [activeTab]);
 
   // Delete functions
   const handleDelete = async (requirementId) => {
@@ -172,7 +200,7 @@ const CollegeDashboard = () => {
   // Handle requirements access attempt
   const handleRequirementsAccess = () => {
     if (canAccessRequirements()) {
-      setActiveTab('requirements');
+              handleTabChange('requirements');
     } else {
       setVerificationFeatureName("Requirements Creation");
       setShowVerificationRequirement(true);
@@ -186,13 +214,13 @@ const CollegeDashboard = () => {
 
   // Wrapper functions for verification from RequirementsTab
   const handleVerifyEmailFromRequirements = () => {
-    setActiveTab('profile');
+    handleTabChange('profile');
     setEditingProfile(true);
     setShowEmailVerification(true);
   };
 
   const handleVerifyPhoneFromRequirements = () => {
-    setActiveTab('profile');
+    handleTabChange('profile');
     setEditingProfile(true);
     setShowPhoneVerification(true);
   };
@@ -900,14 +928,14 @@ const CollegeDashboard = () => {
                 label="Overview"
                 icon={Home}
                 isActive={activeTab === 'overview'}
-                onClick={setActiveTab}
+                onClick={handleTabChange}
               />
               <SidebarItem
                 id="profile"
                 label="Profile"
                 icon={Building2}
                 isActive={activeTab === 'profile'}
-                onClick={setActiveTab}
+                onClick={handleTabChange}
               />
               <SidebarItem
                 id="requirements"
@@ -926,7 +954,7 @@ const CollegeDashboard = () => {
                     setVerificationFeatureName("Expert Directory");
                     setShowVerificationRequirement(true);
                   } else {
-                    setActiveTab(tabId);
+                    handleTabChange(tabId);
                   }
                 }}
               />
@@ -940,7 +968,7 @@ const CollegeDashboard = () => {
                     setVerificationFeatureName("Ratings & Trust");
                     setShowVerificationRequirement(true);
                   } else {
-                    setActiveTab(tabId);
+                    handleTabChange(tabId);
                   }
                 }}
               />
@@ -1052,7 +1080,7 @@ const CollegeDashboard = () => {
                       <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        onClick={() => setActiveTab('experts')}
+                        onClick={() => handleTabChange('experts')}
                         className="group flex items-center space-x-4 p-5 bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-xl hover:from-emerald-100 hover:to-emerald-200/50 transition-all duration-300"
                       >
                         <div className="p-3 bg-emerald-600 rounded-xl group-hover:bg-emerald-700 transition-colors">
@@ -1066,7 +1094,7 @@ const CollegeDashboard = () => {
                       <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        onClick={() => setActiveTab('profile')}
+                        onClick={() => handleTabChange('profile')}
                         className="group flex items-center space-x-4 p-5 bg-gradient-to-br from-violet-50 to-violet-100/50 rounded-xl hover:from-violet-100 hover:to-violet-200/50 transition-all duration-300"
                       >
                         <div className="p-3 bg-violet-600 rounded-xl group-hover:bg-violet-700 transition-colors">
@@ -1088,7 +1116,7 @@ const CollegeDashboard = () => {
                         <h3 className="text-lg font-semibold text-slate-900">Recent Requirements</h3>
                         {recentRequirements.length > 0 && (
                           <button
-                            onClick={() => setActiveTab('requirements')}
+                            onClick={() => handleTabChange('requirements')}
                             className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                           >
                             View All
@@ -1111,7 +1139,7 @@ const CollegeDashboard = () => {
                             ) : (
                               <div className="space-y-3">
                           <button 
-                            onClick={() => setActiveTab('requirements')}
+                            onClick={() => handleTabChange('requirements')}
                                   className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                           >
               Post your first requirement
@@ -1129,7 +1157,7 @@ const CollegeDashboard = () => {
                                 index={index}
                                 showActions={false}
                                 compact={true}
-                                onClick={() => setActiveTab('requirements')}
+                                onClick={() => handleTabChange('requirements')}
                               />
                             ))}
                           </>
@@ -1189,7 +1217,7 @@ const CollegeDashboard = () => {
                     onVerifyPhone={handleVerifyPhoneFromRequirements}
                     onPostRequirement={refreshRequirements}
                     showToast={showToast}
-                    setActiveTab={setActiveTab}
+                    setActiveTab={handleTabChange}
                     onDelete={handleDelete}
                     allRequirements={allRequirements}
                     setAllRequirements={setAllRequirements}
@@ -1374,13 +1402,13 @@ const CollegeDashboard = () => {
         onClose={() => setShowVerificationRequirement(false)}
         onVerifyEmail={() => {
           setShowVerificationRequirement(false);
-          setActiveTab('profile');
+          handleTabChange('profile');
           setEditingProfile(true);
           setShowEmailVerification(true);
         }}
         onVerifyPhone={() => {
           setShowVerificationRequirement(false);
-          setActiveTab('profile');
+          handleTabChange('profile');
           setEditingProfile(true);
           setShowPhoneVerification(true);
         }}
@@ -2839,12 +2867,16 @@ const ExpertsTab = ({ user }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [experts, setExperts] = useState([]);
+  const [totalExperts, setTotalExperts] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
     page: 1,
     limit: 12
   });
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   const categories = [
     'All Categories',
@@ -2875,18 +2907,51 @@ const ExpertsTab = ({ user }) => {
       
       const searchFilters = { ...filters };
       
-      // Add search query if provided
+      // Smart search logic: detect if search query might be a city and apply location filter
       if (searchQuery.trim()) {
-        searchFilters.query = searchQuery.trim();
+        const query = searchQuery.trim();
+        
+        // Check if the search query might be a city (common city names with variations)
+        const commonCities = [
+          'mumbai', 'delhi', 'bangalore', 'banglore', 'bengaluru', 'hyderabad', 'chennai', 'kolkata', 'pune', 
+          'ahmedabad', 'jaipur', 'surat', 'lucknow', 'kanpur', 'nagpur', 'indore', 
+          'thane', 'bhopal', 'visakhapatnam', 'pimpri-chinchwad', 'patna', 'vadodara',
+          'noida', 'gurgaon', 'gurugram', 'faridabad', 'ghaziabad', 'meerut', 'raipur', 'ranchi', 'jabalpur',
+          'bombay', 'calcutta', 'madras', // Include old names
+          'bang', 'beng', 'bengal' // Include partial matches for bangalore
+        ];
+        
+        // More flexible city matching - check if query contains city name or vice versa
+        const isCitySearch = commonCities.some(city => {
+          const queryLower = query.toLowerCase();
+          const cityLower = city.toLowerCase();
+          const match = queryLower.includes(cityLower) || cityLower.includes(queryLower) || queryLower === cityLower;
+          if (match) {
+            console.log('🔍 City match found:', { query: queryLower, city: cityLower });
+          }
+          return match;
+        });
+        
+        if (isCitySearch) {
+          // If it's a city search, only use location filter for better results
+          console.log('🔍 City search detected:', query);
+          searchFilters.location = query;
+          // Don't set query when it's a city search to avoid conflicts
+          delete searchFilters.query;
+        } else {
+          // Regular search query
+          console.log('🔍 Regular search query:', query);
+          searchFilters.query = query;
+        }
       }
       
       // Add category filter if selected
       if (selectedCategory && selectedCategory !== 'All Categories') {
         // For category filtering, we'll search by category name in multiple fields
         // This is more flexible than trying to match specific skills
-        if (searchQuery.trim()) {
+        if (searchFilters.query) {
           // If user has typed something, combine it with category
-          searchFilters.query = `${searchQuery.trim()} ${selectedCategory}`;
+          searchFilters.query = `${searchFilters.query} ${selectedCategory}`;
         } else {
           // If no search query, just search by category
           searchFilters.query = selectedCategory;
@@ -2895,15 +2960,28 @@ const ExpertsTab = ({ user }) => {
         delete searchFilters.skills;
       }
       
-      console.log('Searching experts with filters:', searchFilters);
-      console.log('API service instance:', apiService);
-      console.log('API base URL:', apiService.baseURL);
+      console.log('🔍 Search query:', searchQuery);
+      console.log('🔍 Final search filters:', searchFilters);
+      console.log('🔍 API service instance:', apiService);
+      console.log('🔍 API base URL:', apiService.baseURL);
       
       const response = await apiService.searchExperts(searchFilters);
       console.log('Search response:', response);
       console.log('Response experts:', response?.experts);
       console.log('Setting experts to:', response?.experts || []);
-      setExperts(response?.experts || []);
+      
+      if (filters.page === 1) {
+        // First page: replace all experts
+        setExperts(response?.experts || []);
+      } else {
+        // Subsequent pages: append new experts
+        setExperts(prev => [...prev, ...(response?.experts || [])]);
+      }
+      
+      setTotalExperts(response?.total || 0);
+      
+      // Check if there are more experts to load using backend's totalPages
+      setHasMore(filters.page < (response?.totalPages || 1));
     } catch (err) {
       console.error('Error fetching experts:', err);
       
@@ -2932,6 +3010,44 @@ const ExpertsTab = ({ user }) => {
     fetchExperts();
   }, [fetchExperts, user]);
 
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+          loadMoreExperts();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const loadMoreTrigger = document.getElementById('load-more-trigger');
+    if (loadMoreTrigger) {
+      observer.observe(loadMoreTrigger);
+    }
+
+    return () => {
+      if (loadMoreTrigger) {
+        observer.unobserve(loadMoreTrigger);
+      }
+    };
+  }, [hasMore, isLoadingMore]);
+
+  // Scroll event listener for scroll-to-top button
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 300);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Scroll to top function
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   // Handle search with debouncing
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -2941,22 +3057,53 @@ const ExpertsTab = ({ user }) => {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+
+
   // Handle category change
   const handleCategoryChange = (category) => {
     setSelectedCategory(category);
     setFilters(prev => ({ ...prev, page: 1 }));
   };
 
+  // Load more experts
+  const loadMoreExperts = async () => {
+    if (isLoadingMore || !hasMore) return;
+    
+    setIsLoadingMore(true);
+    setFilters(prev => ({ ...prev, page: prev.page + 1 }));
+    setIsLoadingMore(false);
+  };
+
+
+
+  // Contact modal state
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [selectedExpert, setSelectedExpert] = useState(null);
+  
+  // Profile modal state
+  const [showProfileModal, setShowProfileModal] = useState(false);
+
   // Handle contact expert
   const handleContactExpert = (expert) => {
-    // TODO: Implement contact functionality
-    console.log('Contact expert:', expert);
+    setSelectedExpert(expert);
+    setShowContactModal(true);
   };
 
   // Handle view profile
   const handleViewProfile = (expert) => {
-    // TODO: Implement view profile functionality
-    console.log('View profile:', expert);
+    setSelectedExpert(expert);
+    setShowProfileModal(true);
+  };
+
+  // Close modals
+  const closeContactModal = () => {
+    setShowContactModal(false);
+    setSelectedExpert(null);
+  };
+
+  const closeProfileModal = () => {
+    setShowProfileModal(false);
+    setSelectedExpert(null);
   };
 
   // Loading skeleton
@@ -2992,18 +3139,24 @@ const ExpertsTab = ({ user }) => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search experts by name, expertise, skills, or company..."
-                className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500 transition-all duration-200"
+                className={`w-full pl-9 pr-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500 transition-all duration-200 ${
+                  searchQuery ? 'border-blue-300 bg-blue-50' : 'border-gray-200'
+                }`}
               />
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             </div>
           </div>
+
+
 
           {/* Category Filter */}
           <div className="sm:w-40">
             <select
               value={selectedCategory}
               onChange={(e) => handleCategoryChange(e.target.value)}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 transition-all duration-200"
+              className={`w-full px-3 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 transition-all duration-200 ${
+                selectedCategory !== 'All Categories' ? 'border-blue-300 bg-blue-50' : 'border-gray-200'
+              }`}
             >
               {categories.map(category => (
                 <option key={category} value={category}>{category}</option>
@@ -3011,6 +3164,26 @@ const ExpertsTab = ({ user }) => {
             </select>
           </div>
         </div>
+        
+        {/* Active Filters Indicator */}
+        {(searchQuery || selectedCategory !== 'All Categories') && (
+          <div className="mt-3 pt-3 border-t border-gray-100">
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <Filter className="w-4 h-4" />
+              <span className="font-medium">Active filters:</span>
+              {searchQuery && (
+                <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                  Search: {searchQuery}
+                </span>
+              )}
+              {selectedCategory !== 'All Categories' && (
+                <span className="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
+                  Category: {selectedCategory}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
 
@@ -3021,7 +3194,11 @@ const ExpertsTab = ({ user }) => {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-lg font-semibold text-gray-900">
-              {loading ? 'Loading experts...' : `${experts.length} Expert${experts.length !== 1 ? 's' : ''} Found`}
+              {loading ? 'Loading experts...' : (
+                (searchQuery || selectedCategory !== 'All Categories') 
+                  ? `${experts.length} Expert${experts.length !== 1 ? 's' : ''} Found`
+                  : `${totalExperts} Expert${totalExperts !== 1 ? 's' : ''} Available`
+              )}
             </h3>
             {searchQuery && (
               <p className="text-xs text-gray-600 mt-0.5">
@@ -3031,7 +3208,12 @@ const ExpertsTab = ({ user }) => {
           </div>
           {experts.length > 0 && (
             <div className="text-xs text-gray-500">
-              Showing {experts.length} of {experts.length} experts
+              Showing {experts.length} of {totalExperts} experts
+              {(searchQuery || selectedCategory !== 'All Categories') && totalExperts > experts.length && (
+                <span className="ml-2 text-blue-600">
+                  (filtered results)
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -3189,6 +3371,7 @@ const ExpertsTab = ({ user }) => {
                         </span>
                       )}
                     </div>
+
                   </div>
                 )}
 
@@ -3205,7 +3388,7 @@ const ExpertsTab = ({ user }) => {
                       onClick={() => handleViewProfile(expert)}
                       className="px-3 py-2 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-200 transition-colors"
                     >
-                      Profile
+                      View Profile
                     </button>
                   </div>
                 </div>
@@ -3214,15 +3397,474 @@ const ExpertsTab = ({ user }) => {
           </div>
         )}
 
-        {/* Load More Button */}
-        {!loading && !error && experts.length > 0 && experts.length >= filters.limit && (
+        {/* Load More Section */}
+        {!loading && !error && experts.length > 0 && (
           <div className="text-center mt-8">
-            <button
-              onClick={() => setFilters(prev => ({ ...prev, page: prev.page + 1, limit: prev.limit + 12 }))}
-              className="px-8 py-3 bg-white text-blue-600 border border-blue-200 rounded-xl hover:bg-blue-50 transition-colors font-medium"
+            {/* Load More Button (Manual) */}
+            {hasMore && (
+              <button
+                onClick={loadMoreExperts}
+                disabled={isLoadingMore}
+                className="px-8 py-3 bg-white text-blue-600 border border-blue-200 rounded-xl hover:bg-blue-50 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoadingMore ? 'Loading...' : 'Load More Experts'}
+              </button>
+            )}
+            
+            {/* Loading More Indicator */}
+            {isLoadingMore && (
+              <div className="mt-4">
+                <div className="inline-flex items-center space-x-2 text-gray-600">
+                  <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                  <span>Loading more experts...</span>
+                </div>
+              </div>
+            )}
+            
+            {/* End of Results - Only show when there are many experts */}
+            {!hasMore && experts.length > 0 && experts.length >= 20 && (
+              <div className="mt-4 text-gray-500">
+                <p>You've reached the end of all available experts.</p>
+                <p className="text-sm">Showing {experts.length} of {totalExperts} experts</p>
+              </div>
+            )}
+            
+            {/* Intersection Observer Trigger for Auto-loading */}
+            <div id="load-more-trigger" className="h-4 w-full" />
+          </div>
+        )}
+
+        {/* Scroll to Top Button */}
+        {showScrollTop && (
+          <button
+            onClick={scrollToTop}
+            className="fixed bottom-6 right-6 w-12 h-12 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-all duration-200 z-40 flex items-center justify-center"
+            title="Scroll to top"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+            </svg>
+          </button>
+        )}
+
+        {/* Contact Modal */}
+        {showContactModal && selectedExpert && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
             >
-              Load More Experts
-            </button>
+              {/* Header */}
+              <div className="p-6 border-b border-gray-100">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    {selectedExpert.profilePicture ? (
+                      <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-200">
+                        <img
+                          src={selectedExpert.profilePicture}
+                          alt={`${selectedExpert.user?.fullName}'s profile`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-2xl">
+                        {selectedExpert.user?.fullName?.charAt(0) || 'E'}
+                      </div>
+                    )}
+                    <div>
+                      <h2 className="text-xl font-bold text-gray-900">
+                        {selectedExpert.user?.fullName}
+                      </h2>
+                      <p className="text-gray-600">{selectedExpert.jobTitle}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={closeContactModal}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+                <p className="text-gray-600 text-sm">
+                  Get in touch with {selectedExpert.user?.fullName} for collaboration opportunities.
+                </p>
+              </div>
+
+              {/* Contact Details */}
+              <div className="p-6 space-y-4">
+                {/* Email */}
+                <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                  <Mail className="w-5 h-5 text-blue-600" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Email</p>
+                    <p className="text-sm text-gray-600">{selectedExpert.user?.email}</p>
+                  </div>
+                </div>
+
+                {/* Phone */}
+                {selectedExpert.user?.phone && (
+                  <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                    <Phone className="w-5 h-5 text-blue-600" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Phone</p>
+                      <p className="text-sm text-gray-600">{selectedExpert.user?.phone}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Email Composition Form */}
+              <div className="px-6 pb-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Send Message</h3>
+                <div className="space-y-4">
+                  {/* Subject */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                    <input
+                      type="text"
+                      placeholder="Collaboration Opportunity"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      defaultValue="Collaboration Opportunity"
+                    />
+                  </div>
+                  
+                  {/* Message */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                    <textarea
+                      rows={4}
+                      placeholder="Hi, I'm interested in collaborating with you..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                      defaultValue={`Hi ${selectedExpert.user?.fullName},
+
+I'm interested in collaborating with you for a project. Could you please let me know your availability and discuss the details?
+
+Best regards,`}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="p-6 border-t border-gray-100 flex space-x-3">
+                <button
+                  onClick={closeContactModal}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    const subject = document.querySelector('input[placeholder="Collaboration Opportunity"]').value;
+                    const message = document.querySelector('textarea').value;
+                    const mailtoLink = `mailto:${selectedExpert.user?.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
+                    window.open(mailtoLink, '_blank');
+                  }}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Send Email
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Profile Modal */}
+        {showProfileModal && selectedExpert && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+            >
+              {/* Simple Header */}
+              <div className="bg-white border-b border-gray-200 p-6">
+                <div className="flex items-center justify-between">
+                                  <div className="flex items-center space-x-4">
+                  {selectedExpert.profilePicture ? (
+                    <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-200">
+                      <img
+                        src={selectedExpert.profilePicture}
+                        alt={`${selectedExpert.user?.fullName}'s profile`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          console.log('❌ Profile picture failed to load:', selectedExpert.profilePicture);
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                      <div className="w-full h-full bg-gray-100 rounded-full flex items-center justify-center text-gray-600 font-semibold text-xl" style={{display: 'none'}}>
+                        {selectedExpert.user?.fullName?.charAt(0) || 'E'}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 font-semibold text-xl">
+                      {selectedExpert.user?.fullName?.charAt(0) || 'E'}
+                    </div>
+                  )}
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900">
+                        {selectedExpert.user?.fullName}
+                      </h2>
+                      <p className="text-gray-600">{selectedExpert.jobTitle}</p>
+                      {selectedExpert.company && (
+                        <p className="text-gray-500 text-sm">{selectedExpert.company}</p>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={closeProfileModal}
+                    className="text-gray-400 hover:text-gray-600 transition-colors p-2"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+                
+                {/* Quick Info Row */}
+                <div className="flex items-center space-x-6 mt-4 pt-4 border-t border-gray-100">
+                  {selectedExpert.experience && (
+                    <div className="flex items-center space-x-2 text-sm text-gray-600">
+                      <Clock className="w-4 h-4" />
+                      <span>{selectedExpert.experience}</span>
+                    </div>
+                  )}
+                  {selectedExpert.location && (
+                    <div className="flex items-center space-x-2 text-sm text-gray-600">
+                      <MapPin className="w-4 h-4" />
+                      <span>{selectedExpert.location}</span>
+                    </div>
+                  )}
+                  {selectedExpert.hourlyRate && (
+                    <div className="flex items-center space-x-2 text-sm text-gray-600">
+                      <TrendingUp className="w-4 h-4" />
+                      <span className="font-semibold text-green-600">${parseFloat(selectedExpert.hourlyRate).toFixed(0)}/hr</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-6 max-h-[60vh] overflow-y-auto">
+                <div className="space-y-6">
+                                     {/* About */}
+                   {selectedExpert.bio && (
+                     <div>
+                       <h3 className="text-lg font-semibold text-gray-900 mb-3">About</h3>
+                       <p className="text-gray-700 leading-relaxed">{selectedExpert.bio}</p>
+                     </div>
+                   )}
+
+                   {/* Primary Expertise */}
+                   {selectedExpert.primaryExpertise && (
+                     <div>
+                       <h3 className="text-lg font-semibold text-gray-900 mb-3">Primary Expertise</h3>
+                       <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
+                         <p className="text-gray-700 font-medium">
+                           {selectedExpert.primaryExpertise?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                         </p>
+                       </div>
+                     </div>
+                   )}
+
+                   {/* Skills */}
+                   {selectedExpert.expertskill && selectedExpert.expertskill.length > 0 && (
+                     <div>
+                       <h3 className="text-lg font-semibold text-gray-900 mb-3">Skills & Expertise</h3>
+                       <div className="flex flex-wrap gap-2">
+                         {selectedExpert.expertskill.map(skill => (
+                           <span
+                             key={skill.id}
+                             className="px-3 py-1 bg-blue-50 text-blue-700 rounded-md text-sm border border-blue-200"
+                           >
+                             {skill.skillName}
+                             {skill.skillLevel && (
+                               <span className="ml-2 text-blue-500">({skill.skillLevel})</span>
+                             )}
+                           </span>
+                         ))}
+                       </div>
+                     </div>
+                   )}
+
+                   {/* Available For */}
+                   {selectedExpert.availableFor && Array.isArray(selectedExpert.availableFor) && selectedExpert.availableFor.length > 0 && (
+                     <div>
+                       <h3 className="text-lg font-semibold text-gray-900 mb-3">Available For</h3>
+                       <div className="flex flex-wrap gap-2">
+                         {selectedExpert.availableFor.map((service, index) => (
+                           <span
+                             key={index}
+                             className="px-3 py-2 bg-green-50 text-green-700 text-sm rounded-lg border border-green-200 font-medium"
+                           >
+                             {service}
+                           </span>
+                         ))}
+                       </div>
+
+                     </div>
+                   )}
+
+                   {/* Preferred Mode */}
+                   {selectedExpert.preferredMode && (
+                     <div>
+                       <h3 className="text-lg font-semibold text-gray-900 mb-3">Preferred Mode</h3>
+                       <div className="p-3 bg-gray-50 rounded-md">
+                         <p className="text-gray-700">{selectedExpert.preferredMode}</p>
+                       </div>
+                     </div>
+                   )}
+
+                   {/* Work Experience Details */}
+                   {selectedExpert.workexperience && selectedExpert.workexperience.length > 0 && (
+                     <div>
+                       <h3 className="text-lg font-semibold text-gray-900 mb-3">Work Experience</h3>
+                       <div className="space-y-4">
+                         {selectedExpert.workexperience.map((exp, index) => (
+                           <div key={exp.id} className="p-4 bg-white border border-gray-200 rounded-lg">
+                             <div className="flex items-start justify-between mb-2">
+                               <div>
+                                 <h4 className="font-semibold text-gray-900 text-lg">{exp.jobTitle}</h4>
+                                 <p className="text-blue-600 font-medium">{exp.company}</p>
+                                 {exp.location && (
+                                   <p className="text-gray-600 text-sm">{exp.location}</p>
+                                 )}
+                               </div>
+                               <div className="text-right">
+                                 <div className="text-sm text-gray-600">
+                                   {new Date(exp.startDate).toLocaleDateString('en-US', { 
+                                     month: 'short', 
+                                     year: 'numeric' 
+                                   })}
+                                   {' - '}
+                                   {exp.isCurrent 
+                                     ? 'Present' 
+                                     : exp.endDate 
+                                       ? new Date(exp.endDate).toLocaleDateString('en-US', { 
+                                           month: 'short', 
+                                           year: 'numeric' 
+                                         })
+                                       : 'N/A'
+                                   }
+                                 </div>
+                                 {exp.isCurrent && (
+                                   <span className="inline-block px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full mt-1">
+                                     Current
+                                   </span>
+                                 )}
+                               </div>
+                             </div>
+                             
+                             {exp.description && (
+                               <p className="text-gray-700 mb-3 leading-relaxed">{exp.description}</p>
+                             )}
+                             
+                             {exp.achievements && (
+                               <div className="mb-3">
+                               <p className="text-sm font-medium text-gray-900 mb-2">Key Achievements:</p>
+                               <p className="text-gray-700 text-sm leading-relaxed">{exp.achievements}</p>
+                             </div>
+                             )}
+                             
+                             {exp.skills && Array.isArray(exp.skills) && exp.skills.length > 0 && (
+                               <div>
+                                 <p className="text-sm font-medium text-gray-900 mb-2">Skills Used:</p>
+                                 <div className="flex flex-wrap gap-2">
+                                   {exp.skills.map((skill, skillIndex) => (
+                                     <span
+                                       key={skillIndex}
+                                       className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded border border-blue-200"
+                                     >
+                                       {skill}
+                                     </span>
+                                   ))}
+                                 </div>
+                               </div>
+                             )}
+                           </div>
+                         ))}
+                       </div>
+                     </div>
+                   )}
+
+
+
+                  {/* Contact & Documents */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Contact */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3">Contact Information</h3>
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-3 p-2">
+                          <Mail className="w-4 h-4 text-gray-500" />
+                          <span className="text-sm text-gray-700">{selectedExpert.user?.email}</span>
+                        </div>
+                        {selectedExpert.user?.phone && (
+                          <div className="flex items-center space-x-3 p-2">
+                            <Phone className="w-4 h-4 text-gray-500" />
+                            <span className="text-sm text-gray-700">{selectedExpert.user?.phone}</span>
+                          </div>
+                        )}
+                        {selectedExpert.website && (
+                          <div className="flex items-center space-x-3 p-2">
+                            <Building2 className="w-4 h-4 text-gray-500" />
+                            <a
+                              href={selectedExpert.website}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-blue-600 hover:underline"
+                            >
+                              Visit Website
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                                         {/* Documents */}
+                     {selectedExpert.resumeUrl && (
+                       <div>
+                         <h3 className="text-lg font-semibold text-gray-900 mb-3">Documents</h3>
+                         <div className="space-y-2">
+                           <a
+                             href={selectedExpert.resumeUrl}
+                             target="_blank"
+                             rel="noopener noreferrer"
+                             className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-md transition-colors"
+                           >
+                             <FileText className="w-4 h-4 text-gray-500" />
+                             <span className="text-sm text-gray-700">View Resume</span>
+                           </a>
+                         </div>
+                       </div>
+                     )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Simple Footer */}
+              <div className="bg-gray-50 border-t border-gray-200 p-4">
+                <div className="flex space-x-3">
+                  <button
+                    onClick={closeProfileModal}
+                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+                  >
+                    Close
+                  </button>
+                  <button
+                    onClick={() => {
+                      closeProfileModal();
+                      handleContactExpert(selectedExpert);
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                  >
+                    Contact Expert
+                  </button>
+                </div>
+              </div>
+            </motion.div>
           </div>
         )}
       </div>

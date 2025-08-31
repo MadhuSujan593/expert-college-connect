@@ -34,7 +34,11 @@ const ExpertDashboard = () => {
 
   const { user, logout, setUser } = useAuth();
 
-  const [activeTab, setActiveTab] = useState('overview');
+  // Get active tab from URL or default to 'overview'
+  const [activeTab, setActiveTab] = useState(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('tab') || 'overview';
+  });
 
   const [profile, setProfile] = useState(null);
 
@@ -246,7 +250,29 @@ const ExpertDashboard = () => {
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
+  // Tab management with URL persistence
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    
+    // Update URL without page reload
+    const url = new URL(window.location);
+    url.searchParams.set('tab', tabId);
+    window.history.pushState({}, '', url);
+  };
 
+  // Listen for browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabFromUrl = urlParams.get('tab');
+      if (tabFromUrl && tabFromUrl !== activeTab) {
+        setActiveTab(tabFromUrl);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [activeTab]);
 
   useEffect(() => {
 
@@ -1385,7 +1411,7 @@ const ExpertDashboard = () => {
 
                 isActive={activeTab === 'overview'}
 
-                onClick={setActiveTab}
+                onClick={handleTabChange}
 
               />
 
@@ -1399,7 +1425,7 @@ const ExpertDashboard = () => {
 
                 isActive={activeTab === 'profile'}
 
-                onClick={setActiveTab}
+                onClick={handleTabChange}
 
               />
 
@@ -1413,7 +1439,7 @@ const ExpertDashboard = () => {
 
                 isActive={activeTab === 'experience'}
 
-                onClick={setActiveTab}
+                onClick={handleTabChange}
 
               />
 
@@ -1429,7 +1455,7 @@ const ExpertDashboard = () => {
 
                 isActive={activeTab === 'colleges'}
 
-                onClick={setActiveTab}
+                onClick={handleTabChange}
 
               />
 
@@ -1443,7 +1469,7 @@ const ExpertDashboard = () => {
 
                 isActive={activeTab === 'ratings'}
 
-                onClick={setActiveTab}
+                onClick={handleTabChange}
 
               />
 
@@ -1756,7 +1782,7 @@ const ExpertDashboard = () => {
 
                         whileTap={{ scale: 0.98 }}
 
-                        onClick={() => setActiveTab('profile')}
+                        onClick={() => handleTabChange('profile')}
 
                         className="group flex items-center space-x-4 p-5 bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl hover:from-blue-100 hover:to-blue-200/50 transition-all duration-300"
 
@@ -1784,7 +1810,7 @@ const ExpertDashboard = () => {
 
                         whileTap={{ scale: 0.98 }}
 
-                        onClick={() => setActiveTab('colleges')}
+                        onClick={() => handleTabChange('colleges')}
 
                         className="group flex items-center space-x-4 p-5 bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-xl hover:from-emerald-100 hover:to-emerald-200/50 transition-all duration-300"
 

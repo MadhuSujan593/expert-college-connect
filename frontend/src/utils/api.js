@@ -24,14 +24,37 @@ class ApiService {
   }
 
   // Helper method to handle responses
-  async handleResponse(response) {
+  async handleResponse(response, requestContext = {}) {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       
-      // Handle 401 Unauthorized - token expired
+      console.log('❌ API Service - Response not OK:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorData,
+        requestContext,
+        currentPath: window.location.pathname
+      });
+      
+      // Handle 401 Unauthorized - distinguish between invalid credentials and expired tokens
       if (response.status === 401) {
-        await this.handleUnauthorized();
-        throw new Error('Authentication expired. Please login again.');
+        // Check if this is a login attempt (invalid credentials) vs expired token
+        const isLoginAttempt = requestContext.isLoginAttempt || 
+                              window.location.pathname === '/login' || 
+                              window.location.pathname === '/auth/login';
+        
+        console.log('🔐 API Service - 401 Unauthorized, isLoginAttempt:', isLoginAttempt);
+        
+        if (isLoginAttempt) {
+          // This is likely invalid credentials during login
+          console.log('🔐 API Service - Invalid credentials during login');
+          throw new Error(errorData.message || 'Invalid credentials.');
+        } else {
+          // This is likely an expired token during authenticated requests
+          console.log('🔐 API Service - Expired token during authenticated request');
+          await this.handleUnauthorized();
+          throw new Error('Authentication expired. Please login again.');
+        }
       }
       
       throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
@@ -152,12 +175,17 @@ class ApiService {
   }
 
   async login(credentials) {
+    console.log('🔐 API Service - Login attempt for:', credentials.identifier);
+    
     const response = await fetch(`${this.baseURL}/auth/login`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify(credentials),
     });
-    return this.handleResponse(response);
+    
+    console.log('🔐 API Service - Login response status:', response.status);
+    
+    return this.handleResponse(response, { isLoginAttempt: true });
   }
 
   async logout() {

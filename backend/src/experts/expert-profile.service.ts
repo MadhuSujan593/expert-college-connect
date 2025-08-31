@@ -697,6 +697,9 @@ export class ExpertProfileService {
               },
             },
             expertskill: true,
+            workexperience: {
+              orderBy: { startDate: 'desc' },
+            },
             rating: {
               select: { rating: true },
             },
@@ -737,6 +740,9 @@ export class ExpertProfileService {
               },
             },
             expertskill: true,
+            workexperience: {
+              orderBy: { startDate: 'desc' },
+            },
             rating: {
               select: { rating: true },
             },
@@ -796,6 +802,9 @@ export class ExpertProfileService {
             },
           },
           expertskill: true,
+          workexperience: {
+            orderBy: { startDate: 'desc' },
+          },
           rating: {
             select: { rating: true },
           },
