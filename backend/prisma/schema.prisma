@@ -21,13 +21,13 @@ model collegeprofile {
   country           String?                        @db.VarChar(100)
   postalCode        String?                        @db.VarChar(20)
   phone             String?                        @db.VarChar(20)
-  logoUrl           String?                        @db.VarChar(500)
-  description       String?                        @db.Text
   isProfileComplete Boolean                        @default(false)
   isVerified        Boolean                        @default(false)
   verificationDate  DateTime?
   createdAt         DateTime                       @default(now())
   updatedAt         DateTime
+  description       String?                        @db.Text
+  logoUrl           String?                        @db.VarChar(500)
   user              user                           @relation(fields: [userId], references: [id], onDelete: Cascade, map: "CollegeProfile_userId_key")
   requirement       requirement[]
 
@@ -57,26 +57,26 @@ model emailverification {
 }
 
 model expertprofile {
-  id                String        @id
-  userId            String        @unique(map: "ExpertProfile_userId_key")
-  jobTitle          String        @db.VarChar(255)
-  company           String        @db.VarChar(255)
-  experience        String?       @db.VarChar(100)
-  location          String?       @db.VarChar(255)
-  website           String?       @db.VarChar(500)
-  primaryExpertise  String?       @db.VarChar(255)
-  bio               String?       @db.Text
-  hourlyRate        Decimal?      @db.Decimal(10, 2)
+  id                String           @id
+  userId            String           @unique(map: "ExpertProfile_userId_key")
+  jobTitle          String           @db.VarChar(255)
+  company           String           @db.VarChar(255)
+  experience        String?          @db.VarChar(100)
+  location          String?          @db.VarChar(255)
+  website           String?          @db.VarChar(500)
+  primaryExpertise  String?          @db.VarChar(255)
+  bio               String?          @db.Text
+  hourlyRate        Decimal?         @db.Decimal(10, 2)
   availableFor      Json?
-  preferredMode     String?       @db.VarChar(100)
-  resumeUrl         String?       @db.VarChar(500)
-  profilePicture    String?       @db.VarChar(500)
-  isProfileComplete Boolean       @default(false)
-  isVerified        Boolean       @default(false)
+  preferredMode     String?          @db.VarChar(100)
+  isProfileComplete Boolean          @default(false)
+  isVerified        Boolean          @default(false)
   verificationDate  DateTime?
-  createdAt         DateTime      @default(now())
+  createdAt         DateTime         @default(now())
   updatedAt         DateTime
-  user              user          @relation(fields: [userId], references: [id], onDelete: Cascade, map: "ExpertProfile_userId_fkey")
+  resumeUrl         String?          @db.VarChar(500)
+  profilePicture    String?          @db.VarChar(500)
+  user              user             @relation(fields: [userId], references: [id], onDelete: Cascade, map: "ExpertProfile_userId_fkey")
   expertskill       expertskill[]
   rating            rating[]
   service           service[]
@@ -202,6 +202,9 @@ model requirement {
   isActive         Boolean                @default(true)
   createdAt        DateTime               @default(now())
   updatedAt        DateTime
+  experience       String?                @db.Text
+  requiredSkills   String?                @db.Text
+  applications     application[]
   collegeprofile   collegeprofile         @relation(fields: [collegeProfileId], references: [id], onDelete: Cascade, map: "Requirement_collegeProfileId_fkey")
 
   @@index([budget], map: "Requirement_budget_idx")
@@ -273,9 +276,13 @@ model user {
   createdAt         DateTime            @default(now())
   updatedAt         DateTime
   deletedAt         DateTime?
+  applications      application[]
   collegeprofile    collegeprofile?
   emailverification emailverification[]
   expertprofile     expertprofile?
+  receivedMessages  message[]           @relation("MessageReceiver")
+  sentMessages      message[]           @relation("MessageSender")
+  notifications     notification[]
   passwordreset     passwordreset[]
   phoneverification phoneverification[]
   refreshtoken      refreshtoken[]
@@ -286,6 +293,91 @@ model user {
   @@index([isActive], map: "User_isActive_idx")
   @@index([phone], map: "User_phone_idx")
   @@index([role], map: "User_role_idx")
+}
+
+model workexperience {
+  id              String        @id
+  expertProfileId String
+  jobTitle        String        @db.VarChar(255)
+  company         String        @db.VarChar(255)
+  location        String?       @db.VarChar(255)
+  startDate       DateTime
+  endDate         DateTime?
+  isCurrent       Boolean       @default(false)
+  description     String?       @db.Text
+  skills          Json?
+  achievements    String?       @db.Text
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime
+  expertprofile   expertprofile @relation(fields: [expertProfileId], references: [id], onDelete: Cascade, map: "WorkExperience_expertProfileId_fkey")
+
+  @@index([expertProfileId], map: "WorkExperience_expertProfileId_idx")
+  @@index([startDate], map: "WorkExperience_startDate_idx")
+  @@index([isCurrent], map: "WorkExperience_isCurrent_idx")
+}
+
+model application {
+  id                 String             @id @default(cuid())
+  requirementId      String
+  expertId           String
+  status             application_status @default(PENDING)
+  coverLetter        String?            @db.Text
+  proposedBudget     Decimal?           @db.Decimal(10, 2)
+  proposedTimeline   String?            @db.VarChar(255)
+  relevantExperience String?            @db.Text
+  attachments        Json?
+  isShortlisted      Boolean            @default(false)
+  shortlistedAt      DateTime?
+  reviewedAt         DateTime?
+  reviewedBy         String?
+  reviewNotes        String?            @db.Text
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime
+  expert             user               @relation(fields: [expertId], references: [id], onDelete: Cascade)
+  requirement        requirement        @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  notifications      notification[]
+
+  @@index([requirementId], map: "Application_requirementId_idx")
+  @@index([expertId], map: "Application_expertId_idx")
+  @@index([status], map: "Application_status_idx")
+  @@index([createdAt], map: "Application_createdAt_idx")
+}
+
+model notification {
+  id            String            @id @default(cuid())
+  userId        String
+  applicationId String?
+  type          notification_type
+  title         String            @db.VarChar(255)
+  message       String            @db.Text
+  isRead        Boolean           @default(false)
+  readAt        DateTime?
+  createdAt     DateTime          @default(now())
+  application   application?      @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  user          user              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "Notification_userId_idx")
+  @@index([applicationId], map: "Notification_applicationId_idx")
+  @@index([isRead], map: "Notification_isRead_idx")
+  @@index([createdAt], map: "Notification_createdAt_idx")
+}
+
+model message {
+  id         String    @id @default(cuid())
+  senderId   String
+  receiverId String
+  subject    String    @db.VarChar(255)
+  content    String    @db.Text
+  isRead     Boolean   @default(false)
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
+  receiver   user      @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender     user      @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([senderId], map: "Message_senderId_idx")
+  @@index([receiverId], map: "Message_receiverId_idx")
+  @@index([isRead], map: "Message_isRead_idx")
+  @@index([createdAt], map: "Message_createdAt_idx")
 }
 
 enum expertskill_skillLevel {
@@ -318,7 +410,7 @@ enum payment_status {
   FAILED
   CANCELLED
   REFUNDED
-} 
+}
 
 enum requirement_budgetType {
   FIXED
@@ -340,23 +432,21 @@ enum user_role {
   SUPER_ADMIN
 }
 
-model workexperience {
-  id                String        @id
-  expertProfileId   String
-  jobTitle          String        @db.VarChar(255)
-  company           String        @db.VarChar(255)
-  location          String?       @db.VarChar(255)
-  startDate         DateTime
-  endDate           DateTime?
-  isCurrent         Boolean       @default(false)
-  description       String?       @db.Text
-  skills            Json?
-  achievements      String?       @db.Text
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime
-  expertprofile     expertprofile @relation(fields: [expertProfileId], references: [id], onDelete: Cascade, map: "WorkExperience_expertProfileId_fkey")
+enum application_status {
+  PENDING
+  SHORTLISTED
+  REJECTED
+  ACCEPTED
+  WITHDRAWN
+}
 
-  @@index([expertProfileId], map: "WorkExperience_expertProfileId_idx")
-  @@index([startDate], map: "WorkExperience_startDate_idx")
-  @@index([isCurrent], map: "WorkExperience_isCurrent_idx")
+enum notification_type {
+  APPLICATION_SUBMITTED
+  APPLICATION_STATUS_UPDATED
+  APPLICATION_SHORTLISTED
+  APPLICATION_REJECTED
+  APPLICATION_ACCEPTED
+  MESSAGE_RECEIVED
+  REQUIREMENT_POSTED
+  REQUIREMENT_UPDATED
 }

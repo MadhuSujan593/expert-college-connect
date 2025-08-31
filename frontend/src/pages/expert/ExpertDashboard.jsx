@@ -23,12 +23,14 @@ import api from '../../utils/api';
 import FileUpload from '../../components/common/FileUpload';
 
 import Toast from '../../components/common/Toast';
-import VerificationBanner from '../../components/common/VerificationBanner';
+
 import EmailVerificationModal from '../../components/verification/EmailVerificationModal';
 import PhoneVerificationModal from '../../components/verification/PhoneVerificationModal';
+import ExpertOpportunities from '../../components/expert/ExpertOpportunities';
 import { 
   checkAvailability 
 } from '../../utils/verificationUtils';
+import VerificationRequirementModal from '../../components/common/VerificationRequirementModal';
 
 const ExpertDashboard = () => {
 
@@ -1615,22 +1617,7 @@ const ExpertDashboard = () => {
 
             <div className="p-6 space-y-6">
 
-               {/* Verification Banner */}
-               {console.log('Verification Banner Debug:', { 
-                 userEmail: user?.email, 
-                 isEmailVerified: user?.isEmailVerified, 
-                 userPhone: user?.phone, 
-                 isPhoneVerified: user?.isPhoneVerified,
-                 shouldShow: (!user?.isEmailVerified || !user?.isPhoneVerified),
-                 userObject: user
-               })}
-               {user && (!user.isEmailVerified || !user.isPhoneVerified) && (
-                 <VerificationBanner 
-                   user={user}
-                   onVerifyEmail={() => setIsEditingProfile(true)}
-                   onVerifyPhone={() => setIsEditingProfile(true)}
-                 />
-               )}
+               
 
               {/* Overview Tab */}
 
@@ -3757,189 +3744,8 @@ const ExpertDashboard = () => {
 
                 >
 
-                  {/* Search Section */}
-
-                  <div className="bg-white rounded-2xl border border-slate-200/60 p-6">
-
-                    <h2 className="text-xl font-semibold text-slate-900 mb-6">Find Opportunities</h2>
-
-                    <div className="flex space-x-4">
-
-                      <div className="flex-1">
-
-                        <input
-
-                          type="text"
-
-                          placeholder="Search for colleges, courses, or opportunities..."
-
-                          value={collegeSearchQuery}
-
-                          onChange={(e) => setCollegeSearchQuery(e.target.value)}
-
-                          className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-
-                        />
-
-                      </div>
-
-                      <motion.button
-
-                        whileHover={{ scale: 1.02 }}
-
-                        whileTap={{ scale: 0.98 }}
-
-                        className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium shadow-lg shadow-blue-600/25"
-
-                      >
-
-                        <Search className="h-5 w-5" />
-
-                      </motion.button>
-
-                    </div>
-
-                  </div>
-
-
-
-                  {/* Opportunities List */}
-
-                  <div className="bg-white rounded-2xl border border-slate-200/60 p-6">
-
-                    <h3 className="text-lg font-semibold text-slate-900 mb-6">Available Opportunities</h3>
-
-                    
-                    
-                    {collegePosts && collegePosts.length > 0 ? (
-
-                      <div className="space-y-4">
-
-                        {collegePosts.map((post, index) => (
-
-                          <motion.div
-
-                            key={index}
-
-                            initial={{ opacity: 0, y: 10 }}
-
-                            animate={{ opacity: 1, y: 0 }}
-
-                            className="p-6 bg-slate-50 rounded-xl border border-slate-200/60 hover:border-slate-300/60 transition-colors"
-
-                          >
-
-                            <div className="flex items-start justify-between">
-
-                              <div className="flex-1">
-
-                                <div className="flex items-center space-x-3 mb-3">
-
-                                  <div className="p-2 bg-emerald-100 rounded-xl">
-
-                                    <Building2 className="h-5 w-5 text-emerald-600" />
-
-                                  </div>
-
-                                  <div>
-
-                                    <h4 className="text-lg font-semibold text-slate-900">MIT College</h4>
-
-                                    <p className="text-slate-600">Computer Science Department</p>
-
-                                  </div>
-
-                                </div>
-
-                                <p className="text-slate-700 mb-3">
-
-                                  Looking for experienced software engineers to conduct workshops on modern web development technologies.
-
-                                </p>
-
-                                <div className="flex items-center space-x-4 text-sm text-slate-500">
-
-                                  <div className="flex items-center space-x-1">
-
-                                    <Clock className="h-4 w-4" />
-
-                                    <span>2 weeks ago</span>
-
-                                  </div>
-
-                                  <div className="flex items-center space-x-1">
-
-                                    <MapPin className="h-4 w-4" />
-
-                                    <span>Boston, MA</span>
-
-                                  </div>
-
-                                  <div className="flex items-center space-x-1">
-
-                                    <DollarSign className="h-4 w-4" />
-
-                                    <span>₹2000/hour</span>
-
-                                  </div>
-
-                                </div>
-
-                              </div>
-
-                              <motion.button
-
-                                whileHover={{ scale: 1.02 }}
-
-                                whileTap={{ scale: 0.98 }}
-
-                                className="px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors font-medium shadow-lg shadow-emerald-600/25"
-
-                              >
-
-                                Apply Now
-
-                              </motion.button>
-
-                            </div>
-
-                          </motion.div>
-
-                        ))}
-
-                      </div>
-
-                    ) : (
-
-                      <div className="text-center py-12 text-slate-500">
-
-                        <Building2 className="h-16 w-16 mx-auto mb-4 text-slate-300" />
-
-                        <h3 className="text-lg font-medium text-slate-900 mb-2">No opportunities available</h3>
-
-                        <p className="text-slate-500 mb-4">Check back later for new opportunities from colleges</p>
-
-                        <motion.button
-
-                          whileHover={{ scale: 1.02 }}
-
-                          whileTap={{ scale: 0.98 }}
-
-                          className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium shadow-lg shadow-blue-600/25"
-
-                        >
-
-                          <RefreshCw className="h-4 w-4" />
-
-                          <span>Refresh</span>
-
-                        </motion.button>
-
-                      </div>
-
-                    )}
-
-                  </div>
+                  {/* Expert Opportunities Component */}
+                  <ExpertOpportunities />
 
                 </motion.div>
 

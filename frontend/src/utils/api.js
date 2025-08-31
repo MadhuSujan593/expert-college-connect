@@ -116,6 +116,49 @@ class ApiService {
     }
   }
 
+  // Basic HTTP methods
+  async get(url, options = {}) {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}${url}`, {
+      method: 'GET',
+      headers: { ...headers, ...options.headers },
+      ...options
+    });
+    return this.handleResponse(response);
+  }
+
+  async post(url, data, options = {}) {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}${url}`, {
+      method: 'POST',
+      headers: { ...headers, ...options.headers },
+      body: JSON.stringify(data),
+      ...options
+    });
+    return this.handleResponse(response);
+  }
+
+  async put(url, data, options = {}) {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}${url}`, {
+      method: 'PUT',
+      headers: { ...headers, ...options.headers },
+      body: JSON.stringify(data),
+      ...options
+    });
+    return this.handleResponse(response);
+  }
+
+  async delete(url, options = {}) {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}${url}`, {
+      method: 'DELETE',
+      headers: { ...headers, ...options.headers },
+      ...options
+    });
+    return this.handleResponse(response);
+  }
+
   // Get token with automatic refresh
   async getValidToken() {
     let token = localStorage.getItem('accessToken');

@@ -58,7 +58,12 @@ const CollegeDashboard = () => {
     upcomingDeadlines: 0
   });
   const [recentRequirements, setRecentRequirements] = useState([]);
-  const [allRequirements, setAllRequirements] = useState([]);
+  // Infinite scroll state for requirements
+  const [requirements, setRequirements] = useState([]);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [totalRequirements, setTotalRequirements] = useState(0);
   const [editingProfile, setEditingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState({});
   const [logoFile, setLogoFile] = useState(null);
@@ -122,7 +127,7 @@ const CollegeDashboard = () => {
   // Delete functions
   const handleDelete = async (requirementId) => {
     // Find the requirement to get its title for the modal
-    const requirement = allRequirements?.find(req => req.id === requirementId);
+    const requirement = requirements?.find(req => req.id === requirementId);
     if (requirement) {
       setRequirementToDelete(requirement);
       setShowDeleteModal(true);
@@ -210,6 +215,10 @@ const CollegeDashboard = () => {
   // Refresh requirements after posting
   const refreshRequirements = () => {
     fetchRequirements();
+    // Also refresh the main requirements list if on requirements tab
+    if (activeTab === 'requirements') {
+      fetchRequirementsPage(1, false);
+    }
   };
 
   // Wrapper functions for verification from RequirementsTab
@@ -622,47 +631,101 @@ const CollegeDashboard = () => {
     fetchDashboardData();
   }, []);
 
+  // Load requirements when requirements tab is active
+  useEffect(() => {
+    if (activeTab === 'requirements') {
+      fetchRequirementsPage(1, false);
+    }
+  }, [activeTab]);
+
   // Fetch requirements from backend
   const fetchRequirements = async () => {
     try {
-      console.log('🔄 fetchRequirements called - fetching both recent and all requirements...');
-      // Fetch both recent requirements and all requirements
-      const [recentResponse, allResponse] = await Promise.all([
-        fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/requirements/recent`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-          }
-        }),
-        fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/requirements?page=1&limit=8`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-          }
-        })
-      ]);
+      console.log('🔄 fetchRequirements called - fetching recent requirements...');
+      // Fetch only recent requirements for dashboard stats
+      const recentResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/requirements/recent`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        }
+      });
 
-      if (recentResponse.ok && allResponse.ok) {
-        const [recentRequirements, allRequirementsData] = await Promise.all([
-          recentResponse.json(),
-          allResponse.json()
-        ]);
+      if (recentResponse.ok) {
+        const recentRequirements = await recentResponse.json();
         
         console.log('📊 Recent requirements fetched:', recentRequirements.length);
-        console.log('📊 All requirements fetched:', allRequirementsData.requirements.length);
-        console.log('📊 All requirements data:', allRequirementsData.requirements);
         
         setRecentRequirements(recentRequirements);
-        setAllRequirements(allRequirementsData.requirements);
         setStats(prev => ({
           ...prev,
           totalRequirements: recentRequirements.length
         }));
       } else {
-        console.error('Failed to fetch requirements');
+        console.error('Failed to fetch recent requirements');
       }
     } catch (error) {
       console.error('Error fetching requirements:', error);
     }
   };
+
+  // Infinite scroll function for requirements
+  const fetchRequirementsPage = async (pageNum = 1, append = false) => {
+    try {
+      setLoadingMore(true);
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/requirements/college?page=${pageNum}&limit=20`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (append) {
+                  setRequirements(prev => [...prev, ...data.requirements]);
+      } else {
+        setRequirements(data.requirements);
+      }
+      
+      setHasMore(data.hasNextPage);
+      setPage(pageNum);
+      setTotalRequirements(data.total);
+        
+        console.log(`📊 Requirements page ${pageNum} fetched:`, data.requirements.length);
+      } else {
+        console.error('Failed to fetch requirements page');
+      }
+    } catch (error) {
+      console.error('Error fetching requirements page:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  // Load more requirements for infinite scroll
+  const loadMoreRequirements = useCallback(() => {
+    if (hasMore && !loadingMore) {
+      fetchRequirementsPage(page + 1, true);
+    }
+  }, [hasMore, loadingMore, page]);
+
+  // Auto-load more when scrolling to bottom
+  useEffect(() => {
+    const handleScroll = () => {
+      if (activeTab === 'requirements') {
+        const scrollTop = window.scrollY;
+        const windowHeight = window.innerHeight;
+        const documentHeight = document.documentElement.scrollHeight;
+        
+        // Load more when user is near bottom (within 100px)
+        if (scrollTop + windowHeight >= documentHeight - 100) {
+          loadMoreRequirements();
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [activeTab, loadMoreRequirements]);
 
   // Fetch dashboard data
   const fetchDashboardData = async () => {
@@ -1219,9 +1282,14 @@ const CollegeDashboard = () => {
                     showToast={showToast}
                     setActiveTab={handleTabChange}
                     onDelete={handleDelete}
-                    allRequirements={allRequirements}
-                    setAllRequirements={setAllRequirements}
+                    requirements={requirements}
+                    setRequirements={setRequirements}
                     refreshRequirements={refreshRequirements}
+                    totalRequirements={totalRequirements}
+                    loading={loading}
+                    loadingMore={loadingMore}
+                    hasMore={hasMore}
+                    loadMoreRequirements={loadMoreRequirements}
                   />
 
 
@@ -2118,7 +2186,7 @@ const ProfileTab = ({
 };
 
 // Requirements Tab Component - Enhanced with form
-const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhone, onPostRequirement, showToast, setActiveTab, onDelete, allRequirements, setAllRequirements, refreshRequirements }) => {
+const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhone, onPostRequirement, showToast, setActiveTab, onDelete, requirements, setRequirements, refreshRequirements, totalRequirements, loading, loadingMore, hasMore, loadMoreRequirements }) => {
   // Check if user can access requirements creation
   const canAccessRequirements = () => {
     return user?.isEmailVerified || user?.isPhoneVerified;
@@ -2131,59 +2199,14 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
     budget: '',
     deadline: '',
     isUrgent: false,
-    requirements: ''
+    requiredSkills: '',
+    experience: ''
   });
-  const [loading, setLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [page, setPage] = useState(1);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [editingRequirement, setEditingRequirement] = useState(null);
   const [showEditForm, setShowEditForm] = useState(false);
 
-  // Load initial requirements
-  useEffect(() => {
-    loadRequirements();
-  }, []);
-
-  const loadRequirements = async (pageNum = 1, append = false) => {
-    try {
-      setLoading(true);
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/requirements?page=${pageNum}&limit=8`,
-        {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-          }
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        if (append) {
-          setAllRequirements(prev => [...prev, ...data.requirements]);
-        } else {
-          setAllRequirements(data.requirements);
-        }
-        setHasMore(data.hasMore);
-        setPage(pageNum);
-      } else {
-        showToast('error', 'Failed to load requirements');
-      }
-    } catch (error) {
-      console.error('Error loading requirements:', error);
-      showToast('error', 'Failed to load requirements');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadMore = async () => {
-    if (isLoadingMore || !hasMore) return;
-    
-    setIsLoadingMore(true);
-    await loadRequirements(page + 1, true);
-    setIsLoadingMore(false);
-  };
+  // Remove duplicate loading logic since parent component handles it
+  // The requirements are now passed as props from the parent component
 
   const loadRecentRequirements = async () => {
     try {
@@ -2247,7 +2270,8 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
           budget: '',
           deadline: '',
           isUrgent: false,
-          requirements: ''
+          requiredSkills: '',
+          experience: ''
         });
         
         // Refresh requirements list
@@ -2255,11 +2279,13 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
           onPostRequirement();
         }
         
-        // Reload requirements
-        loadRequirements(1, false);
-        
         // Show success message
         showToast('success', 'Requirement created successfully!');
+        
+        // Refresh requirements using parent component's refresh function
+        if (refreshRequirements) {
+          refreshRequirements();
+        }
       } else {
         const errorData = await response.json();
         console.error('❌ Backend error:', errorData);
@@ -2280,7 +2306,8 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
       budget: requirement.budget?.toString() || '',
       deadline: requirement.deadline ? new Date(requirement.deadline).toISOString().split('T')[0] : '',
       isUrgent: requirement.isUrgent,
-      requirements: ''
+      requiredSkills: requirement.requiredSkills || '',
+      experience: requirement.experience || ''
     });
     setShowEditForm(true);
     setShowForm(false);
@@ -2340,12 +2367,17 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
           budget: '',
           deadline: '',
           isUrgent: false,
-          requirements: ''
+          requiredSkills: '',
+          experience: ''
         });
         
         // Refresh requirements list
         showToast('success', 'Requirement updated successfully!');
-        loadRequirements(1, false);
+        
+        // Refresh requirements using parent component's refresh function
+        if (refreshRequirements) {
+          refreshRequirements();
+        }
       } else {
         const errorData = await response.json();
         console.error('❌ [FRONTEND] Backend error:', errorData);
@@ -2371,7 +2403,8 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
       budget: '',
       deadline: '',
       isUrgent: false,
-      requirements: ''
+      requiredSkills: '',
+      experience: ''
     });
   };
 
@@ -2580,15 +2613,29 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
 
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-slate-700 uppercase tracking-wide">
-                  Specific Requirements
+                  Required Skills
                 </label>
             <textarea
-                name="requirements"
-                value={requirementForm.requirements}
+                name="requiredSkills"
+                value={requirementForm.requiredSkills}
               onChange={handleInputChange}
                 rows={2}
                   className="w-full px-3 py-2 bg-white/50 backdrop-blur-sm border border-slate-200/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 placeholder:text-slate-400 resize-none"
-                  placeholder="Specify any particular skills, experience, or qualifications needed..."
+                  placeholder="Specify any particular skills needed for the project..."
+            />
+        </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-slate-700 uppercase tracking-wide">
+                  Experience
+                </label>
+            <textarea
+                name="experience"
+                value={requirementForm.experience}
+              onChange={handleInputChange}
+                rows={2}
+                  className="w-full px-3 py-2 bg-white/50 backdrop-blur-sm border border-slate-200/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 placeholder:text-slate-400 resize-none"
+                  placeholder="Specify required experience level or qualifications..."
             />
         </div>
 
@@ -2734,6 +2781,30 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
                   />
                   <label className="ml-2 text-sm text-slate-700">Mark as Urgent</label>
                 </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Required Skills</label>
+                  <textarea
+                    name="requiredSkills"
+                    value={requirementForm.requiredSkills}
+                    onChange={handleInputChange}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Specify any particular skills needed for the project..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Experience</label>
+                  <textarea
+                    name="experience"
+                    value={requirementForm.experience}
+                    onChange={handleInputChange}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Specify required experience level or qualifications..."
+                  />
+                </div>
                 
                 <div className="flex gap-3 pt-4">
                   <button
@@ -2762,21 +2833,21 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
             <div className="flex items-center gap-3">
               <h2 className="text-lg sm:text-xl font-bold text-slate-900">All Requirements</h2>
               <div className="px-2 sm:px-3 py-1 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-full">
-                <span className="text-xs sm:text-sm font-semibold text-blue-800">{allRequirements.length} requirements</span>
-                    </div>
+                <span className="text-xs sm:text-sm font-semibold text-blue-800">{totalRequirements} requirements</span>
+              </div>
                   </div>
             
-            {allRequirements.length > 0 && (
+            {requirements.length > 0 && (
               <div className="flex items-center gap-2 text-xs text-slate-500">
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span>Sorted by latest first</span>
               </div>
-                  )}
+            )}
                 </div>
 
-          {loading && allRequirements.length === 0 ? (
+          {loading && requirements.length === 0 ? (
             <div className="text-center py-8 sm:py-12">
               <div className="relative">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3 sm:mb-4"></div>
@@ -2784,7 +2855,7 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
               </div>
               <p className="text-slate-600 font-medium text-sm">Loading your requirements...</p>
             </div>
-          ) : allRequirements.length === 0 ? (
+          ) : requirements.length === 0 ? (
             <div className="text-center py-8 sm:py-12">
               <div className="relative">
                 <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4 shadow-lg">
@@ -2805,27 +2876,38 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
             </div>
           ) : (
             <div className="grid gap-3 sm:gap-4">
-                                          {allRequirements.map((requirement, index) => (
-                              <RequirementCard
-                                key={requirement.id}
-                                requirement={requirement}
-                                index={index}
-                                showActions={true}
-                                compact={false}
-                                onEdit={() => handleEdit(requirement)}
-                                onDelete={() => onDelete(requirement.id)}
-                              />
-                            ))}
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading requirements...</p>
+                </div>
+              ) : requirements.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-600">No requirements found.</p>
+                </div>
+              ) : (
+                requirements.map((requirement, index) => (
+                  <RequirementCard
+                    key={requirement.id}
+                    requirement={requirement}
+                    index={index}
+                    showActions={true}
+                    compact={false}
+                    onEdit={() => handleEdit(requirement)}
+                    onDelete={() => onDelete(requirement.id)}
+                  />
+                ))
+              )}
               
-              {/* Compact Load More Button */}
+              {/* Infinite Scroll Load More Button */}
               {hasMore && (
                 <div className="text-center pt-4 sm:pt-6">
                   <button
-                    onClick={loadMore}
-                    disabled={isLoadingMore}
+                    onClick={loadMoreRequirements}
+                    disabled={loadingMore}
                     className="group relative w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-slate-100 to-slate-200 text-slate-700 rounded-xl font-semibold hover:from-slate-200 hover:to-slate-300 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed border border-slate-300/50 hover:border-slate-400/50 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
                   >
-                    {isLoadingMore ? (
+                    {loadingMore ? (
                       <div className="flex items-center justify-center gap-2">
                         <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
                         <span className="text-sm">Loading more...</span>
@@ -2839,7 +2921,7 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
                       </span>
                     )}
                   </button>
-        </div>
+                </div>
               )}
             </div>
           )}
@@ -3332,7 +3414,7 @@ const ExpertsTab = ({ user }) => {
                   {expert.hourlyRate && (
                     <div className="mb-2">
                       <p className="text-sm font-semibold text-gray-900">
-                        ${parseFloat(expert.hourlyRate).toFixed(0)}<span className="text-xs font-normal text-gray-600">/hr</span>
+                        ₹{parseFloat(expert.hourlyRate).toFixed(0)}<span className="text-xs font-normal text-gray-600">/hr</span>
                       </p>
                     </div>
                   )}

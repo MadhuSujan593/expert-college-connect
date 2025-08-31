@@ -26,4 +26,12 @@ export class CreateRequirementDto {
   @IsOptional()
   @IsBoolean()
   isUrgent?: boolean;
+
+  @IsOptional()
+  @IsString()
+  requiredSkills?: string;
+
+  @IsOptional()
+  @IsString()
+  experience?: string;
 }
