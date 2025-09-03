@@ -120,11 +120,11 @@ const RequirementDetails = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center py-4">
+    <div className="min-h-screen bg-secondary-50">
+      {/* Modern Header */}
+      <div className="bg-white border-b border-secondary-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center py-6">
             <button
               onClick={() => {
                 if (applicationData?.fromApplications) {
@@ -133,96 +133,120 @@ const RequirementDetails = () => {
                   navigate('/dashboard/expert');
                 }
               }}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+              className="flex items-center gap-2 text-secondary-600 hover:text-secondary-900 transition-colors group"
             >
-              <ArrowLeft className="w-5 h-5" />
-              <span>Back to Dashboard</span>
+              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+              <span className="font-medium">Back to Dashboard</span>
             </button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-                 {/* Application Status Banner - Always show when application exists */}
-         {hasApplied && (
-           <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-             <div className="flex items-center gap-3">
-               <div className="flex-shrink-0">
-                 <CheckCircle className="w-5 h-5 text-blue-600" />
-               </div>
-               <div className="flex-1">
-                 <h3 className="text-sm font-medium text-blue-800">Application Status</h3>
-                 <p className="text-sm text-blue-700 mt-1">
-                   You have applied for this requirement. Current status: 
-                   <span className="ml-1 font-medium capitalize">
-                     {applicationData?.applicationStatus?.toLowerCase() || applicationStatus?.toLowerCase() || 'Pending'}
-                   </span>
-                 </p>
-               </div>
-             </div>
-           </div>
-         )}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Modern Application Status Banner */}
+        {hasApplied && (
+          <div className="mb-8 bg-white border border-secondary-200 rounded-xl p-6 shadow-sm">
+            <div className="flex items-center gap-4">
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
+                  <CheckCircle className="w-6 h-6 text-primary-600" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-secondary-900 mb-1">Application Status</h3>
+                <p className="text-secondary-600">
+                  You have applied for this requirement. Current status: 
+                  <span className="ml-2 inline-flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-semibold bg-primary-50 text-primary-700 border border-primary-200">
+                    <div className="w-2 h-2 rounded-full bg-primary-400"></div>
+                    {applicationData?.applicationStatus || applicationStatus || 'Pending'}
+                  </span>
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2">
-            {/* Job Card */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-                             {/* Job Title and Company */}
-               <div className="flex items-start justify-between mb-4">
-                 <div className="flex-1">
-                   <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                     {requirement.title}
-                   </h1>
-                   <div className="flex items-center gap-2 text-gray-600 mb-2">
-                     <Building2 className="w-4 h-4" />
-                     <span className="font-medium">{requirement.collegeprofile?.institutionName || 'College Name'}</span>
-                   </div>
-                   <div className="flex items-center gap-2 text-gray-600 mb-3">
-                     <MapPin className="w-4 h-4" />
-                     <span className="text-sm">{requirement.collegeprofile?.city || 'Location not specified'}</span>
-                   </div>
-                 </div>
-                 
-                 <div className="flex flex-col items-end gap-2">
-                   {requirement.isUrgent && (
-                     <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded">
-                       <Zap className="w-3 h-3" />
-                       Urgent
-                     </span>
-                   )}
-                   <span className="text-sm text-gray-500">
-                     Posted {new Date(requirement.createdAt).toLocaleDateString()}
-                   </span>
-                 </div>
-               </div>
+            {/* Modern Job Card */}
+            <div className="bg-white rounded-xl border border-secondary-200 p-8 shadow-sm">
+              {/* Modern Job Header */}
+              <div className="flex items-start justify-between mb-8">
+                <div className="flex-1">
+                  <h1 className="text-3xl font-bold text-secondary-900 mb-3">
+                    {requirement.title}
+                  </h1>
+                  <div className="flex items-center gap-2 text-secondary-600 mb-2">
+                    <Building2 className="w-5 h-5" />
+                    <span className="font-semibold text-lg">{requirement.collegeprofile?.institutionName || 'College Name'}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-secondary-500 mb-4">
+                    <MapPin className="w-4 h-4" />
+                    <span>{requirement.collegeprofile?.city || 'Location not specified'}</span>
+                  </div>
+                </div>
+                
+                <div className="flex flex-col items-end gap-3">
+                  {requirement.isUrgent && (
+                    <span className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-pink-600 text-white text-sm font-semibold rounded-lg shadow-md">
+                      <Zap className="w-4 h-4" />
+                      Urgent
+                    </span>
+                  )}
+                  <span className="text-sm text-secondary-500 font-medium">
+                    Posted {new Date(requirement.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
 
-               {/* Key Job Details */}
-               <div className="mb-6">
-                 <div className="flex items-center gap-2 text-gray-600">
-                   <IndianRupee className="w-4 h-4" />
-                   <span className="text-sm">Budget: ₹{requirement.budget ? new Intl.NumberFormat('en-IN').format(requirement.budget) : 'Not disclosed'}</span>
-                 </div>
-               </div>
+              {/* Key Job Details - Modern Layout */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div className="flex items-center gap-3 p-4 bg-secondary-50 rounded-lg">
+                  <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                    <IndianRupee className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-secondary-600 font-medium">Budget</p>
+                    <p className="text-lg font-semibold text-secondary-900">
+                      {requirement.budget ? `₹${new Intl.NumberFormat('en-IN').format(requirement.budget)}` : 'Not disclosed'}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3 p-4 bg-secondary-50 rounded-lg">
+                  <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <Clock className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-secondary-600 font-medium">Deadline</p>
+                    <p className="text-lg font-semibold text-secondary-900">
+                      {requirement.deadline ? new Date(requirement.deadline).toLocaleDateString() : 'No deadline'}
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-              {/* Tags */}
-              <div className="flex flex-wrap gap-2 mb-6">
-                <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded">
+              {/* Modern Tags */}
+              <div className="flex flex-wrap gap-3 mb-8">
+                <span className="px-4 py-2 bg-primary-100 text-primary-800 text-sm font-semibold rounded-lg border border-primary-200">
                   {requirement.category}
                 </span>
                 {requirement.subcategory && (
-                  <span className="px-3 py-1 bg-gray-100 text-gray-800 text-sm font-medium rounded">
+                  <span className="px-4 py-2 bg-secondary-100 text-secondary-800 text-sm font-semibold rounded-lg border border-secondary-200">
                     {requirement.subcategory}
                   </span>
                 )}
               </div>
 
-              {/* Job Description */}
-              <div className="border-t border-gray-100 pt-4">
-                <h3 className="font-semibold text-gray-900 mb-3">Job description</h3>
-                <p className="text-gray-700 leading-relaxed">
-                  {requirement.description}
-                </p>
+              {/* Modern Job Description */}
+              <div className="border-t border-secondary-200 pt-6">
+                <h3 className="text-xl font-semibold text-secondary-900 mb-4">Job Description</h3>
+                <div className="prose prose-gray max-w-none">
+                  <p className="text-secondary-700 leading-relaxed text-base">
+                    {requirement.description}
+                  </p>
+                </div>
               </div>
 
                                              {/* Additional Details */}
@@ -300,53 +324,60 @@ const RequirementDetails = () => {
             </div>
           </div>
 
-          {/* Right Sidebar */}
+          {/* Modern Right Sidebar */}
           <div className="lg:col-span-1">
-            {/* Apply Card */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6 sticky top-24">
+            {/* Modern Apply Card */}
+            <div className="bg-white rounded-xl border border-secondary-200 p-6 sticky top-24 shadow-sm">
               <div className="text-center mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Apply for this job</h3>
-                <p className="text-sm text-gray-600">Get started with your application</p>
+                <h3 className="text-xl font-semibold text-secondary-900 mb-2">Apply for this job</h3>
+                <p className="text-secondary-600">Get started with your application</p>
               </div>
               
-                                                          {hasApplied ? (
-                 <div className="text-center mb-6">
-                   <div className="px-4 py-3 rounded-lg font-medium bg-blue-100 text-blue-800 border border-blue-200">
-                     Application Submitted
-                   </div>
-                   <p className="text-sm text-gray-600 mt-2">
-                     Status: {applicationData?.applicationStatus || applicationStatus || 'Pending'}
-                   </p>
-                 </div>
-               ) : (
-                 <button
-                   onClick={() => setShowApplicationModal(true)}
-                   className="w-full bg-blue-600 text-white font-medium py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors mb-6"
-                 >
-                   Apply Now
-                 </button>
-               )}
+              {hasApplied ? (
+                <div className="text-center mb-6">
+                  <div className="inline-flex items-center gap-2 px-4 py-3 rounded-lg font-semibold bg-primary-50 text-primary-700 border border-primary-200">
+                    <div className="w-2 h-2 rounded-full bg-primary-400"></div>
+                    Application Submitted
+                  </div>
+                  <p className="text-sm text-secondary-600 mt-3 font-medium">
+                    Status: {applicationData?.applicationStatus || applicationStatus || 'Pending'}
+                  </p>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowApplicationModal(true)}
+                  className="w-full bg-primary-500 text-white font-semibold py-3 px-4 rounded-lg hover:bg-primary-600 transition-colors mb-6 shadow-sm"
+                >
+                  Apply Now
+                </button>
+              )}
 
-                             {/* Application Tips - Only show if not applied */}
-               {!hasApplied && (
-                 <div className="border-t border-gray-100 pt-4">
-                   <h4 className="font-medium text-gray-900 mb-3">Application Tips</h4>
-                   <div className="space-y-2 text-sm text-gray-600">
-                     <div className="flex items-start gap-2">
-                       <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                       <span>Write a compelling cover letter</span>
-                     </div>
-                     <div className="flex items-start gap-2">
-                       <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                       <span>Highlight relevant experience</span>
-                     </div>
-                     <div className="flex items-start gap-2">
-                       <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                       <span>Mention specific skills</span>
-                     </div>
-                   </div>
-                 </div>
-               )}
+              {/* Modern Application Tips */}
+              {!hasApplied && (
+                <div className="border-t border-secondary-200 pt-6">
+                  <h4 className="font-semibold text-secondary-900 mb-4">Application Tips</h4>
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="w-6 h-6 bg-success-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <CheckCircle className="w-4 h-4 text-success-600" />
+                      </div>
+                      <span className="text-secondary-700 font-medium">Write a compelling cover letter</span>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="w-6 h-6 bg-success-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <CheckCircle className="w-4 h-4 text-success-600" />
+                      </div>
+                      <span className="text-secondary-700 font-medium">Highlight relevant experience</span>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="w-6 h-6 bg-success-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <CheckCircle className="w-4 h-4 text-success-600" />
+                      </div>
+                      <span className="text-secondary-700 font-medium">Mention specific skills</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -1176,214 +1176,103 @@ const ExpertDashboard = () => {
 
 
   const StatCard = ({ icon: Icon, title, value, change, color = "blue", trend = "up" }) => (
-
-    <motion.div
-
-      initial={{ opacity: 0, y: 20 }}
-
-      animate={{ opacity: 1, y: 0 }}
-
-      whileHover={{ y: -2 }}
-
-      className="group bg-white rounded-2xl border border-slate-200/60 p-6 hover:border-slate-300/60 hover:shadow-lg hover:shadow-slate-900/5 transition-all duration-300"
-
-    >
-
-      <div className="flex items-start justify-between">
-
-        <div className="flex-1">
-
-          <div className="flex items-center space-x-2 mb-3">
-
-            <div className={`p-2.5 rounded-xl ${
-
-              color === 'blue' ? 'bg-blue-50 group-hover:bg-blue-100' :
-
-              color === 'green' ? 'bg-emerald-50 group-hover:bg-emerald-100' :
-
-              color === 'purple' ? 'bg-violet-50 group-hover:bg-violet-100' :
-
-              color === 'orange' ? 'bg-orange-50 group-hover:bg-orange-100' :
-
-              'bg-slate-50 group-hover:bg-slate-100'
-
-            } transition-colors duration-300`}>
-
-              <Icon className={`h-5 w-5 ${
-
-                color === 'blue' ? 'text-blue-600' :
-
-                color === 'green' ? 'text-emerald-600' :
-
-                color === 'purple' ? 'text-violet-600' :
-
-                color === 'orange' ? 'text-orange-600' :
-
-                'text-slate-600'
-
-              }`} />
-
-            </div>
-
-            <p className="text-sm font-semibold text-slate-600">{title}</p>
-
-          </div>
-
-          <p className="text-3xl font-bold text-slate-900 mb-2">{value}</p>
-
-          {change && (
-
-            <div className="flex items-center space-x-1">
-
-              {trend === 'up' ? (
-
-                <TrendingUp className="h-4 w-4 text-emerald-600" />
-
-              ) : (
-
-                <TrendingDown className="h-4 w-4 text-red-500" />
-
-              )}
-
-              <p className={`text-sm font-medium ${
-
-                trend === 'up' ? 'text-emerald-600' : 'text-red-500'
-
-              }`}>
-
-                {change}
-
-              </p>
-
-            </div>
-
-          )}
-
+    <div className="card p-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm text-secondary-600 mb-1">{title}</p>
+          <p className="text-2xl font-semibold text-secondary-900">{value}</p>
         </div>
-
+        <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+          color === 'blue' ? 'bg-primary-100' :
+          color === 'green' ? 'bg-success-100' :
+          color === 'purple' ? 'bg-accent-100' :
+          color === 'orange' ? 'bg-warning-100' :
+          'bg-secondary-100'
+        }`}>
+          <Icon className={`w-6 h-6 ${
+            color === 'blue' ? 'text-primary-600' :
+            color === 'green' ? 'text-success-600' :
+            color === 'purple' ? 'text-accent-600' :
+            color === 'orange' ? 'text-warning-600' :
+            'text-secondary-600'
+          }`} />
+        </div>
       </div>
-
-    </motion.div>
-
+      {change && (
+        <div className="flex items-center space-x-1 mt-2">
+          {trend === 'up' ? (
+            <TrendingUp className="h-4 w-4 text-success-600" />
+          ) : (
+            <TrendingDown className="h-4 w-4 text-error-500" />
+          )}
+          <p className={`text-sm font-medium ${
+            trend === 'up' ? 'text-success-600' : 'text-error-500'
+          }`}>
+            {change}
+          </p>
+        </div>
+      )}
+    </div>
   );
 
 
 
   const SidebarItem = ({ id, label, icon: Icon, isActive, onClick }) => (
-
-    <motion.button
-
+    <button
       onClick={() => onClick(id)}
-
-      whileHover={{ x: 4 }}
-
-      whileTap={{ scale: 0.98 }}
-
-      className={`group flex items-center space-x-3 w-full px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
-
+      className={`group flex items-center space-x-3 w-full px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
         isActive
-
-          ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25'
-
-          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-
+          ? 'bg-primary-500 text-white'
+          : 'text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100'
       }`}
-
     >
-
-      <Icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-slate-700'}`} />
-
-      <span className="font-semibold">{label}</span>
-
-      {isActive && (
-
-        <motion.div
-
-          layoutId="activeTab"
-
-          className="ml-auto w-2 h-2 bg-white rounded-full"
-
-        />
-
-      )}
-
-    </motion.button>
-
+      <Icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-secondary-500 group-hover:text-secondary-700'}`} />
+      <span>{label}</span>
+    </button>
   );
 
 
 
   return (
-
-    <div className="min-h-screen bg-slate-50">
-
-      {/* Modern Layout with Sidebar */}
-
+    <div className="min-h-screen bg-white">
+      {/* Clean Layout with Sidebar - Expert Style */}
       <div className="flex h-screen overflow-hidden">
-
         {/* Sidebar */}
-
-        <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200/60 transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
+        <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-secondary-200 transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 shadow-soft`}>
 
           <div className="flex flex-col h-full">
 
             {/* Sidebar Header */}
-
-            <div className="flex items-center justify-between px-6 py-6 border-b border-slate-200/60">
-
+            <div className="flex items-center justify-between px-6 py-6 border-b border-secondary-200">
               <div className="flex items-center space-x-3">
-
                 {profile?.profilePicture ? (
-
                   <img 
-
                     src={getFullProfilePictureUrl(profile.profilePicture)} 
-
                     alt="Profile Picture" 
-
-                    className="w-10 h-10 rounded-xl object-cover shadow-lg"
-
+                    className="w-10 h-10 rounded-lg object-cover"
                   />
-
                 ) : (
-
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-
+                  <div className="w-10 h-10 bg-primary-500 rounded-lg flex items-center justify-center">
                     <User className="w-5 h-5 text-white" />
-
                   </div>
-
                 )}
-
                 <div>
-
-                  <h1 className="text-lg font-bold text-slate-900">{profile?.user?.fullName || user?.fullName || 'Expert'}</h1>
-
-                  <p className="text-xs text-slate-500">Expert Panel</p>
-
+                  <h1 className="text-lg font-semibold text-secondary-900">{profile?.user?.fullName || user?.fullName || 'Expert'}</h1>
+                  <p className="text-sm text-secondary-500">Dashboard</p>
                 </div>
-
               </div>
-
               <button
-
                 onClick={() => setSidebarOpen(false)}
-
-                className="lg:hidden p-2 rounded-lg hover:bg-slate-100 text-slate-500"
-
+                className="lg:hidden w-8 h-8 bg-secondary-100 hover:bg-secondary-200 rounded-lg flex items-center justify-center text-secondary-500 hover:text-secondary-700 transition-colors"
               >
-
-                <X className="h-5 w-5" />
-
+                <X className="h-4 w-4" />
               </button>
-
             </div>
 
 
 
             {/* Navigation */}
-
-            <nav className="flex-1 px-4 py-6 space-y-2">
+            <nav className="flex-1 px-4 py-4 space-y-1">
 
               <SidebarItem
 
@@ -1532,85 +1421,43 @@ const ExpertDashboard = () => {
 
 
         {/* Main Content */}
-
-        <div className="flex-1 flex flex-col overflow-hidden">
-
+        <div className="flex-1 flex flex-col overflow-hidden bg-white">
           {/* Top Header */}
-
-          <header className="bg-white border-b border-slate-200/60 px-6 py-4">
-
+          <header className="bg-white border-b border-secondary-200 px-6 py-4">
             <div className="flex items-center justify-between">
-
               <div className="flex items-center space-x-4">
-
                 <button
-
                   onClick={() => setSidebarOpen(true)}
-
-                  className="lg:hidden p-2 rounded-lg hover:bg-slate-100 text-slate-600"
-
+                  className="lg:hidden w-8 h-8 bg-secondary-100 hover:bg-secondary-200 rounded-lg flex items-center justify-center text-secondary-600 hover:text-secondary-800 transition-colors"
                 >
-
-                  <Menu className="h-5 w-5" />
-
+                  <Menu className="h-4 w-4" />
                 </button>
-
                 <div>
-
-                  <h1 className="text-2xl font-bold text-slate-900">
-
-                    {activeTab === 'overview' && 'Dashboard Overview'}
-
-                    {activeTab === 'profile' && 'Profile Management'}
-
-                    {activeTab === 'experience' && 'Work Experience'}
-
+                  <h1 className="text-2xl font-semibold text-secondary-900">
+                    {activeTab === 'overview' && 'Dashboard'}
+                    {activeTab === 'profile' && 'Profile'}
+                    {activeTab === 'experience' && 'Experience'}
                     {activeTab === 'colleges' && 'Opportunities'}
-
-                    {activeTab === 'ratings' && 'Reviews & Ratings'}
-
+                    {activeTab === 'applications' && 'Applications'}
+                    {activeTab === 'ratings' && 'Reviews'}
                   </h1>
-
-                  <div className="flex items-center space-x-2 text-sm text-slate-500 mt-1">
-
-                    <Home className="h-4 w-4" />
-
-                    <ChevronRight className="h-4 w-4" />
-
-                    <span className="capitalize">{activeTab}</span>
-
-                  </div>
-
                 </div>
-
               </div>
-
               <div className="flex items-center space-x-3">
-
-                <button className="relative p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
-
+                <button className="relative p-2 text-secondary-500 hover:text-secondary-700 hover:bg-secondary-100 rounded-lg transition-colors">
                   <Bell className="h-5 w-5" />
-
-                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
-
+                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-error-500 rounded-full text-xs text-white flex items-center justify-center">
                     3
-
                   </span>
-
                 </button>
-
               </div>
-
             </div>
-
           </header>
 
 
 
           {/* Scrollable Content */}
-
-          <main className="flex-1 overflow-y-auto bg-slate-50">
-
+          <main className="flex-1 overflow-y-auto bg-secondary-50">
             <div className="p-6 space-y-6">
 
                
@@ -1751,160 +1598,76 @@ const ExpertDashboard = () => {
 
 
 
-                  {/* Quick Actions */}
-
-                  <div className="bg-white rounded-2xl border border-slate-200/60 p-6">
-
-                    <h3 className="text-lg font-semibold text-slate-900 mb-6">Quick Actions</h3>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-                      <motion.button
-
-                        whileHover={{ scale: 1.02 }}
-
-                        whileTap={{ scale: 0.98 }}
-
+                  {/* Modern Quick Actions */}
+                  <div className="card p-6">
+                    <h3 className="text-xl font-semibold text-secondary-900 mb-6">Quick Actions</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <button
                         onClick={() => handleTabChange('profile')}
-
-                        className="group flex items-center space-x-4 p-5 bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl hover:from-blue-100 hover:to-blue-200/50 transition-all duration-300"
-
+                        className="group flex items-center space-x-4 p-6 bg-primary-50 hover:bg-primary-100 rounded-xl border border-primary-200 hover:border-primary-300 transition-all duration-200"
                       >
-
-                        <div className="p-3 bg-blue-600 rounded-xl group-hover:bg-blue-700 transition-colors">
-
-                          <Edit3 className="h-5 w-5 text-white" />
-
+                        <div className="w-12 h-12 bg-primary-500 rounded-lg flex items-center justify-center group-hover:bg-primary-600 transition-colors">
+                          <Edit3 className="h-6 w-6 text-white" />
                         </div>
-
                         <div className="text-left">
-
-                          <p className="font-semibold text-slate-900">Update Profile</p>
-
-                          <p className="text-sm text-slate-600">Keep information current</p>
-
+                          <p className="font-semibold text-secondary-900">Update Profile</p>
+                          <p className="text-sm text-secondary-600">Keep information current</p>
                         </div>
+                      </button>
 
-                      </motion.button>
-
-                      <motion.button
-
-                        whileHover={{ scale: 1.02 }}
-
-                        whileTap={{ scale: 0.98 }}
-
+                      <button
                         onClick={() => handleTabChange('colleges')}
-
-                        className="group flex items-center space-x-4 p-5 bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-xl hover:from-emerald-100 hover:to-emerald-200/50 transition-all duration-300"
-
+                        className="group flex items-center space-x-4 p-6 bg-success-50 hover:bg-success-100 rounded-xl border border-success-200 hover:border-success-300 transition-all duration-200"
                       >
-
-                        <div className="p-3 bg-emerald-600 rounded-xl group-hover:bg-emerald-700 transition-colors">
-
-                          <Search className="h-5 w-5 text-white" />
-
+                        <div className="w-12 h-12 bg-success-500 rounded-lg flex items-center justify-center group-hover:bg-success-600 transition-colors">
+                          <Search className="h-6 w-6 text-white" />
                         </div>
-
                         <div className="text-left">
-
-                          <p className="font-semibold text-slate-900">Find Opportunities</p>
-
-                          <p className="text-sm text-slate-600">Search college posts</p>
-
+                          <p className="font-semibold text-secondary-900">Find Opportunities</p>
+                          <p className="text-sm text-secondary-600">Search college posts</p>
                         </div>
-
-                      </motion.button>
-
-
-
+                      </button>
                     </div>
-
                   </div>
 
 
 
-                  {/* Recent Activity */}
-
-                  <div className="bg-white rounded-2xl border border-slate-200/60 p-6">
-
-                    <h3 className="text-lg font-semibold text-slate-900 mb-6">Recent Activity</h3>
-
+                  {/* Modern Recent Activity */}
+                  <div className="card p-6">
+                    <h3 className="text-xl font-semibold text-secondary-900 mb-6">Recent Activity</h3>
                     <div className="space-y-4">
+                      <div className="flex items-center space-x-4 p-4 bg-secondary-50 hover:bg-secondary-100 rounded-xl transition-colors cursor-pointer group">
+                        <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center group-hover:bg-primary-200 transition-colors">
+                          <MessageCircle className="h-5 w-5 text-primary-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-secondary-900">New message from MIT College</p>
+                          <p className="text-xs text-secondary-500">2 hours ago</p>
+                        </div>
+                      </div>
 
-                      <motion.div
+                      <div className="flex items-center space-x-4 p-4 bg-secondary-50 hover:bg-secondary-100 rounded-xl transition-colors cursor-pointer group">
+                        <div className="w-10 h-10 bg-success-100 rounded-lg flex items-center justify-center group-hover:bg-success-200 transition-colors">
+                          <Star className="h-5 w-5 text-success-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-secondary-900">Received 5-star rating</p>
 
-                        whileHover={{ x: 4 }}
+                          <p className="text-xs text-secondary-500">1 day ago</p>
+                        </div>
+                      </div>
 
-                        className="flex items-center space-x-4 p-4 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
-
-                      >
-
-                        <div className="p-2.5 bg-blue-100 rounded-xl">
-
-                          <MessageCircle className="h-4 w-4 text-blue-600" />
-
+                      <div className="flex items-center space-x-4 p-4 bg-secondary-50 hover:bg-secondary-100 rounded-xl transition-colors cursor-pointer group">
+                        <div className="w-10 h-10 bg-accent-100 rounded-lg flex items-center justify-center group-hover:bg-accent-200 transition-colors">
+                          <Eye className="h-5 w-5 text-accent-600" />
                         </div>
 
                         <div className="flex-1">
-
-                          <p className="text-sm font-semibold text-slate-900">New message from MIT College</p>
-
-                          <p className="text-xs text-slate-500">2 hours ago</p>
-
+                          <p className="text-sm font-semibold text-secondary-900">Profile viewed 15 times</p>
+                          <p className="text-xs text-secondary-500">2 days ago</p>
                         </div>
-
-                      </motion.div>
-
-                      <motion.div
-
-                        whileHover={{ x: 4 }}
-
-                        className="flex items-center space-x-4 p-4 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
-
-                      >
-
-                        <div className="p-2.5 bg-emerald-100 rounded-xl">
-
-                          <Star className="h-4 w-4 text-emerald-600" />
-
-                        </div>
-
-                        <div className="flex-1">
-
-                          <p className="text-sm font-semibold text-slate-900">Received 5-star rating</p>
-
-                          <p className="text-xs text-slate-500">1 day ago</p>
-
-                        </div>
-
-                      </motion.div>
-
-                      <motion.div
-
-                        whileHover={{ x: 4 }}
-
-                        className="flex items-center space-x-4 p-4 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
-
-                      >
-
-                        <div className="p-2.5 bg-violet-100 rounded-xl">
-
-                          <Eye className="h-4 w-4 text-violet-600" />
-
-                        </div>
-
-                        <div className="flex-1">
-
-                          <p className="text-sm font-semibold text-slate-900">Profile viewed 15 times</p>
-
-                          <p className="text-xs text-slate-500">2 days ago</p>
-
-                        </div>
-
-                      </motion.div>
-
+                      </div>
                     </div>
-
                   </div>
 
                 </motion.div>

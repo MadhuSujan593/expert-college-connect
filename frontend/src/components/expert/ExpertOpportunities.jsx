@@ -179,8 +179,8 @@ const ExpertOpportunities = () => {
   // Format budget
   const formatBudget = (budget, budgetType) => {
     if (!budget) return 'Negotiable';
-    if (budgetType === 'RANGE') return `₹${budget} - Negotiable`;
-    return `₹${budget}`;
+    if (budgetType === 'RANGE') return `${budget} - Negotiable`;
+    return `${budget}`;
   };
 
   // Format deadline
@@ -423,28 +423,60 @@ const ExpertOpportunities = () => {
                       const getStatusConfig = (status) => {
                         switch (status?.toUpperCase()) {
                           case 'PENDING':
-                            return { bg: 'bg-yellow-500', text: 'Pending' };
+                            return { 
+                              bg: 'bg-amber-50', 
+                              text: 'Under Review', 
+                              color: 'text-amber-700',
+                              border: 'border-amber-200',
+                              dot: 'bg-amber-400'
+                            };
                           case 'SHORTLISTED':
-                            return { bg: 'bg-green-500', text: 'Shortlisted' };
+                            return { 
+                              bg: 'bg-emerald-50', 
+                              text: 'Shortlisted', 
+                              color: 'text-emerald-700',
+                              border: 'border-emerald-200',
+                              dot: 'bg-emerald-400'
+                            };
                           case 'REJECTED':
-                            return { bg: 'bg-red-500', text: 'Rejected' };
+                            return { 
+                              bg: 'bg-red-50', 
+                              text: 'Not Selected', 
+                              color: 'text-red-700',
+                              border: 'border-red-200',
+                              dot: 'bg-red-400'
+                            };
                           case 'ACCEPTED':
-                            return { bg: 'bg-green-600', text: 'Accepted' };
+                            return { 
+                              bg: 'bg-green-50', 
+                              text: 'Selected', 
+                              color: 'text-green-700',
+                              border: 'border-green-200',
+                              dot: 'bg-green-400'
+                            };
                           default:
-                            return { bg: 'bg-gray-500', text: 'Applied' };
+                            return { 
+                              bg: 'bg-slate-50', 
+                              text: 'Applied', 
+                              color: 'text-slate-700',
+                              border: 'border-slate-200',
+                              dot: 'bg-slate-400'
+                            };
                         }
                       };
                       const config = getStatusConfig(status);
                       return (
-                        <span className={`px-4 py-2 ${config.bg} text-white rounded-lg font-medium inline-block`}>
-                          {config.text}
-                        </span>
+                        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border ${config.bg} ${config.color} ${config.border}`}>
+                          <div className={`w-2 h-2 rounded-full ${config.dot}`}></div>
+                          <span className="font-semibold">{config.text}</span>
+                        </div>
                       );
                     })()
                   ) : (
-                    <span className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium inline-block">
-                      Available
-                    </span>
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border bg-primary-50 text-primary-700 border-primary-200">
+                      <div className="w-2 h-2 rounded-full bg-primary-400"></div>
+                      <span className="font-semibold">Available</span>
+                    </div>
                   )}
                 </div>
               </div>

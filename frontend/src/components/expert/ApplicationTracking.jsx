@@ -67,21 +67,70 @@ const ApplicationTracking = () => {
     setStats(stats);
   };
 
-  // Get status icon and color
+  // Format budget
+  const formatBudget = (budget, budgetType) => {
+    if (!budget) return 'Not specified';
+    if (budgetType === 'RANGE') return `${budget} - Negotiable`;
+    return `${budget}`;
+  };
+
+  // Get status icon and color - Modern professional design
   const getStatusInfo = (status) => {
     switch (status) {
       case 'PENDING':
-        return { icon: Clock, color: 'text-yellow-600', bgColor: 'bg-yellow-100', label: 'Pending Review' };
+        return { 
+          icon: Clock, 
+          color: 'text-amber-700', 
+          bgColor: 'bg-amber-50', 
+          borderColor: 'border-amber-200',
+          label: 'Under Review',
+          dotColor: 'bg-amber-400'
+        };
       case 'SHORTLISTED':
-        return { icon: Star, color: 'text-blue-600', bgColor: 'bg-blue-100', label: 'Shortlisted' };
+        return { 
+          icon: Star, 
+          color: 'text-emerald-700', 
+          bgColor: 'bg-emerald-50', 
+          borderColor: 'border-emerald-200',
+          label: 'Shortlisted',
+          dotColor: 'bg-emerald-400'
+        };
       case 'REJECTED':
-        return { icon: XCircle, color: 'text-red-600', bgColor: 'bg-red-100', label: 'Rejected' };
+        return { 
+          icon: XCircle, 
+          color: 'text-red-700', 
+          bgColor: 'bg-red-50', 
+          borderColor: 'border-red-200',
+          label: 'Not Selected',
+          dotColor: 'bg-red-400'
+        };
       case 'ACCEPTED':
-        return { icon: CheckCircle, color: 'text-green-600', bgColor: 'bg-green-100', label: 'Accepted' };
+        return { 
+          icon: CheckCircle, 
+          color: 'text-green-700', 
+          bgColor: 'bg-green-50', 
+          borderColor: 'border-green-200',
+          label: 'Selected',
+          dotColor: 'bg-green-400'
+        };
       case 'WITHDRAWN':
-        return { icon: AlertCircle, color: 'text-gray-600', bgColor: 'bg-gray-100', label: 'Withdrawn' };
+        return { 
+          icon: AlertCircle, 
+          color: 'text-slate-700', 
+          bgColor: 'bg-slate-50', 
+          borderColor: 'border-slate-200',
+          label: 'Withdrawn',
+          dotColor: 'bg-slate-400'
+        };
       default:
-        return { icon: Clock, color: 'text-gray-600', bgColor: 'bg-gray-100', label: status };
+        return { 
+          icon: Clock, 
+          color: 'text-slate-700', 
+          bgColor: 'bg-slate-50', 
+          borderColor: 'border-slate-200',
+          label: status,
+          dotColor: 'bg-slate-400'
+        };
     }
   };
 
@@ -222,7 +271,7 @@ const ApplicationTracking = () => {
               key={application.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-                             className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md hover:shadow-lg hover:border-blue-300 hover:scale-[1.02] transition-all duration-200 cursor-pointer group"
+              className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md hover:border-blue-300 transition-all duration-200 cursor-pointer group"
                              onClick={() => {
                  // Navigate to requirement details with application status
                  console.log('Navigating to requirement details for:', application.requirement?.title || 'Unknown Requirement');
@@ -260,14 +309,14 @@ const ApplicationTracking = () => {
                     </div>
                   </div>
 
-                  {/* Status Badge */}
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${statusInfo.bgColor} ${statusInfo.color}`}>
-                      <StatusIcon className="w-4 h-4" />
-                      {statusInfo.label}
-                    </span>
+                  {/* Status Badge - Modern Professional Design */}
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border ${statusInfo.bgColor} ${statusInfo.color} ${statusInfo.borderColor}`}>
+                      <div className={`w-2 h-2 rounded-full ${statusInfo.dotColor}`}></div>
+                      <span className="font-semibold">{statusInfo.label}</span>
+                    </div>
                     {application.reviewedAt && (
-                      <span className="text-sm text-gray-500">
+                      <span className="text-sm text-slate-500 font-medium">
                         Updated {formatDate(application.reviewedAt)}
                       </span>
                     )}
@@ -281,11 +330,11 @@ const ApplicationTracking = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       <IndianRupee className="w-4 h-4" />
-                      <span>Budget: ₹{application.proposedBudget || 'Not specified'}</span>
+                      <span>Budget: {formatBudget(application.requirement.budget, application.requirement.budgetType)}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock className="w-4 h-4" />
-                      <span>Timeline: {application.proposedTimeline || 'Not specified'}</span>
+                      <span>Timeline: {application.requirement.deadline ? new Date(application.requirement.deadline).toLocaleDateString() : 'Not specified'}</span>
                     </div>
                   </div>
 
@@ -307,13 +356,7 @@ const ApplicationTracking = () => {
                      </div>
                    )}
                    
-                   {/* Click indicator */}
-                   <div className="mt-3 flex items-center gap-2 text-sm text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                     <span>Click to view requirement details</span>
-                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                     </svg>
-                   </div>
+
                  </div>
 
 

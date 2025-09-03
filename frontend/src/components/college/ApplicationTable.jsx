@@ -178,39 +178,49 @@ const ApplicationTable = ({
 
   const SortableHeader = ({ field, children }) => (
     <th 
-      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-50"
+      className="px-6 py-4 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider cursor-pointer hover:bg-neutral-100 transition-colors duration-200"
       onClick={() => handleSort(field)}
     >
       <div className="flex items-center gap-2">
         {children}
         {sortBy === field && (
-          sortOrder === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+          sortOrder === 'asc' ? <ChevronUp className="w-4 h-4 text-primary-600" /> : <ChevronDown className="w-4 h-4 text-primary-600" />
         )}
       </div>
     </th>
   );
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+    <div className="card">
       {/* Header with Bulk Actions */}
-      <div className="px-6 py-4 border-b border-gray-200">
+      <div className="p-6 border-b border-neutral-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h3 className="text-lg font-semibold text-gray-900">
-              Applications ({totalApplications})
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-primary-100 to-primary-200 rounded-xl flex items-center justify-center">
+                <User className="w-5 h-5 text-primary-600" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-neutral-900">
+                  Applications
             </h3>
+                <p className="text-sm text-neutral-500">
+                  {totalApplications} total applications
+                </p>
+              </div>
+            </div>
             {selectedApplications.size > 0 && (
-              <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
+              <span className="px-4 py-2 bg-primary-100 text-primary-800 text-sm font-semibold rounded-xl border border-primary-200">
                 {selectedApplications.size} selected
               </span>
             )}
           </div>
           
           {selectedApplications.size > 0 && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <select
                 onChange={(e) => handleBulkStatusUpdate(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="input text-sm"
               >
                 <option value="">Bulk Update Status</option>
                 <option value="SHORTLISTED">Shortlist Selected</option>
@@ -219,7 +229,7 @@ const ApplicationTable = ({
               </select>
               <button
                 onClick={() => setSelectedApplications(new Set())}
-                className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800"
+                className="btn-ghost btn-sm"
               >
                 Clear Selection
               </button>
@@ -229,23 +239,23 @@ const ApplicationTable = ({
       </div>
 
       {/* Filters */}
-      <div className="px-6 py-4 border-b border-gray-200">
+      <div className="p-6 border-b border-neutral-200 bg-gradient-to-r from-neutral-50 to-neutral-100">
         <div className="flex items-center gap-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-4 h-4" />
             <input
               type="text"
               placeholder="Search by expert name or email..."
               value={filters.search}
               onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="input w-full pl-10"
             />
           </div>
           
           <select
             value={filters.status}
             onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="input text-sm"
           >
             <option value="">All Statuses</option>
             <option value="PENDING">Pending</option>
@@ -258,37 +268,46 @@ const ApplicationTable = ({
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+        <table className="table-modern">
+          <thead>
             <tr>
-              <th className="px-6 py-3 text-left">
+              <th className="px-6 py-4 text-left">
                 <input
                   type="checkbox"
                   checked={selectedApplications.size === applications.length && applications.length > 0}
                   onChange={handleSelectAll}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="rounded-lg border-neutral-300 text-primary-600 focus:ring-primary-500"
                 />
               </th>
                              <SortableHeader field="expert.fullName">Expert</SortableHeader>
                <SortableHeader field="status">Status</SortableHeader>
-               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">
                  Actions
                </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody>
             {loading ? (
               <tr>
-                <td colSpan="5" className="px-6 py-12 text-center">
-                  <div className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <td colSpan="4" className="px-6 py-16 text-center">
+                  <div className="flex flex-col items-center justify-center gap-4">
+                    <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary-200 border-t-primary-600"></div>
+                    <p className="text-neutral-500 font-medium">Loading applications...</p>
                   </div>
                 </td>
               </tr>
             ) : applications.length === 0 ? (
               <tr>
-                <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
-                  No applications found
+                <td colSpan="4" className="px-6 py-16 text-center">
+                  <div className="flex flex-col items-center justify-center gap-4">
+                    <div className="w-16 h-16 bg-neutral-100 rounded-2xl flex items-center justify-center">
+                      <User className="w-8 h-8 text-neutral-400" />
+                    </div>
+                    <div>
+                      <p className="text-neutral-600 font-semibold text-lg">No applications found</p>
+                      <p className="text-neutral-500 text-sm">Try adjusting your search or filter criteria</p>
+                    </div>
+                  </div>
                 </td>
               </tr>
             ) : (
@@ -299,7 +318,7 @@ const ApplicationTable = ({
                                  return (
                    <tr 
                      key={application.id} 
-                     className="hover:bg-blue-50 hover:shadow-sm cursor-pointer transition-all duration-200 border-l-4 border-l-transparent hover:border-l-blue-500 group"
+                     className="hover:bg-gradient-to-r hover:from-primary-50 hover:to-accent-50 cursor-pointer transition-all duration-200 border-l-4 border-l-transparent hover:border-l-primary-500 group"
                      onClick={() => {
                        // Navigate to requirement details with application context
                        if (application.requirement?.id) {
@@ -308,47 +327,47 @@ const ApplicationTable = ({
                      }}
                      title="Click to view requirement details"
                    >
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-6 whitespace-nowrap">
                       <input
                         type="checkbox"
                         checked={selectedApplications.has(application.id)}
                         onChange={() => handleSelectApplication(application.id)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded-lg border-neutral-300 text-primary-600 focus:ring-primary-500"
                       />
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                          <User className="w-5 h-5 text-gray-600" />
+                    <td className="px-6 py-6 whitespace-nowrap">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-primary-100 to-primary-200 rounded-xl flex items-center justify-center shadow-soft">
+                          <User className="w-6 h-6 text-primary-600" />
                         </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
+                        <div className="flex-1">
+                          <div className="text-base font-semibold text-neutral-900 mb-1">
                             {application.expert.fullName}
                           </div>
-                          <div className="text-sm text-gray-500">
+                          <div className="text-sm text-neutral-600 mb-1">
                             {application.expert.email}
                           </div>
-                          <div className="text-xs text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-200 mt-1">
+                          <div className="text-xs text-primary-600 opacity-0 group-hover:opacity-100 transition-opacity duration-200 font-medium">
                             Click to view requirement details →
                           </div>
                         </div>
                       </div>
                     </td>
-                                         <td className="px-6 py-4 whitespace-nowrap">
-                       <div className="flex items-center gap-2">
-                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusInfo.bgColor} ${statusInfo.color}`}>
-                           <StatusIcon className="w-3 h-3 mr-1" />
+                                         <td className="px-6 py-6 whitespace-nowrap">
+                       <div className="flex items-center gap-3">
+                         <span className={`inline-flex items-center px-3 py-1.5 rounded-xl text-sm font-semibold border ${statusInfo.bgColor} ${statusInfo.color}`}>
+                           <StatusIcon className="w-4 h-4 mr-2" />
                            {statusInfo.label}
                          </span>
                          {application.reviewNotes && (
-                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                             <MessageSquare className="w-3 h-3 mr-1" />
+                           <span className="inline-flex items-center px-3 py-1.5 rounded-xl text-sm font-semibold bg-accent-100 text-accent-800 border border-accent-200">
+                             <MessageSquare className="w-4 h-4 mr-2" />
                              Feedback
                            </span>
                          )}
                        </div>
                      </td>
-                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                         <td className="px-6 py-6 whitespace-nowrap">
                        <div className="flex items-center gap-2">
                          <button
                            onClick={(e) => {
@@ -357,10 +376,10 @@ const ApplicationTable = ({
                                window.open(`/requirement/${application.requirement.id}`, '_blank');
                              }
                            }}
-                           className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
+                           className="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 transition-all duration-200 border border-primary-200"
                            title="View Requirement Details"
                          >
-                           <Eye className="w-3 h-3 mr-1" />
+                           <Eye className="w-4 h-4 mr-1.5" />
                            View
                          </button>
                          <button
@@ -368,10 +387,10 @@ const ApplicationTable = ({
                              e.stopPropagation(); // Prevent row click when clicking button
                              onUpdateStatus(application);
                            }}
-                           className="inline-flex items-center px-2 py-1 text-xs font-medium text-purple-600 bg-purple-50 rounded-md hover:bg-purple-100 transition-colors"
+                           className="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-accent-600 bg-accent-50 rounded-lg hover:bg-accent-100 transition-all duration-200 border border-accent-200"
                            title="Update Status"
                          >
-                           <CheckCircle className="w-3 h-3 mr-1" />
+                           <CheckCircle className="w-4 h-4 mr-1.5" />
                            Status
                          </button>
                          {application.reviewNotes ? (
@@ -384,10 +403,10 @@ const ApplicationTable = ({
                                  const feedback = `Feedback for ${application.expert.fullName}:\n\n${application.reviewNotes}`;
                                  alert(feedback);
                                }}
-                               className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
+                               className="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-accent-600 bg-accent-50 rounded-lg hover:bg-accent-100 transition-all duration-200 border border-accent-200"
                                title="View Feedback"
                              >
-                               <MessageSquare className="w-3 h-3 mr-1" />
+                               <MessageSquare className="w-4 h-4 mr-1.5" />
                                Feedback
                              </button>
                              <button
@@ -409,10 +428,10 @@ const ApplicationTable = ({
                                  const mailtoLink = `mailto:${application.expert.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
                                  window.open(mailtoLink);
                                }}
-                               className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-600 bg-green-50 rounded-md hover:bg-green-100 transition-colors"
+                               className="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-success-600 bg-success-50 rounded-lg hover:bg-success-100 transition-all duration-200 border border-success-200"
                                title="Contact Expert via Email"
                              >
-                               <Mail className="w-3 h-3 mr-1" />
+                               <Mail className="w-4 h-4 mr-1.5" />
                                Contact
                              </button>
                            </div>
@@ -437,10 +456,10 @@ const ApplicationTable = ({
                                const mailtoLink = `mailto:${application.expert.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
                                window.open(mailtoLink);
                              }}
-                             className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-600 bg-green-50 rounded-md hover:bg-green-100 transition-colors"
+                             className="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-success-600 bg-success-50 rounded-lg hover:bg-success-100 transition-all duration-200 border border-success-200"
                              title="Contact Expert via Email"
                            >
-                             <Mail className="w-3 h-3 mr-1" />
+                             <Mail className="w-4 h-4 mr-1.5" />
                              Contact
                            </button>
                          )}
@@ -456,26 +475,26 @@ const ApplicationTable = ({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="px-6 py-4 border-t border-gray-200">
+        <div className="p-6 border-t border-neutral-200 bg-gradient-to-r from-neutral-50 to-neutral-100">
           <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-700">
+            <div className="text-sm text-neutral-600 font-medium">
               Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, totalApplications)} of {totalApplications} results
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <button
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-outline btn-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Previous
               </button>
-              <span className="px-3 py-2 text-sm text-gray-700">
+              <span className="px-4 py-2 text-sm text-neutral-700 font-semibold bg-white rounded-xl border border-neutral-200">
                 Page {currentPage} of {totalPages}
               </span>
               <button
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages}
-                className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-outline btn-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next
               </button>

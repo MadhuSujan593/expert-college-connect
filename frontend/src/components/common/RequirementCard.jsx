@@ -84,8 +84,8 @@ const RequirementCard = ({
   };
 
   const cardClasses = compact 
-    ? "group relative backdrop-blur-xl bg-white/80 border border-white/30 rounded-xl p-3 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-200/50 cursor-pointer"
-    : "group relative backdrop-blur-xl bg-white/80 border border-white/30 rounded-xl sm:rounded-2xl p-4 sm:p-6 hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-200/50";
+    ? "group relative bg-white border border-neutral-200 rounded-xl p-6 min-h-[120px] hover:shadow-lg hover:shadow-primary-500/10 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary-300 cursor-pointer"
+    : "group relative bg-white border border-neutral-200 rounded-xl sm:rounded-2xl p-6 sm:p-8 min-h-[160px] hover:shadow-xl hover:shadow-primary-500/10 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary-300";
 
   return (
     <motion.div
@@ -96,7 +96,7 @@ const RequirementCard = ({
       onClick={onClick}
     >
       {/* Card Background Pattern */}
-      <div className="absolute inset-0 opacity-[0.01] rounded-xl sm:rounded-2xl">
+      <div className="absolute inset-0 opacity-[0.02] rounded-xl sm:rounded-2xl">
         <div className="absolute inset-0" style={{
           backgroundImage: `
             radial-gradient(circle at 30% 70%, #3B82F6 1px, transparent 1px),
@@ -108,17 +108,17 @@ const RequirementCard = ({
 
       <div className="relative z-10">
         {/* Header */}
-        <div className={`flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-0 ${compact ? 'mb-2' : 'mb-3 sm:mb-4'}`}>
+        <div className={`flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-0 ${compact ? 'mb-3' : 'mb-4 sm:mb-5'}`}>
           <div className="flex-1 min-w-0">
-            <div className={`flex flex-col gap-2 ${compact ? 'mb-1' : 'mb-2'}`}>
+            <div className={`flex flex-col gap-2 ${compact ? 'mb-2' : 'mb-3'}`}>
               <div className="flex items-start justify-between gap-2">
                 <h3 className={`font-bold text-slate-900 group-hover:text-blue-900 transition-colors duration-300 line-clamp-1 flex-1 min-w-0 ${
-                  compact ? 'text-base' : 'text-lg sm:text-xl'
+                  compact ? 'text-lg' : 'text-xl sm:text-2xl'
                 }`}>
                   {requirement.title}
                 </h3>
                 {requirement.isUrgent && (
-                  <span className="px-2 py-1 bg-gradient-to-r from-red-500 to-pink-600 text-white text-sm font-semibold rounded-full shadow-md flex-shrink-0">
+                  <span className="px-3 py-1.5 bg-gradient-to-r from-red-500 to-pink-600 text-white text-sm font-semibold rounded-full shadow-md flex-shrink-0">
                     Urgent
                   </span>
                 )}
@@ -126,20 +126,20 @@ const RequirementCard = ({
             </div>
             
             {!compact && (
-              <p className="text-slate-600 text-sm sm:text-base leading-relaxed mb-3 sm:mb-4 line-clamp-2">
+              <p className="text-slate-600 text-base sm:text-lg leading-relaxed mb-4 sm:mb-5 line-clamp-2">
                 {requirement.description}
               </p>
             )}
             
             {/* Tags and Info */}
-            <div className={`flex flex-wrap items-center gap-2 sm:gap-3 ${compact ? 'gap-1' : ''}`}>
-              <span className={`px-2 sm:px-3 py-1 bg-gradient-to-r ${getCategoryColor(requirement.category)} text-white text-sm font-semibold rounded-full shadow-md`}>
+            <div className={`flex flex-wrap items-center gap-2 sm:gap-3 ${compact ? 'gap-2' : 'gap-3'}`}>
+              <span className={`px-3 sm:px-4 py-1.5 bg-gradient-to-r ${getCategoryColor(requirement.category)} text-white text-sm font-semibold rounded-full shadow-md`}>
                 {getCategoryLabel(requirement.category)}
               </span>
               
               {requirement.budget && (
-                <div className="flex items-center gap-1 px-2 sm:px-3 py-1 bg-gradient-to-r from-emerald-100 to-teal-100 rounded-full">
-                  <svg className="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 bg-gradient-to-r from-emerald-100 to-teal-100 rounded-full">
+                  <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                   </svg>
                   <span className="text-sm font-semibold text-emerald-800">{formatBudget(requirement.budget)}</span>
@@ -147,8 +147,8 @@ const RequirementCard = ({
               )}
               
               {requirement.deadline && (
-                <div className="flex items-center gap-1 px-2 sm:px-3 py-1 bg-gradient-to-r from-orange-100 to-red-100 rounded-full">
-                  <svg className="w-3 h-3 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 bg-gradient-to-r from-orange-100 to-red-100 rounded-full">
+                  <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                   <span className="text-sm font-semibold text-orange-800">{formatDate(requirement.deadline)}</span>

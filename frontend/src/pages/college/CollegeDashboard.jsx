@@ -936,11 +936,11 @@ const CollegeDashboard = () => {
       whileTap={{ scale: 0.98 }}
       className={`group flex items-center space-x-3 w-full px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
         isActive
-          ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25'
-          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-lg shadow-primary-600/25'
+          : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100'
       }`}
     >
-      <Icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-slate-700'}`} />
+      <Icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-neutral-500 group-hover:text-neutral-700'}`} />
       <span className="font-semibold">{label}</span>
       {isActive && (
         <motion.div
@@ -952,41 +952,41 @@ const CollegeDashboard = () => {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-background">
       {/* Modern Layout with Sidebar */}
       <div className="flex h-screen overflow-hidden">
         {/* Sidebar */}
-        <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200/60 transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
+        <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-80 bg-white/95 backdrop-blur-sm border-r border-neutral-200/60 transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 shadow-large`}>
           <div className="flex flex-col h-full">
             {/* Sidebar Header */}
-            <div className="flex items-center justify-between px-6 py-6 border-b border-slate-200/60">
-              <div className="flex items-center space-x-3">
+            <div className="flex items-center justify-between px-6 py-8 border-b border-neutral-200/60 bg-gradient-to-r from-primary-50/50 to-accent-50/50">
+              <div className="flex items-center space-x-4">
                 {profile?.logoUrl ? (
                   <img 
                     src={getFullLogoUrl(profile.logoUrl)} 
                     alt="Institution Logo" 
-                    className="w-10 h-10 rounded-xl object-cover shadow-lg"
+                    className="w-12 h-12 rounded-2xl object-cover shadow-soft border-2 border-white"
                   />
                 ) : (
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <Building2 className="w-5 h-5 text-white" />
+                  <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-soft border-2 border-white">
+                    <Building2 className="w-6 h-6 text-white" />
                   </div>
                 )}
                 <div>
-                  <h1 className="text-lg font-bold text-slate-900">{profile?.institutionName || 'College'}</h1>
-                  <p className="text-xs text-slate-500">Institution Panel</p>
+                  <h1 className="text-xl font-bold text-neutral-900 font-heading">{profile?.institutionName || 'College'}</h1>
+                  <p className="text-sm text-neutral-500 font-medium">Institution Panel</p>
                 </div>
-                </div>
+              </div>
               <button
                 onClick={() => setSidebarOpen(false)}
-                className="lg:hidden p-2 rounded-lg hover:bg-slate-100 text-slate-500"
+                className="lg:hidden w-10 h-10 bg-neutral-100 hover:bg-neutral-200 rounded-xl flex items-center justify-center text-neutral-500 hover:text-neutral-700 transition-all duration-200"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 px-4 py-6 space-y-2">
+            <nav className="flex-1 px-6 py-6 space-y-2">
               <SidebarItem
                 id="overview"
                 label="Overview"
@@ -1029,53 +1029,39 @@ const CollegeDashboard = () => {
                   }
                 }}
               />
-              <SidebarItem
-                id="ratings"
-                label="Ratings & Trust"
-                icon={Award}
-                isActive={activeTab === 'ratings'}
-                onClick={(tabId) => {
-                  if (tabId === 'ratings' && !canAccessRequirements()) {
-                    setVerificationFeatureName("Ratings & Trust");
-                    setShowVerificationRequirement(true);
-                  } else {
-                    handleTabChange(tabId);
-                  }
-                }}
-              />
             </nav>
 
 
 
             {/* Logout Button */}
-            <div className="px-6 py-4 border-t border-slate-200/60 mt-auto">
+            <div className="px-6 py-6 border-t border-neutral-200/60 mt-auto bg-gradient-to-r from-neutral-50/50 to-neutral-100/50">
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setShowLogoutConfirm(true)}
-                className="group flex items-center space-x-3 w-full px-4 py-3 rounded-xl font-medium transition-all duration-200 text-slate-600 hover:text-red-600 hover:bg-red-50"
+                className="group flex items-center space-x-3 w-full px-4 py-3 rounded-xl font-medium transition-all duration-200 text-neutral-600 hover:text-error-600 hover:bg-error-50 border border-transparent hover:border-error-200"
               >
-                <LogOut className="h-5 w-5 text-slate-500 group-hover:text-red-600" />
+                <LogOut className="h-5 w-5 text-neutral-500 group-hover:text-error-600" />
                 <span className="font-semibold">Sign Out</span>
               </motion.button>
-                </div>
-                </div>
             </div>
+          </div>
+        </div>
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden bg-background">
           {/* Top Header */}
-          <header className="bg-white border-b border-slate-200/60 px-6 py-4">
-              <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
+          <header className="bg-white/80 backdrop-blur-sm border-b border-neutral-200/60 px-8 py-6 shadow-soft">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-6">
                 <button
                   onClick={() => setSidebarOpen(true)}
-                  className="lg:hidden p-2 rounded-lg hover:bg-slate-100 text-slate-600"
+                  className="lg:hidden w-10 h-10 bg-neutral-100 hover:bg-neutral-200 rounded-xl flex items-center justify-center text-neutral-600 hover:text-neutral-800 transition-all duration-200"
                 >
                   <Menu className="h-5 w-5" />
                 </button>
                 <div>
-                  <h1 className="text-2xl font-bold text-slate-900">
+                  <h1 className="text-3xl font-bold text-neutral-900 font-heading">
                     {activeTab === 'overview' && 'Dashboard Overview'}
                     {activeTab === 'profile' && 'Institution Profile'}
                     {activeTab === 'requirements' && 'Requirements Management'}
@@ -1083,159 +1069,213 @@ const CollegeDashboard = () => {
                     {activeTab === 'experts' && 'Expert Directory'}
                     {activeTab === 'ratings' && 'Ratings & Trust'}
                   </h1>
-                  <div className="flex items-center space-x-2 text-sm text-slate-500 mt-1">
+                  <div className="flex items-center space-x-2 text-sm text-neutral-500 mt-2">
                     <Home className="h-4 w-4" />
                     <ChevronRight className="h-4 w-4" />
-                    <span className="capitalize">{activeTab}</span>
-                </div>
+                    <span className="capitalize font-medium">{activeTab}</span>
+                  </div>
                 </div>
               </div>
             </div>
           </header>
 
           {/* Scrollable Content */}
-          <main className="flex-1 overflow-y-auto bg-slate-50">
-            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+          <main className="flex-1 overflow-y-auto bg-background">
+            <div className="p-8 space-y-8">
               {/* Overview Tab */}
               {activeTab === 'overview' && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
                   className="space-y-6"
                 >
                   {/* Stats Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                    <StatCard
-                      icon={CheckCircle}
-                      title="Profile Completeness"
-                      value={`${stats.profileCompleteness}%`}
-                      color="blue"
-                    />
-                    <StatCard
-                      icon={FileText}
-                      title="Total Requirements"
-                      value={stats.totalRequirements}
-                      color="green"
-                    />
-                    <StatCard
-                      icon={AlertCircle}
-                      title="Urgent Requirements"
-                      value={stats.urgentRequirements}
-                      color="red"
-                    />
-                    <StatCard
-                      icon={Calendar}
-                      title="Upcoming Deadlines"
-                      value={stats.upcomingDeadlines}
-                      color="orange"
-                    />
-      </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 }}
+                      className="stat-card-gradient group hover:scale-105 transition-transform duration-200"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-neutral-600 font-medium mb-1">Profile Completeness</p>
+                          <p className="text-3xl font-bold text-neutral-900">{stats.profileCompleteness}%</p>
+                        </div>
+                        <div className="w-14 h-14 bg-gradient-to-br from-primary-100 to-primary-200 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                          <CheckCircle className="w-7 h-7 text-primary-600" />
+                        </div>
+                      </div>
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                      className="stat-card-gradient group hover:scale-105 transition-transform duration-200"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-neutral-600 font-medium mb-1">Total Requirements</p>
+                          <p className="text-3xl font-bold text-neutral-900">{stats.totalRequirements}</p>
+                        </div>
+                        <div className="w-14 h-14 bg-gradient-to-br from-success-100 to-success-200 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                          <FileText className="w-7 h-7 text-success-600" />
+                        </div>
+                      </div>
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                      className="stat-card-gradient group hover:scale-105 transition-transform duration-200"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-neutral-600 font-medium mb-1">Urgent Requirements</p>
+                          <p className="text-3xl font-bold text-neutral-900">{stats.urgentRequirements}</p>
+                        </div>
+                        <div className="w-14 h-14 bg-gradient-to-br from-error-100 to-error-200 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                          <AlertCircle className="w-7 h-7 text-error-600" />
+                        </div>
+                      </div>
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4 }}
+                      className="stat-card-gradient group hover:scale-105 transition-transform duration-200"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-neutral-600 font-medium mb-1">Upcoming Deadlines</p>
+                          <p className="text-3xl font-bold text-neutral-900">{stats.upcomingDeadlines}</p>
+                        </div>
+                        <div className="w-14 h-14 bg-gradient-to-br from-warning-100 to-warning-200 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                          <Calendar className="w-7 h-7 text-warning-600" />
+                        </div>
+                      </div>
+                    </motion.div>
+                  </div>
 
                   {/* Quick Actions */}
-                  <div className="bg-white rounded-2xl border border-slate-200/60 p-6">
-                    <h3 className="text-lg font-semibold text-slate-900 mb-6">Quick Actions</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="card p-8">
+                    <div className="flex items-center gap-3 mb-8">
+                      <div className="w-10 h-10 bg-gradient-to-br from-primary-100 to-primary-200 rounded-xl flex items-center justify-center">
+                        <Plus className="w-5 h-5 text-primary-600" />
+                      </div>
+                      <h3 className="text-2xl font-bold text-neutral-900">Quick Actions</h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={handleRequirementsAccess}
-                        className="group flex items-center space-x-4 p-5 bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl hover:from-blue-100 hover:to-blue-200/50 transition-all duration-300"
+                        className="group flex items-center space-x-4 p-6 bg-gradient-to-br from-primary-50 to-primary-100/50 rounded-2xl hover:from-primary-100 hover:to-primary-200/50 transition-all duration-300 border border-primary-200 hover:border-primary-300"
                       >
-                        <div className="p-3 bg-blue-600 rounded-xl group-hover:bg-blue-700 transition-colors">
-                          <Plus className="h-5 w-5 text-white" />
-    </div>
+                        <div className="p-4 bg-primary-600 rounded-2xl group-hover:bg-primary-700 transition-colors shadow-soft">
+                          <Plus className="h-6 w-6 text-white" />
+                        </div>
                         <div className="text-left">
-                          <p className="font-semibold text-slate-900">Post Requirement</p>
-                          <p className="text-sm text-slate-600">Add new academic requirement</p>
-          </div>
+                          <p className="font-bold text-neutral-900 text-lg">Post Requirement</p>
+                          <p className="text-sm text-neutral-600">Add new academic requirement</p>
+                        </div>
                       </motion.button>
+                      
                       <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => handleTabChange('experts')}
-                        className="group flex items-center space-x-4 p-5 bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-xl hover:from-emerald-100 hover:to-emerald-200/50 transition-all duration-300"
+                        className="group flex items-center space-x-4 p-6 bg-gradient-to-br from-success-50 to-success-100/50 rounded-2xl hover:from-success-100 hover:to-success-200/50 transition-all duration-300 border border-success-200 hover:border-success-300"
                       >
-                        <div className="p-3 bg-emerald-600 rounded-xl group-hover:bg-emerald-700 transition-colors">
-                          <Search className="h-5 w-5 text-white" />
-          </div>
+                        <div className="p-4 bg-success-600 rounded-2xl group-hover:bg-success-700 transition-colors shadow-soft">
+                          <Search className="h-6 w-6 text-white" />
+                        </div>
                         <div className="text-left">
-                          <p className="font-semibold text-slate-900">Find Experts</p>
-                          <p className="text-sm text-slate-600">Search for qualified experts</p>
-        </div>
+                          <p className="font-bold text-neutral-900 text-lg">Find Experts</p>
+                          <p className="text-sm text-neutral-600">Search for qualified experts</p>
+                        </div>
                       </motion.button>
+                      
                       <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => handleTabChange('profile')}
-                        className="group flex items-center space-x-4 p-5 bg-gradient-to-br from-violet-50 to-violet-100/50 rounded-xl hover:from-violet-100 hover:to-violet-200/50 transition-all duration-300"
+                        className="group flex items-center space-x-4 p-6 bg-gradient-to-br from-accent-50 to-accent-100/50 rounded-2xl hover:from-accent-100 hover:to-accent-200/50 transition-all duration-300 border border-accent-200 hover:border-accent-300"
                       >
-                        <div className="p-3 bg-violet-600 rounded-xl group-hover:bg-violet-700 transition-colors">
-                          <Edit3 className="h-5 w-5 text-white" />
-            </div>
+                        <div className="p-4 bg-accent-600 rounded-2xl group-hover:bg-accent-700 transition-colors shadow-soft">
+                          <Edit3 className="h-6 w-6 text-white" />
+                        </div>
                         <div className="text-left">
-                          <p className="font-semibold text-slate-900">Update Profile</p>
-                          <p className="text-sm text-slate-600">Keep information current</p>
-          </div>
+                          <p className="font-bold text-neutral-900 text-lg">Update Profile</p>
+                          <p className="text-sm text-neutral-600">Keep information current</p>
+                        </div>
                       </motion.button>
-      </div>
-    </div>
+                    </div>
+                  </div>
 
-                
-
-    {/* Recent Requirements */}
-                                      <div className="space-y-6">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-semibold text-slate-900">Recent Requirements</h3>
-                        {recentRequirements.length > 0 && (
-                          <button
-                            onClick={() => handleTabChange('requirements')}
-                            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                          >
-                            View All
-                          </button>
-                        )}
+                  {/* Recent Requirements */}
+                  <div className="card p-8">
+                    <div className="flex items-center justify-between mb-8">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-accent-100 to-accent-200 rounded-xl flex items-center justify-center">
+                          <FileText className="w-5 h-5 text-accent-600" />
+                        </div>
+                        <h3 className="text-2xl font-bold text-neutral-900">Recent Requirements</h3>
                       </div>
+                      {recentRequirements.length > 0 && (
+                        <button
+                          onClick={() => handleTabChange('requirements')}
+                          className="btn-primary btn-md"
+                        >
+                          View All
+                        </button>
+                      )}
+                    </div>
                       
-                      <div className="space-y-4">
-                        {recentRequirements.length === 0 ? (
-          <div className="text-center py-8">
-            <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                            <p className="text-gray-500 mb-3">No requirements posted yet</p>
-                            {canAccessRequirements() ? (
-                              <button 
-                                onClick={handleRequirementsAccess}
-                                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                              >
-                                Post your first requirement
-                              </button>
-                            ) : (
-                              <div className="space-y-3">
-                          <button 
-                            onClick={() => handleTabChange('requirements')}
-                                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                          >
-              Post your first requirement
-            </button>
-          </div>
-                            )}
+                    <div className="space-y-6">
+                      {recentRequirements.length === 0 ? (
+                        <div className="text-center py-12">
+                          <div className="w-20 h-20 bg-neutral-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                            <FileText className="w-10 h-10 text-neutral-400" />
                           </div>
-                        ) : (
-                          <>
-                            {/* Show only latest 2 requirements */}
-                            {recentRequirements.slice(0, 2).map((requirement, index) => (
-                              <RequirementCard
-                                key={requirement.id}
-                                requirement={requirement}
-                                index={index}
-                                showActions={false}
-                                compact={true}
-                                onClick={() => handleTabChange('requirements')}
-                              />
-                            ))}
-                          </>
-        )}
-      </div>
-    </div>
+                          <h4 className="text-lg font-semibold text-neutral-600 mb-3">No requirements posted yet</h4>
+                          <p className="text-neutral-500 mb-6">Start by posting your first academic requirement to connect with experts.</p>
+                          {canAccessRequirements() ? (
+                            <button 
+                              onClick={handleRequirementsAccess}
+                              className="btn-primary"
+                            >
+                              Post Your First Requirement
+                            </button>
+                          ) : (
+                            <button 
+                              onClick={() => handleTabChange('requirements')}
+                              className="btn-primary"
+                            >
+                              Post Your First Requirement
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <>
+                          {/* Show only latest 2 requirements */}
+                          {recentRequirements.slice(0, 2).map((requirement, index) => (
+                            <RequirementCard
+                              key={requirement.id}
+                              requirement={requirement}
+                              index={index}
+                              showActions={false}
+                              compact={true}
+                              onClick={() => handleTabChange('requirements')}
+                            />
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </motion.div>
               )}
 
