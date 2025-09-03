@@ -62,6 +62,23 @@ export class ApplicationController {
     };
   }
 
+  // Get all applications for a college admin across all requirements
+  @Get('college')
+  @Roles(UserRole.COLLEGE_ADMIN)
+  async getCollegeApplications(
+    @Query() query: GetApplicationsDto,
+    @Request() req
+  ) {
+    const result = await this.applicationService.getCollegeApplications(
+      req.user.id,
+      query
+    );
+    return {
+      success: true,
+      data: result
+    };
+  }
+
   // Get applications for a specific requirement (college admin view)
   @Get('requirement/:requirementId')
   @Roles(UserRole.COLLEGE_ADMIN)

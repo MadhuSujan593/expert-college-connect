@@ -17,6 +17,7 @@ import {
 } from './pages/auth';
 import ExpertDashboard from './pages/expert/ExpertDashboard';
 import CollegeDashboard from './pages/college/CollegeDashboard';
+import RequirementDetails from './components/expert/RequirementDetails';
 // import SearchExperts from './pages/search/SearchExperts';
 // import SearchRequirements from './pages/search/SearchRequirements';
 // import ExpertProfile from './pages/expert/ExpertProfile';
@@ -44,11 +45,13 @@ const AppContent = () => {
   );
   
   const isDashboardPage = location.pathname.startsWith('/dashboard');
+  const isRequirementPage = location.pathname.startsWith('/requirement');
   
   // Debug logging
   console.log('Current pathname:', location.pathname);
   console.log('Is auth page:', isAuthPage);
   console.log('Is dashboard page:', isDashboardPage);
+  console.log('Is requirement page:', isRequirementPage);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
@@ -80,13 +83,23 @@ const AppContent = () => {
             } 
           />
           
+          {/* Requirement Details Route */}
+          <Route 
+            path="/requirement/:id" 
+            element={
+              <ProtectedRoute requiredRole="EXPERT">
+                <RequirementDetails />
+              </ProtectedRoute>
+            } 
+          />
+          
           {/* <Route path="/search/experts" element={<SearchExperts />} />
           <Route path="/search/requirements" element={<SearchRequirements />} />
           <Route path="/expert/:id" element={<ExpertProfile />} />
           <Route path="/college/:id" element={<CollegeProfile />} /> */}
         </Routes>
       </main>
-      {!isAuthPage && !isDashboardPage && <Footer />}
+      {!isAuthPage && !isDashboardPage && !isRequirementPage && <Footer />}
       <Toaster
         position="top-right"
         toastOptions={{

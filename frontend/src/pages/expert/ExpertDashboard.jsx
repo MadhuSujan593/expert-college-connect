@@ -27,6 +27,7 @@ import Toast from '../../components/common/Toast';
 import EmailVerificationModal from '../../components/verification/EmailVerificationModal';
 import PhoneVerificationModal from '../../components/verification/PhoneVerificationModal';
 import ExpertOpportunities from '../../components/expert/ExpertOpportunities';
+import ApplicationTracking from '../../components/expert/ApplicationTracking';
 import { 
   checkAvailability 
 } from '../../utils/verificationUtils';
@@ -339,39 +340,26 @@ const ExpertDashboard = () => {
 
 
   const fetchProfile = async () => {
-
     try {
-
       const response = await api.getExpertProfile();
-
-      setProfile(response);
-
+      console.log('🔍 FetchProfile Debug - Full response:', response);
+      console.log('🔍 FetchProfile Debug - Profile picture URL:', response?.profilePicture);
+      console.log('🔍 FetchProfile Debug - Profile picture type:', typeof response?.profilePicture);
       
+      setProfile(response);
       
       // Map the response data to the editedProfile structure
-
       setEditedProfile({
-
         ...response,
-
         fullName: response?.user?.fullName || '',
-
         phone: response?.user?.phone || '',
-
         jobTitle: response?.jobTitle || '',
-
         primaryExpertise: response?.primaryExpertise || '',
-
         experience: response?.experience || '',
-
         location: response?.location || '',
-
         bio: response?.bio || '',
-
         hourlyRate: response?.hourlyRate || '',
-
       });
-
       
       // Initialize verification states
       console.log('FetchProfile Debug - User object:', user);
@@ -388,17 +376,11 @@ const ExpertDashboard = () => {
       setCurrentPhoneVerified(user?.isPhoneVerified || false);
 
     } catch (error) {
-
       console.error('Error fetching profile:', error);
-
       setToast({ type: 'error', message: 'Failed to load profile' });
-
     } finally {
-
       setLoading(false);
-
     }
-
   };
 
 
@@ -1463,6 +1445,20 @@ const ExpertDashboard = () => {
 
               <SidebarItem
 
+                id="applications"
+
+                label="Applications"
+
+                icon={CheckCircle}
+
+                isActive={activeTab === 'applications'}
+
+                onClick={handleTabChange}
+
+              />
+
+              <SidebarItem
+
                 id="ratings"
 
                 label="Reviews"
@@ -2003,42 +1999,38 @@ const ExpertDashboard = () => {
 
                         <h3 className="font-semibold text-slate-900">Profile Picture</h3>
 
+                        {console.log('🖼️ FileUpload Render Debug - Profile object:', profile)}
+
+                        {console.log('🖼️ FileUpload Render Debug - Profile picture URL:', profile?.profilePicture)}
+
+                        {console.log('🖼️ FileUpload Render Debug - Profile picture type:', typeof profile?.profilePicture)}
+
                         <FileUpload
-
                           type="image"
-
                           currentFile={profile?.profilePicture}
-
                           isEditing={isEditingProfile}
-
                           onFileSelect={async (file) => {
-
                             try {
-
+                              console.log('🖼️ Profile Picture Upload - Starting upload for file:', file);
+                              console.log('🖼️ Profile Picture Upload - Current profile:', profile);
+                              
                               const response = await api.uploadProfilePicture(file);
-
+                              console.log('🖼️ Profile Picture Upload - API response:', response);
+                              console.log('🖼️ Profile Picture Upload - New profile picture URL:', response.profilePicture);
+                              
                               setProfile(prevProfile => ({ 
-
                                 ...prevProfile, 
-
                                 profilePicture: response.profilePicture 
-
                               }));
-
+                              
+                              console.log('🖼️ Profile Picture Upload - Profile state updated, fetching fresh profile...');
                               await fetchProfile();
-
                               showToast('success', 'Profile picture updated successfully!');
-
                             } catch (error) {
-
                               console.error('Error uploading profile picture:', error);
-
                               showToast('error', `Failed to upload profile picture: ${error.message}`);
-
                             }
-
                           }}
-
                           onRemove={async () => {
 
                             try {
@@ -2066,13 +2058,9 @@ const ExpertDashboard = () => {
                             }
 
                           }}
-
                           accept="image/*"
-
                           maxSize={5}
-
                           className="w-full"
-
                         />
 
                       </div>
@@ -3746,6 +3734,29 @@ const ExpertDashboard = () => {
 
                   {/* Expert Opportunities Component */}
                   <ExpertOpportunities />
+
+                </motion.div>
+
+              )}
+
+
+
+              {/* Applications Tab */}
+
+              {activeTab === 'applications' && (
+
+                <motion.div
+
+                  initial={{ opacity: 0, y: 20 }}
+
+                  animate={{ opacity: 1, y: 0 }}
+
+                  className="space-y-6"
+
+                >
+
+                  {/* Application Tracking Component */}
+                  <ApplicationTracking />
 
                 </motion.div>
 

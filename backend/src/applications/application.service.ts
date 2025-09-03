@@ -80,6 +80,71 @@ export class ApplicationService {
     return application;
   }
 
+  // Get all applications for a college admin across all requirements
+  async getCollegeApplications(collegeAdminId: string, query: GetApplicationsDto) {
+    const { page = 1, limit = 10, status, search, requirementId } = query;
+    const skip = (page - 1) * limit;
+
+    // Build where clause
+    const where: any = {
+      requirement: {
+        collegeprofile: {
+          userId: collegeAdminId
+        }
+      }
+    };
+    
+    if (status) where.status = status;
+    if (requirementId) where.requirementId = requirementId;
+    if (search) {
+      where.OR = [
+        { expert: { fullName: { contains: search, mode: 'insensitive' } } },
+        { expert: { expertprofile: { primaryExpertise: { contains: search, mode: 'insensitive' } } } },
+        { coverLetter: { contains: search, mode: 'insensitive' } },
+        { requirement: { title: { contains: search, mode: 'insensitive' } } }
+      ];
+    }
+
+    const [applications, total] = await Promise.all([
+      this.prisma.application.findMany({
+        where,
+        include: {
+          expert: {
+            include: {
+              expertprofile: {
+                include: {
+                  expertskill: true,
+                  workexperience: {
+                    orderBy: { startDate: 'desc' }
+                  }
+                }
+              }
+            }
+          },
+          requirement: {
+            include: {
+              collegeprofile: {
+                include: { user: true }
+              }
+            }
+          }
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit
+      }),
+      this.prisma.application.count({ where })
+    ]);
+
+    return {
+      applications,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    };
+  }
+
   // Get applications for a requirement (college admin view)
   async getRequirementApplications(requirementId: string, collegeAdminId: string, query: GetApplicationsDto) {
     const { page = 1, limit = 10, status, search } = query;
@@ -123,6 +188,13 @@ export class ApplicationService {
                     orderBy: { startDate: 'desc' }
                   }
                 }
+              }
+            }
+          },
+          requirement: {
+            include: {
+              collegeprofile: {
+                include: { user: true }
               }
             }
           }

@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { Search, Filter, MapPin, Clock, Users, Briefcase, Calendar, Star, Eye, FileText, IndianRupee } from 'lucide-react';
 import apiService from '../../utils/api';
-import RequirementDetails from './RequirementDetails';
 
 const ExpertOpportunities = () => {
+  const navigate = useNavigate();
   const [requirements, setRequirements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -23,9 +24,8 @@ const ExpertOpportunities = () => {
   const [totalRequirements, setTotalRequirements] = useState(0);
   const [categories, setCategories] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
-  const [showDetailsView, setShowDetailsView] = useState(false);
-  const [selectedRequirementId, setSelectedRequirementId] = useState(null);
   const [appliedRequirements, setAppliedRequirements] = useState(new Set());
+  const [applicationStatuses, setApplicationStatuses] = useState(new Map());
 
   const observer = useRef();
   const lastRequirementRef = useCallback(node => {
@@ -105,9 +105,18 @@ const ExpertOpportunities = () => {
       console.log('📡 Expert applications response:', response);
       
       if (response.data && response.data.applications) {
-        const appliedIds = new Set(response.data.applications.map(app => app.requirementId));
+        const appliedIds = new Set();
+        const statusMap = new Map();
+        
+        response.data.applications.forEach(app => {
+          appliedIds.add(app.requirementId);
+          statusMap.set(app.requirementId, app.status);
+        });
+        
         console.log('✅ Applied requirement IDs:', Array.from(appliedIds));
+        console.log('📊 Application statuses:', Object.fromEntries(statusMap));
         setAppliedRequirements(appliedIds);
+        setApplicationStatuses(statusMap);
       } else {
         console.log('⚠️ No applications found in response');
         console.log('📋 Response structure:', response);
@@ -116,6 +125,7 @@ const ExpertOpportunities = () => {
       console.error('❌ Error fetching expert applications:', err);
       // Set empty set to avoid undefined state
       setAppliedRequirements(new Set());
+      setApplicationStatuses(new Map());
     }
   };
 
@@ -152,21 +162,7 @@ const ExpertOpportunities = () => {
 
   // Show requirement details
   const showRequirementDetails = (requirementId) => {
-    setSelectedRequirementId(requirementId);
-    setShowDetailsView(true);
-  };
-
-  // Go back to opportunities list
-  const goBackToOpportunities = () => {
-    setShowDetailsView(false);
-    setSelectedRequirementId(null);
-  };
-
-  // Handle successful application from details view
-  const handleApplicationSuccess = () => {
-    setAppliedRequirements(prev => new Set([...prev, selectedRequirementId]));
-    goBackToOpportunities();
-    fetchRequirements();
+    navigate(`/requirement/${requirementId}`);
   };
 
   // Effects
@@ -210,30 +206,21 @@ const ExpertOpportunities = () => {
     );
   }
 
-  // Show details view if selected
-  if (showDetailsView) {
-    return (
-      <RequirementDetails
-        requirementId={selectedRequirementId}
-        onBack={goBackToOpportunities}
-        onApplySuccess={handleApplicationSuccess}
-      />
-    );
-  }
+
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                     <div>
-             <h1 className="text-2xl font-bold text-gray-900">Browse Opportunities</h1>
-             <p className="text-gray-600 mt-1">Find requirements and review details before applying</p>
-           </div>
-          <div className="flex items-center gap-3">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Browse Opportunities</h1>
+            <p className="text-gray-600 text-sm">Find requirements and review details before applying</p>
+          </div>
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm"
             >
               <Filter className="w-4 h-4" />
               Filters
@@ -242,15 +229,15 @@ const ExpertOpportunities = () => {
         </div>
 
         {/* Search Bar */}
-        <div className="mt-6">
+        <div className="mt-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="text"
               placeholder="Search requirements by title, description, or category..."
               value={filters.search}
               onChange={(e) => handleSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
             />
           </div>
         </div>
@@ -346,8 +333,8 @@ const ExpertOpportunities = () => {
         )}
       </AnimatePresence>
 
-      {/* Requirements Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Requirements List - One card per row */}
+      <div className="space-y-4">
         {requirements.map((requirement, index) => (
           <motion.div
             key={requirement.id}
@@ -355,95 +342,113 @@ const ExpertOpportunities = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
             ref={index === requirements.length - 1 ? lastRequirementRef : null}
-            className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
+            className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow w-full cursor-pointer"
+            onClick={() => showRequirementDetails(requirement.id)}
           >
-            {/* Header */}
-            <div className="p-6 border-b border-gray-100">
-              <div className="flex items-start justify-between mb-3">
-                <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">
-                  {requirement.title}
-                </h3>
-                {requirement.isUrgent && (
-                  <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">
-                    Urgent
-                  </span>
-                )}
-              </div>
-              
-              <p className="text-gray-600 text-sm line-clamp-3 mb-4">
-                {requirement.description}
-              </p>
+            {/* Compact Card Layout */}
+            <div className="p-4">
+              <div className="flex items-start justify-between gap-4">
+                {/* Left Side - Main Content */}
+                <div className="flex-1 min-w-0">
+                  {/* Title and Urgency */}
+                  <div className="flex items-start gap-3 mb-2">
+                    <h3 className="text-lg font-semibold text-gray-900 truncate">
+                      {requirement.title}
+                    </h3>
+                    {requirement.isUrgent && (
+                      <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full flex-shrink-0">
+                        Urgent
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Description */}
+                  <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                    {requirement.description}
+                  </p>
 
-              {/* Tags */}
-              <div className="flex flex-wrap gap-2 mb-4">
-                <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
-                  {requirement.category}
-                </span>
-                {requirement.subcategory && (
-                  <span className="px-3 py-1 bg-gray-100 text-gray-800 text-xs font-medium rounded-full">
-                    {requirement.subcategory}
-                  </span>
-                )}
-              </div>
-            </div>
+                  {/* Tags */}
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                      {requirement.category}
+                    </span>
+                    {requirement.subcategory && (
+                      <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-medium rounded-full">
+                        {requirement.subcategory}
+                      </span>
+                    )}
+                  </div>
 
-            {/* Details */}
-            <div className="p-6 space-y-3">
-              {/* College Info */}
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Briefcase className="w-4 h-4" />
-                <span>{requirement.collegeprofile?.institutionName || 'College Name'}</span>
-              </div>
+                  {/* Key Details Row - Compact */}
+                  <div className="flex flex-wrap items-center gap-4 text-xs text-gray-600">
+                    {/* College Info */}
+                    <div className="flex items-center gap-1">
+                      <Briefcase className="w-3 h-3" />
+                      <span className="truncate">{requirement.collegeprofile?.institutionName || 'College Name'}</span>
+                    </div>
 
-              {/* Location */}
-              {requirement.collegeprofile?.city && (
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <MapPin className="w-4 h-4" />
-                  <span>{requirement.collegeprofile.city}</span>
+                    {/* Location */}
+                    {requirement.collegeprofile?.city && (
+                      <div className="flex items-center gap-1">
+                        <MapPin className="w-3 h-3" />
+                        <span>{requirement.collegeprofile.city}</span>
+                      </div>
+                    )}
+
+                    {/* Budget */}
+                    <div className="flex items-center gap-1">
+                      <IndianRupee className="w-3 h-3" />
+                      <span className="font-medium">{formatBudget(requirement.budget, requirement.budgetType)}</span>
+                    </div>
+
+                    {/* Deadline */}
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      <span>{formatDeadline(requirement.deadline)}</span>
+                    </div>
+
+                    {/* Posted Date */}
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      <span>Posted {new Date(requirement.createdAt).toLocaleDateString()}</span>
+                    </div>
+                  </div>
                 </div>
-              )}
 
-                             {/* Budget */}
-               <div className="flex items-center gap-2 text-sm text-gray-600">
-                 <IndianRupee className="w-4 h-4" />
-                 <span>{formatBudget(requirement.budget, requirement.budgetType)}</span>
-               </div>
-
-              {/* Deadline */}
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Clock className="w-4 h-4" />
-                <span>{formatDeadline(requirement.deadline)}</span>
-              </div>
-
-              {/* Posted Date */}
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <Calendar className="w-4 h-4" />
-                <span>Posted {new Date(requirement.createdAt).toLocaleDateString()}</span>
+                {/* Right Side - Status Indicator */}
+                <div className="flex-shrink-0">
+                  {appliedRequirements.has(requirement.id) ? (
+                    (() => {
+                      const status = applicationStatuses.get(requirement.id);
+                      const getStatusConfig = (status) => {
+                        switch (status?.toUpperCase()) {
+                          case 'PENDING':
+                            return { bg: 'bg-yellow-500', text: 'Pending' };
+                          case 'SHORTLISTED':
+                            return { bg: 'bg-green-500', text: 'Shortlisted' };
+                          case 'REJECTED':
+                            return { bg: 'bg-red-500', text: 'Rejected' };
+                          case 'ACCEPTED':
+                            return { bg: 'bg-green-600', text: 'Accepted' };
+                          default:
+                            return { bg: 'bg-gray-500', text: 'Applied' };
+                        }
+                      };
+                      const config = getStatusConfig(status);
+                      return (
+                        <span className={`px-4 py-2 ${config.bg} text-white rounded-lg font-medium inline-block`}>
+                          {config.text}
+                        </span>
+                      );
+                    })()
+                  ) : (
+                    <span className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium inline-block">
+                      Available
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
-
-                                      {/* Action */}
-             <div className="p-6 pt-0">
-               {appliedRequirements.has(requirement.id) ? (
-                 <button
-                   disabled
-                   className="w-full px-4 py-2 bg-gray-400 text-white rounded-lg cursor-not-allowed font-medium"
-                 >
-                   Already Applied
-                 </button>
-               ) : (
-                 <button
-                   onClick={(e) => {
-                     e.stopPropagation();
-                     showRequirementDetails(requirement.id);
-                   }}
-                   className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                 >
-                   View Details
-                 </button>
-               )}
- 
-             </div>
           </motion.div>
         ))}
       </div>

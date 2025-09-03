@@ -72,8 +72,8 @@ export class RequirementsService {
     
     if (search && typeof search === 'string' && search.trim() !== '') {
       where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } }
+        { title: { contains: search } },
+        { description: { contains: search } }
       ];
     }
 
@@ -147,8 +147,8 @@ export class RequirementsService {
     
     if (search && typeof search === 'string' && search.trim() !== '') {
       where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } }
+        { title: { contains: search } },
+        { description: { contains: search } }
       ];
     }
     

@@ -39,6 +39,7 @@ import PhoneVerificationModal from '../../components/verification/PhoneVerificat
 import VerificationRequirementModal from '../../components/common/VerificationRequirementModal';
 import RequirementCard from '../../components/common/RequirementCard';
 import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
+import ApplicationManagement from '../../components/college/ApplicationManagement';
 
 const CollegeDashboard = () => {
   const { user, logout, setUser } = useAuth();
@@ -1008,6 +1009,13 @@ const CollegeDashboard = () => {
                 onClick={handleRequirementsAccess}
               />
               <SidebarItem
+                id="applications"
+                label="Applications"
+                icon={CheckCircle}
+                isActive={activeTab === 'applications'}
+                onClick={handleTabChange}
+              />
+              <SidebarItem
                 id="experts"
                 label="Expert Directory"
                 icon={Users}
@@ -1071,6 +1079,7 @@ const CollegeDashboard = () => {
                     {activeTab === 'overview' && 'Dashboard Overview'}
                     {activeTab === 'profile' && 'Institution Profile'}
                     {activeTab === 'requirements' && 'Requirements Management'}
+                    {activeTab === 'applications' && 'Application Management'}
                     {activeTab === 'experts' && 'Expert Directory'}
                     {activeTab === 'ratings' && 'Ratings & Trust'}
                   </h1>
@@ -1293,6 +1302,16 @@ const CollegeDashboard = () => {
                   />
 
 
+                </>
+              )}
+
+              {/* Applications Tab */}
+              {activeTab === 'applications' && (
+                <>
+                  <ApplicationManagement 
+                    requirementId={null}
+                    user={user}
+                  />
                 </>
               )}
 

@@ -23,4 +23,8 @@ export class GetApplicationsDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @IsOptional()
+  @IsString()
+  requirementId?: string;
 }

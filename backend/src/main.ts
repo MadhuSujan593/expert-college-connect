@@ -41,26 +41,35 @@ async function bootstrap() {
   );
 
   // Ensure upload directories exist
-  const uploadsDir = join(__dirname, '..', 'uploads');
+  const uploadsDir = join(process.cwd(), 'uploads');
   const profilePicsDir = join(uploadsDir, 'profile-pics');
   const resumesDir = join(uploadsDir, 'resumes');
   
+  console.log('📁 Upload directories setup:');
+  console.log('📁 Current working directory:', process.cwd());
+  console.log('📁 Main uploads dir:', uploadsDir);
+  console.log('📁 Profile pics dir:', profilePicsDir);
+  console.log('📁 Resumes dir:', resumesDir);
+  
   if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
+    console.log('✅ Created uploads directory');
   }
   if (!fs.existsSync(profilePicsDir)) {
     fs.mkdirSync(profilePicsDir, { recursive: true });
+    console.log('✅ Created profile-pics directory');
   }
   if (!fs.existsSync(resumesDir)) {
     fs.mkdirSync(resumesDir, { recursive: true });
+    console.log('✅ Created resumes directory');
   }
 
-
-
   // Serve static files with proper CORS headers
+  console.log('🌐 Setting up static file serving for:', uploadsDir);
   app.useStaticAssets(uploadsDir, {
     prefix: '/uploads/',
     setHeaders: (res, path) => {
+      console.log('📁 Serving static file:', path);
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Access-Control-Allow-Methods', 'GET');
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type');

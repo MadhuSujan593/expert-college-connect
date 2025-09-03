@@ -36,6 +36,14 @@ const FileUpload = ({
   className = '',
   isEditing = false
 }) => {
+  console.log('🖼️ FileUpload Component Debug - Props received:', {
+    type,
+    currentFile,
+    isEditing,
+    accept,
+    maxSize
+  });
+  
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -155,14 +163,18 @@ const FileUpload = ({
       {/* Current File Display */}
       {currentFile && !selectedFile && (
         <div className="space-y-4">
+          {console.log('🖼️ FileUpload Display Debug - Showing current file:', currentFile)}
           {/* Image Preview for Image Type */}
           {type === 'image' && (
             <div className="relative w-full max-w-32 h-32">
+              {console.log('🖼️ FileUpload Image Debug - Rendering image with src:', currentFile)}
               <div className="relative overflow-hidden rounded-2xl border-2 border-slate-200 shadow-lg w-full h-full">
                 <img 
                   src={currentFile} 
                   alt="Profile Picture" 
                   className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                  onLoad={() => console.log('🖼️ FileUpload Image Debug - Image loaded successfully:', currentFile)}
+                  onError={(e) => console.error('🖼️ FileUpload Image Debug - Image failed to load:', currentFile, e)}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300" />
               </div>
