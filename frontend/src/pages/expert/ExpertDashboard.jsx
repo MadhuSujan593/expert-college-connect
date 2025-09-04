@@ -8,7 +8,7 @@ import {
 
   Plus, Trash2, Save, X, CheckCircle, AlertCircle, TrendingUp, Calendar, MapPin,
 
-  Briefcase, Globe, Mail, Phone, Search, MessageCircle, Shield, Bell, Video,
+  Briefcase, Globe, Mail, Phone, Search, MessageCircle, Shield, Video,
 
   Users, Building2, Badge, Target, Clock, Activity, Filter, Upload, Download,
 
@@ -65,6 +65,15 @@ const ExpertDashboard = () => {
 
     profileViews: 0
 
+  });
+
+  // Application stats for overview
+  const [applicationStats, setApplicationStats] = useState({
+    total: 0,
+    pending: 0,
+    shortlisted: 0,
+    rejected: 0,
+    accepted: 0
   });
 
 
@@ -245,13 +254,45 @@ const ExpertDashboard = () => {
 
   const [ratings, setRatings] = useState([]);
 
-  const [trustScore, setTrustScore] = useState(0);
-
 
 
   // Logout confirmation
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  // Verification requirement modal state
+  const [showVerificationRequirement, setShowVerificationRequirement] = useState(false);
+  const [verificationFeatureName, setVerificationFeatureName] = useState("this feature");
+
+  // Check if user can access features that require verification
+  const canAccessFeatures = () => {
+    return user?.isEmailVerified || user?.isPhoneVerified;
+  };
+
+  // Handle feature access attempts
+  const handleFeatureAccess = (featureName, tabId) => {
+    if (canAccessFeatures()) {
+      handleTabChange(tabId);
+    } else {
+      setVerificationFeatureName(featureName);
+      setShowVerificationRequirement(true);
+    }
+  };
+
+  // Wrapper functions for verification from feature access
+  const handleVerifyEmailFromFeature = () => {
+    setShowVerificationRequirement(false);
+    handleTabChange('profile');
+    setIsEditingProfile(true);
+    setShowEmailVerification(true);
+  };
+
+  const handleVerifyPhoneFromFeature = () => {
+    setShowVerificationRequirement(false);
+    handleTabChange('profile');
+    setIsEditingProfile(true);
+    setShowPhoneVerification(true);
+  };
 
   // Tab management with URL persistence
   const handleTabChange = (tabId) => {
@@ -284,6 +325,8 @@ const ExpertDashboard = () => {
     fetchWorkExperiences();
 
     fetchStats();
+
+    fetchApplicationStats();
 
     fetchCollegePosts();
 
@@ -431,6 +474,26 @@ const ExpertDashboard = () => {
 
     }
 
+  };
+
+  // Fetch application stats for overview
+  const fetchApplicationStats = async () => {
+    try {
+      const response = await api.get('/applications/my-applications');
+      if (response.success && response.data && response.data.applications) {
+        const apps = response.data.applications;
+        const stats = {
+          total: apps.length,
+          pending: apps.filter(app => app.status === 'PENDING').length,
+          shortlisted: apps.filter(app => app.status === 'SHORTLISTED').length,
+          rejected: apps.filter(app => app.status === 'REJECTED').length,
+          accepted: apps.filter(app => app.status === 'ACCEPTED').length
+        };
+        setApplicationStats(stats);
+      }
+    } catch (error) {
+      console.error('Error fetching application stats:', error);
+    }
   };
 
 
@@ -1176,38 +1239,42 @@ const ExpertDashboard = () => {
 
 
   const StatCard = ({ icon: Icon, title, value, change, color = "blue", trend = "up" }) => (
-    <div className="card p-6">
+    <div className={`p-6 rounded-2xl shadow-sm ${
+      color === 'blue' ? 'bg-gradient-to-br from-blue-500 to-purple-600' :
+      color === 'green' ? 'bg-gradient-to-br from-green-400 to-blue-500' :
+      color === 'purple' ? 'bg-gradient-to-br from-purple-500 to-pink-500' :
+      color === 'orange' ? 'bg-gradient-to-br from-orange-400 to-red-500' :
+      'bg-white'
+    } ${color !== 'white' ? 'text-white' : 'text-gray-900'}`}>
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-secondary-600 mb-1">{title}</p>
-          <p className="text-2xl font-semibold text-secondary-900">{value}</p>
+          <p className={`text-sm mb-1 ${color !== 'white' ? 'text-white/80' : 'text-gray-600'}`}>{title}</p>
+          <p className={`text-3xl font-bold ${color !== 'white' ? 'text-white' : 'text-gray-900'}`}>{value}</p>
         </div>
-        <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-          color === 'blue' ? 'bg-primary-100' :
-          color === 'green' ? 'bg-success-100' :
-          color === 'purple' ? 'bg-accent-100' :
-          color === 'orange' ? 'bg-warning-100' :
-          'bg-secondary-100'
+        <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${
+          color === 'blue' ? 'bg-white/20' :
+          color === 'green' ? 'bg-white/20' :
+          color === 'purple' ? 'bg-white/20' :
+          color === 'orange' ? 'bg-white/20' :
+          'bg-gray-100'
         }`}>
-          <Icon className={`w-6 h-6 ${
-            color === 'blue' ? 'text-primary-600' :
-            color === 'green' ? 'text-success-600' :
-            color === 'purple' ? 'text-accent-600' :
-            color === 'orange' ? 'text-warning-600' :
-            'text-secondary-600'
+          <Icon className={`w-7 h-7 ${
+            color === 'blue' ? 'text-white' :
+            color === 'green' ? 'text-white' :
+            color === 'purple' ? 'text-white' :
+            color === 'orange' ? 'text-white' :
+            'text-gray-600'
           }`} />
         </div>
       </div>
       {change && (
-        <div className="flex items-center space-x-1 mt-2">
+        <div className="flex items-center space-x-1 mt-3">
           {trend === 'up' ? (
-            <TrendingUp className="h-4 w-4 text-success-600" />
+            <TrendingUp className={`h-4 w-4 ${color !== 'white' ? 'text-white/80' : 'text-green-600'}`} />
           ) : (
-            <TrendingDown className="h-4 w-4 text-error-500" />
+            <TrendingDown className={`h-4 w-4 ${color !== 'white' ? 'text-white/80' : 'text-red-500'}`} />
           )}
-          <p className={`text-sm font-medium ${
-            trend === 'up' ? 'text-success-600' : 'text-error-500'
-          }`}>
+          <p className={`text-sm font-medium ${color !== 'white' ? 'text-white/80' : trend === 'up' ? 'text-green-600' : 'text-red-500'}`}>
             {change}
           </p>
         </div>
@@ -1220,13 +1287,13 @@ const ExpertDashboard = () => {
   const SidebarItem = ({ id, label, icon: Icon, isActive, onClick }) => (
     <button
       onClick={() => onClick(id)}
-      className={`group flex items-center space-x-3 w-full px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+      className={`group flex items-center space-x-3 w-full px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
         isActive
-          ? 'bg-primary-500 text-white'
-          : 'text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100'
+          ? 'bg-blue-600 text-white'
+          : 'text-gray-300 hover:text-white hover:bg-gray-800'
       }`}
     >
-      <Icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-secondary-500 group-hover:text-secondary-700'}`} />
+      <Icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'}`} />
       <span>{label}</span>
     </button>
   );
@@ -1234,16 +1301,16 @@ const ExpertDashboard = () => {
 
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Clean Layout with Sidebar - Expert Style */}
+    <div className="min-h-screen bg-gray-100">
+      {/* Classic Theme Layout with Dark Sidebar */}
       <div className="flex h-screen overflow-hidden">
-        {/* Sidebar */}
-        <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-secondary-200 transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 shadow-soft`}>
+        {/* Dark Sidebar */}
+        <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
 
           <div className="flex flex-col h-full">
 
-            {/* Sidebar Header */}
-            <div className="flex items-center justify-between px-6 py-6 border-b border-secondary-200">
+            {/* Dark Sidebar Header */}
+            <div className="flex items-center justify-between px-6 py-6 border-b border-gray-700">
               <div className="flex items-center space-x-3">
                 {profile?.profilePicture ? (
                   <img 
@@ -1252,18 +1319,18 @@ const ExpertDashboard = () => {
                     className="w-10 h-10 rounded-lg object-cover"
                   />
                 ) : (
-                  <div className="w-10 h-10 bg-primary-500 rounded-lg flex items-center justify-center">
+                  <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
                     <User className="w-5 h-5 text-white" />
                   </div>
                 )}
                 <div>
-                  <h1 className="text-lg font-semibold text-secondary-900">{profile?.user?.fullName || user?.fullName || 'Expert'}</h1>
-                  <p className="text-sm text-secondary-500">Dashboard</p>
+                  <h1 className="text-lg font-semibold text-white">{profile?.user?.fullName || user?.fullName || 'Expert'}</h1>
+                  <p className="text-sm text-gray-400">Dashboard</p>
                 </div>
               </div>
               <button
                 onClick={() => setSidebarOpen(false)}
-                className="lg:hidden w-8 h-8 bg-secondary-100 hover:bg-secondary-200 rounded-lg flex items-center justify-center text-secondary-500 hover:text-secondary-700 transition-colors"
+                className="lg:hidden w-8 h-8 bg-gray-800 hover:bg-gray-700 rounded-lg flex items-center justify-center text-gray-400 hover:text-white transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -1328,7 +1395,7 @@ const ExpertDashboard = () => {
 
                 isActive={activeTab === 'colleges'}
 
-                onClick={handleTabChange}
+                onClick={() => handleFeatureAccess("Opportunities", 'colleges')}
 
               />
 
@@ -1342,7 +1409,7 @@ const ExpertDashboard = () => {
 
                 isActive={activeTab === 'applications'}
 
-                onClick={handleTabChange}
+                onClick={() => handleFeatureAccess("Applications", 'applications')}
 
               />
 
@@ -1356,7 +1423,7 @@ const ExpertDashboard = () => {
 
                 isActive={activeTab === 'ratings'}
 
-                onClick={handleTabChange}
+                onClick={() => handleFeatureAccess("Reviews", 'ratings')}
 
               />
 
@@ -1364,29 +1431,6 @@ const ExpertDashboard = () => {
 
 
 
-            {/* Trust Score */}
-
-            {trustScore > 0 && (
-
-              <div className="px-6 py-4 border-t border-slate-200/60">
-
-                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-emerald-50 to-blue-50 rounded-xl">
-
-                  <div className="flex items-center space-x-2">
-
-                    <Shield className="h-4 w-4 text-emerald-600" />
-
-                    <span className="text-sm font-semibold text-slate-700">Trust Score</span>
-
-                  </div>
-
-                  <span className="text-sm font-bold text-emerald-600">{trustScore}%</span>
-
-                </div>
-
-              </div>
-
-            )}
 
 
 
@@ -1402,11 +1446,11 @@ const ExpertDashboard = () => {
 
                 onClick={() => setShowLogoutConfirm(true)}
 
-                className="group flex items-center space-x-3 w-full px-4 py-3 rounded-xl font-medium transition-all duration-200 text-slate-600 hover:text-red-600 hover:bg-red-50"
+                className="group flex items-center space-x-3 w-full px-4 py-3 rounded-xl font-medium transition-all duration-200 text-gray-300 hover:text-red-400 hover:bg-red-900/20"
 
               >
 
-                <LogOut className="h-5 w-5 text-slate-500 group-hover:text-red-600" />
+                <LogOut className="h-5 w-5 text-gray-400 group-hover:text-red-400" />
 
                 <span className="font-semibold">Sign Out</span>
 
@@ -1420,45 +1464,46 @@ const ExpertDashboard = () => {
 
 
 
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col overflow-hidden bg-white">
-          {/* Top Header */}
-          <header className="bg-white border-b border-secondary-200 px-6 py-4">
+        {/* Main Content - Classic Theme */}
+        <div className="flex-1 flex flex-col overflow-hidden bg-white rounded-l-3xl shadow-lg">
+          {/* Classic Header */}
+          <header className="bg-white border-b border-gray-200 px-8 py-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <button
                   onClick={() => setSidebarOpen(true)}
-                  className="lg:hidden w-8 h-8 bg-secondary-100 hover:bg-secondary-200 rounded-lg flex items-center justify-center text-secondary-600 hover:text-secondary-800 transition-colors"
+                  className="lg:hidden w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors"
                 >
-                  <Menu className="h-4 w-4" />
+                  <Menu className="h-5 w-5" />
                 </button>
                 <div>
-                  <h1 className="text-2xl font-semibold text-secondary-900">
-                    {activeTab === 'overview' && 'Dashboard'}
-                    {activeTab === 'profile' && 'Profile'}
-                    {activeTab === 'experience' && 'Experience'}
+                  <h1 className="text-3xl font-bold text-gray-900">
+                    {activeTab === 'overview' && 'Expert Dashboard'}
+                    {activeTab === 'profile' && 'Profile Management'}
+                    {activeTab === 'experience' && 'Work Experience'}
                     {activeTab === 'colleges' && 'Opportunities'}
                     {activeTab === 'applications' && 'Applications'}
-                    {activeTab === 'ratings' && 'Reviews'}
+                    {activeTab === 'ratings' && 'Reviews & Ratings'}
                   </h1>
+                  <p className="text-gray-600 mt-1">
+                    {activeTab === 'overview' && 'Manage your expert profile and track your opportunities'}
+                    {activeTab === 'profile' && 'Manage your professional profile'}
+                    {activeTab === 'experience' && 'Showcase your work experience'}
+                    {activeTab === 'colleges' && 'Find new opportunities'}
+                    {activeTab === 'applications' && 'Track your applications'}
+                    {activeTab === 'ratings' && 'View your reviews and ratings'}
+                  </p>
                 </div>
               </div>
-              <div className="flex items-center space-x-3">
-                <button className="relative p-2 text-secondary-500 hover:text-secondary-700 hover:bg-secondary-100 rounded-lg transition-colors">
-                  <Bell className="h-5 w-5" />
-                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-error-500 rounded-full text-xs text-white flex items-center justify-center">
-                    3
-                  </span>
-                </button>
-              </div>
+
             </div>
           </header>
 
 
 
           {/* Scrollable Content */}
-          <main className="flex-1 overflow-y-auto bg-secondary-50">
-            <div className="p-6 space-y-6">
+          <main className="flex-1 overflow-y-auto bg-gray-50">
+            <div className="p-8 space-y-8">
 
                
 
@@ -1480,151 +1525,112 @@ const ExpertDashboard = () => {
 
 
 
-                  {/* Profile Completion Card */}
-
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-
-                    <div className="bg-white rounded-2xl border border-slate-200/60 p-6">
-
-                      <div className="flex items-center justify-between mb-4">
-
-                        <div className="p-3 bg-emerald-100 rounded-xl">
-
-                          <CheckCircle className="h-6 w-6 text-emerald-600" />
-
+                  {/* Classic Stats Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {/* Profile Completeness */}
+                    <div className="p-6 rounded-2xl shadow-sm bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-white/80 mb-1">Profile Completeness</p>
+                          <p className="text-3xl font-bold text-white">
+                            {(() => {
+                              const completionFields = [
+                                { field: 'fullName', value: profile?.user?.fullName, label: 'Full Name' },
+                                { field: 'phone', value: profile?.user?.phone, label: 'Phone Number' },
+                                { field: 'jobTitle', value: profile?.jobTitle, label: 'Job Title' },
+                                { field: 'experience', value: profile?.experience, label: 'Years of Experience' },
+                                { field: 'location', value: profile?.location, label: 'Location' },
+                                { field: 'bio', value: profile?.bio, label: 'Bio' },
+                                { field: 'primaryExpertise', value: profile?.primaryExpertise, label: 'Primary Expertise' },
+                                { field: 'hourlyRate', value: profile?.hourlyRate, label: 'Hourly Rate' },
+                                { field: 'profilePicture', value: profile?.profilePicture, label: 'Profile Picture' },
+                                { field: 'resumeUrl', value: profile?.resumeUrl, label: 'Resume' },
+                                { field: 'skills', value: profile?.expertskill?.length >= 3, label: 'At least 3 Skills' },
+                                { field: 'workExperience', value: workExperiences?.length >= 1, label: 'At least 1 Work Experience' },
+                              ];
+                              const completedFields = completionFields.filter(field => {
+                                if (typeof field.value === 'boolean') return field.value;
+                                return field.value && field.value.toString().trim() !== '';
+                              });
+                              return Math.round((completedFields.length / completionFields.length) * 100);
+                            })()}%
+                          </p>
                         </div>
-
+                        <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+                          <CheckCircle className="w-7 h-7 text-white" />
+                        </div>
                       </div>
-
-                      <h3 className="text-sm font-medium text-slate-600 mb-2">Profile Completeness</h3>
-
-                      <div className="text-3xl font-bold text-slate-900">
-
-                        {(() => {
-
-                          const completionFields = [
-
-                            { field: 'fullName', value: profile?.user?.fullName, label: 'Full Name' },
-
-                            { field: 'phone', value: profile?.user?.phone, label: 'Phone Number' },
-
-                            { field: 'jobTitle', value: profile?.jobTitle, label: 'Job Title' },
-
-                            { field: 'experience', value: profile?.experience, label: 'Years of Experience' },
-
-                            { field: 'location', value: profile?.location, label: 'Location' },
-
-                            { field: 'bio', value: profile?.bio, label: 'Bio' },
-
-                            { field: 'primaryExpertise', value: profile?.primaryExpertise, label: 'Primary Expertise' },
-
-                            { field: 'hourlyRate', value: profile?.hourlyRate, label: 'Hourly Rate' },
-
-                            { field: 'profilePicture', value: profile?.profilePicture, label: 'Profile Picture' },
-
-                            { field: 'resumeUrl', value: profile?.resumeUrl, label: 'Resume' },
-
-                            { field: 'skills', value: profile?.expertskill?.length >= 3, label: 'At least 3 Skills' },
-
-                            { field: 'workExperience', value: workExperiences?.length >= 1, label: 'At least 1 Work Experience' },
-
-                          ];
-
-
-
-                          const completedFields = completionFields.filter(field => {
-
-                            if (typeof field.value === 'boolean') return field.value;
-
-                            return field.value && field.value.toString().trim() !== '';
-
-                          });
-
-
-
-                          return Math.round((completedFields.length / completionFields.length) * 100);
-
-                        })()}%
-
-                      </div>
-
                     </div>
 
-                    
-                    
-                    <StatCard
+                    {/* Total Applications */}
+                    <div className="p-6 rounded-2xl shadow-sm bg-gradient-to-br from-green-400 to-blue-500 text-white">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-white/80 mb-1">Total Applications</p>
+                          <p className="text-3xl font-bold text-white">{applicationStats.total}</p>
+                        </div>
+                        <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+                          <CheckCircle className="w-7 h-7 text-white" />
+                        </div>
+                      </div>
+                    </div>
 
-                      icon={Eye}
+                    {/* Under Review */}
+                    <div className="p-6 rounded-2xl shadow-sm bg-gradient-to-br from-purple-500 to-pink-500 text-white">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-white/80 mb-1">Under Review</p>
+                          <p className="text-3xl font-bold text-white">{applicationStats.pending}</p>
+                        </div>
+                        <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+                          <Clock className="w-7 h-7 text-white" />
+                        </div>
+                      </div>
+                    </div>
 
-                      title="Profile Views"
-
-                      value={stats.profileViews || 247}
-
-                      change="+12% this week"
-
-                      color="blue"
-
-                    />
-
-                    <StatCard
-
-                      icon={BookOpen}
-
-                      title="Total Services"
-
-                      value={stats.totalServices || 8}
-
-                      change="+3 this month"
-
-                      color="green"
-
-                    />
-
-                    <StatCard
-
-                      icon={Star}
-
-                      title="Average Rating"
-
-                      value={(stats.averageRating || 4.8).toFixed(1)}
-
-                      change={`${stats.totalRatings || 23} reviews`}
-
-                      color="purple"
-
-                    />
-
+                    {/* Selected */}
+                    <div className="p-6 rounded-2xl shadow-sm bg-white text-gray-900">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-gray-600 mb-1">Selected</p>
+                          <p className="text-3xl font-bold text-gray-900">{applicationStats.accepted}</p>
+                        </div>
+                        <div className="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center">
+                          <Award className="w-7 h-7 text-gray-600" />
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
 
 
-                  {/* Modern Quick Actions */}
-                  <div className="card p-6">
-                    <h3 className="text-xl font-semibold text-secondary-900 mb-6">Quick Actions</h3>
+                  {/* Classic Quick Actions */}
+                  <div className="bg-white rounded-2xl shadow-sm p-6">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-6">Quick Actions</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <button
                         onClick={() => handleTabChange('profile')}
-                        className="group flex items-center space-x-4 p-6 bg-primary-50 hover:bg-primary-100 rounded-xl border border-primary-200 hover:border-primary-300 transition-all duration-200"
+                        className="group flex items-center space-x-4 p-6 bg-blue-50 hover:bg-blue-100 rounded-xl border border-blue-200 hover:border-blue-300 transition-all duration-200"
                       >
-                        <div className="w-12 h-12 bg-primary-500 rounded-lg flex items-center justify-center group-hover:bg-primary-600 transition-colors">
+                        <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center group-hover:bg-blue-700 transition-colors">
                           <Edit3 className="h-6 w-6 text-white" />
                         </div>
                         <div className="text-left">
-                          <p className="font-semibold text-secondary-900">Update Profile</p>
-                          <p className="text-sm text-secondary-600">Keep information current</p>
+                          <p className="font-semibold text-gray-900">Update Profile</p>
+                          <p className="text-sm text-gray-600">Keep information current</p>
                         </div>
                       </button>
 
                       <button
                         onClick={() => handleTabChange('colleges')}
-                        className="group flex items-center space-x-4 p-6 bg-success-50 hover:bg-success-100 rounded-xl border border-success-200 hover:border-success-300 transition-all duration-200"
+                        className="group flex items-center space-x-4 p-6 bg-green-50 hover:bg-green-100 rounded-xl border border-green-200 hover:border-green-300 transition-all duration-200"
                       >
-                        <div className="w-12 h-12 bg-success-500 rounded-lg flex items-center justify-center group-hover:bg-success-600 transition-colors">
+                        <div className="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center group-hover:bg-green-700 transition-colors">
                           <Search className="h-6 w-6 text-white" />
                         </div>
                         <div className="text-left">
-                          <p className="font-semibold text-secondary-900">Find Opportunities</p>
-                          <p className="text-sm text-secondary-600">Search college posts</p>
+                          <p className="font-semibold text-gray-900">Find Opportunities</p>
+                          <p className="text-sm text-gray-600">Search college posts</p>
                         </div>
                       </button>
                     </div>
@@ -1632,39 +1638,37 @@ const ExpertDashboard = () => {
 
 
 
-                  {/* Modern Recent Activity */}
-                  <div className="card p-6">
-                    <h3 className="text-xl font-semibold text-secondary-900 mb-6">Recent Activity</h3>
+                  {/* Classic Recent Activity */}
+                  <div className="bg-white rounded-2xl shadow-sm p-6">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-6">Recent Activity</h3>
                     <div className="space-y-4">
-                      <div className="flex items-center space-x-4 p-4 bg-secondary-50 hover:bg-secondary-100 rounded-xl transition-colors cursor-pointer group">
-                        <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center group-hover:bg-primary-200 transition-colors">
-                          <MessageCircle className="h-5 w-5 text-primary-600" />
+                      <div className="flex items-center space-x-4 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer group">
+                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                          <MessageCircle className="h-5 w-5 text-blue-600" />
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm font-semibold text-secondary-900">New message from MIT College</p>
-                          <p className="text-xs text-secondary-500">2 hours ago</p>
+                          <p className="text-sm font-semibold text-gray-900">New message from MIT College</p>
+                          <p className="text-xs text-gray-500">2 hours ago</p>
                         </div>
                       </div>
 
-                      <div className="flex items-center space-x-4 p-4 bg-secondary-50 hover:bg-secondary-100 rounded-xl transition-colors cursor-pointer group">
-                        <div className="w-10 h-10 bg-success-100 rounded-lg flex items-center justify-center group-hover:bg-success-200 transition-colors">
-                          <Star className="h-5 w-5 text-success-600" />
+                      <div className="flex items-center space-x-4 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer group">
+                        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors">
+                          <Star className="h-5 w-5 text-green-600" />
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm font-semibold text-secondary-900">Received 5-star rating</p>
-
-                          <p className="text-xs text-secondary-500">1 day ago</p>
+                          <p className="text-sm font-semibold text-gray-900">Received 5-star rating</p>
+                          <p className="text-xs text-gray-500">1 day ago</p>
                         </div>
                       </div>
 
-                      <div className="flex items-center space-x-4 p-4 bg-secondary-50 hover:bg-secondary-100 rounded-xl transition-colors cursor-pointer group">
-                        <div className="w-10 h-10 bg-accent-100 rounded-lg flex items-center justify-center group-hover:bg-accent-200 transition-colors">
-                          <Eye className="h-5 w-5 text-accent-600" />
+                      <div className="flex items-center space-x-4 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer group">
+                        <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors">
+                          <Eye className="h-5 w-5 text-purple-600" />
                         </div>
-
                         <div className="flex-1">
-                          <p className="text-sm font-semibold text-secondary-900">Profile viewed 15 times</p>
-                          <p className="text-xs text-secondary-500">2 days ago</p>
+                          <p className="text-sm font-semibold text-gray-900">Profile viewed 15 times</p>
+                          <p className="text-xs text-gray-500">2 days ago</p>
                         </div>
                       </div>
                     </div>
@@ -3484,22 +3488,47 @@ const ExpertDashboard = () => {
               {/* Colleges Tab */}
 
               {activeTab === 'colleges' && (
+                canAccessFeatures() ? (
+                  <motion.div
 
-                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
 
-                  initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
 
-                  animate={{ opacity: 1, y: 0 }}
+                    className="space-y-6"
 
-                  className="space-y-6"
+                  >
 
-                >
+                    {/* Expert Opportunities Component */}
+                    <ExpertOpportunities />
 
-                  {/* Expert Opportunities Component */}
-                  <ExpertOpportunities />
-
-                </motion.div>
-
+                  </motion.div>
+                ) : (
+                  <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+                    <div className="text-center py-8">
+                      <Building2 className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-500 mb-3">Verification required to access Opportunities</p>
+                      <div className="space-y-2">
+                        {!user?.isEmailVerified && (
+                          <button
+                            onClick={handleVerifyEmailFromFeature}
+                            className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700"
+                          >
+                            Verify Email
+                          </button>
+                        )}
+                        {!user?.isPhoneVerified && (
+                          <button
+                            onClick={handleVerifyPhoneFromFeature}
+                            className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700"
+                          >
+                            Verify Phone
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
               )}
 
 
@@ -3507,22 +3536,47 @@ const ExpertDashboard = () => {
               {/* Applications Tab */}
 
               {activeTab === 'applications' && (
+                canAccessFeatures() ? (
+                  <motion.div
 
-                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
 
-                  initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
 
-                  animate={{ opacity: 1, y: 0 }}
+                    className="space-y-6"
 
-                  className="space-y-6"
+                  >
 
-                >
+                    {/* Application Tracking Component */}
+                    <ApplicationTracking />
 
-                  {/* Application Tracking Component */}
-                  <ApplicationTracking />
-
-                </motion.div>
-
+                  </motion.div>
+                ) : (
+                  <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+                    <div className="text-center py-8">
+                      <CheckCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-500 mb-3">Verification required to access Applications</p>
+                      <div className="space-y-2">
+                        {!user?.isEmailVerified && (
+                          <button
+                            onClick={handleVerifyEmailFromFeature}
+                            className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700"
+                          >
+                            Verify Email
+                          </button>
+                        )}
+                        {!user?.isPhoneVerified && (
+                          <button
+                            onClick={handleVerifyPhoneFromFeature}
+                            className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700"
+                          >
+                            Verify Phone
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
               )}
 
 
@@ -3530,80 +3584,17 @@ const ExpertDashboard = () => {
               {/* Ratings Tab */}
 
               {activeTab === 'ratings' && (
+                canAccessFeatures() ? (
+                  <motion.div
 
-                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
 
-                  initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
 
-                  animate={{ opacity: 1, y: 0 }}
+                    className="space-y-6"
 
-                  className="space-y-6"
+                  >
 
-                >
-
-                  {/* Trust Score */}
-
-                  <div className="bg-white rounded-2xl border border-slate-200/60 p-6">
-
-                    <div className="flex items-center justify-between mb-6">
-
-                      <h2 className="text-xl font-semibold text-slate-900">Trust Score & Reviews</h2>
-
-                      <div className="flex items-center space-x-2">
-
-                        <Shield className="h-5 w-5 text-emerald-600" />
-
-                        <span className="text-lg font-bold text-emerald-600">{trustScore}%</span>
-
-                      </div>
-
-                    </div>
-
-                    
-                    
-                    <div className="bg-gradient-to-r from-emerald-50 to-blue-50 rounded-xl p-6">
-
-                      <div className="flex items-center justify-between">
-
-                        <div>
-
-                          <h3 className="text-lg font-semibold text-slate-900 mb-2">Your Trust Score</h3>
-
-                          <p className="text-slate-600">Based on verified reviews and ratings from colleges</p>
-
-                        </div>
-
-                        <div className="text-right">
-
-                          <div className="text-3xl font-bold text-emerald-600 mb-1">{trustScore}%</div>
-
-                          <div className="flex items-center space-x-1">
-
-                            {[...Array(5)].map((_, i) => (
-
-                              <Star
-
-                                key={i}
-
-                                className={`h-4 w-4 ${
-
-                                  i < Math.floor(trustScore / 20) ? 'text-yellow-400 fill-current' : 'text-slate-300'
-
-                                }`}
-
-                              />
-
-                            ))}
-
-                          </div>
-
-                        </div>
-
-                      </div>
-
-                    </div>
-
-                  </div>
 
 
 
@@ -3710,7 +3701,32 @@ const ExpertDashboard = () => {
                   </div>
 
                 </motion.div>
-
+                ) : (
+                  <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+                    <div className="text-center py-8">
+                      <Star className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-500 mb-3">Verification required to access Reviews</p>
+                      <div className="space-y-2">
+                        {!user?.isEmailVerified && (
+                          <button
+                            onClick={handleVerifyEmailFromFeature}
+                            className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700"
+                          >
+                            Verify Email
+                          </button>
+                        )}
+                        {!user?.isPhoneVerified && (
+                          <button
+                            onClick={handleVerifyPhoneFromFeature}
+                            className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700"
+                          >
+                            Verify Phone
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
               )}
 
             </div>
@@ -3863,6 +3879,16 @@ const ExpertDashboard = () => {
 
       )}
 
+      {/* Verification Requirement Modal */}
+      <VerificationRequirementModal
+        isOpen={showVerificationRequirement}
+        onClose={() => setShowVerificationRequirement(false)}
+        onVerifyEmail={handleVerifyEmailFromFeature}
+        onVerifyPhone={handleVerifyPhoneFromFeature}
+        user={user}
+        featureName={verificationFeatureName}
+      />
+
     </div>
 
   );
@@ -3872,4 +3898,5 @@ const ExpertDashboard = () => {
 
 
 export default ExpertDashboard;
+
 

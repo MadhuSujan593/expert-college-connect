@@ -207,3 +207,4 @@ const MessagingSystem = ({ applicationId, onClose, currentUserId, otherUser }) =
 };
 
 export default MessagingSystem;
+

@@ -6,3 +6,4 @@ export class CreateMessageDto {
   @MaxLength(1000)
   content: string;
 }
+

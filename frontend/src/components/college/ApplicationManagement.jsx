@@ -34,7 +34,6 @@ const ApplicationManagement = ({ requirementId }) => {
     total: 0,
     pending: 0,
     shortlisted: 0,
-    rejected: 0,
     accepted: 0
   });
 
@@ -69,7 +68,6 @@ const ApplicationManagement = ({ requirementId }) => {
           total: applications.length,
           pending: applications.filter(app => app.status === 'PENDING').length,
           shortlisted: applications.filter(app => app.status === 'SHORTLISTED').length,
-          rejected: applications.filter(app => app.status === 'REJECTED').length,
           accepted: applications.filter(app => app.status === 'ACCEPTED').length
         };
         setStats(stats);
@@ -121,6 +119,18 @@ const ApplicationManagement = ({ requirementId }) => {
     setSelectedExpert(null);
   };
 
+  // Helper function to get full profile picture URL
+  const getFullProfilePictureUrl = (profilePictureUrl) => {
+    if (!profilePictureUrl) return null;
+    
+    if (profilePictureUrl.startsWith('http://') || profilePictureUrl.startsWith('https://')) {
+      return profilePictureUrl;
+    }
+    
+    const baseUrl = 'http://localhost:3000';
+    return `${baseUrl}/${profilePictureUrl}`;
+  };
+
   // Handle table actions
   const handleTableUpdateStatus = (application) => {
     setSelectedApplication(application);
@@ -147,7 +157,7 @@ const ApplicationManagement = ({ requirementId }) => {
         </div>
 
         {/* Left Column - Stats and Table (Shows second on mobile) */}
-        <div className="lg:col-span-2 space-y-6 order-2 lg:order-1">
+        <div className="lg:col-span-2 space-y-6 order-2 lg:order-1 w-full">
           {/* Welcome Message - Show when no requirement is selected */}
           {!selectedRequirement && (
             <motion.div 
@@ -168,99 +178,6 @@ const ApplicationManagement = ({ requirementId }) => {
             </motion.div>
           )}
 
-          {/* Statistics Dashboard - Only show when requirement is selected */}
-          {selectedRequirement && (
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="card p-6"
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-gradient-to-br from-primary-100 to-primary-200 rounded-xl flex items-center justify-center">
-                  <BarChart3 className="w-5 h-5 text-primary-600" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-neutral-900">
-                    Application Statistics
-                  </h2>
-                  <p className="text-sm text-neutral-500">
-                    {selectedRequirement.title}
-                  </p>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3, delay: 0.1 }}
-                  className="stat-card-gradient group hover:scale-105 transition-transform duration-200"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-neutral-600 font-medium mb-1">Total Applications</p>
-                      <p className="text-2xl font-bold text-neutral-900">{stats.total}</p>
-                    </div>
-                    <div className="w-12 h-12 bg-gradient-to-br from-primary-100 to-primary-200 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                      <User className="w-6 h-6 text-primary-600" />
-                    </div>
-                  </div>
-                </motion.div>
-
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3, delay: 0.2 }}
-                  className="stat-card-gradient group hover:scale-105 transition-transform duration-200"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-neutral-600 font-medium mb-1">Pending Review</p>
-                      <p className="text-2xl font-bold text-neutral-900">{stats.pending}</p>
-                    </div>
-                    <div className="w-12 h-12 bg-gradient-to-br from-warning-100 to-warning-200 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                      <Clock className="w-6 h-6 text-warning-600" />
-                    </div>
-                  </div>
-                </motion.div>
-
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3, delay: 0.3 }}
-                  className="stat-card-gradient group hover:scale-105 transition-transform duration-200"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-neutral-600 font-medium mb-1">Shortlisted</p>
-                      <p className="text-2xl font-bold text-neutral-900">{stats.shortlisted}</p>
-                    </div>
-                    <div className="w-12 h-12 bg-gradient-to-br from-accent-100 to-accent-200 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                      <Star className="w-6 h-6 text-accent-600" />
-                    </div>
-                  </div>
-                </motion.div>
-
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3, delay: 0.4 }}
-                  className="stat-card-gradient group hover:scale-105 transition-transform duration-200"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-neutral-600 font-medium mb-1">Rejected</p>
-                      <p className="text-2xl font-bold text-neutral-900">{stats.rejected}</p>
-                    </div>
-                    <div className="w-12 h-12 bg-gradient-to-br from-error-100 to-error-200 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                      <XCircle className="w-6 h-6 text-error-600" />
-                    </div>
-                  </div>
-                </motion.div>
-              </div>
-            </motion.div>
-          )}
 
           {/* Applications Table - Only show when requirement is selected */}
           {selectedRequirement && (
@@ -314,9 +231,8 @@ const ApplicationManagement = ({ requirementId }) => {
                   className="input w-full"
                 >
                   <option value="PENDING">Pending</option>
-                  <option value="SHORTLISTED">Shortlisted</option>
+                  <option value="SHORTLISTED">Shortlist</option>
                   <option value="REJECTED">Rejected</option>
-                  <option value="ACCEPTED">Accepted</option>
                 </select>
               </div>
 
@@ -335,13 +251,13 @@ const ApplicationManagement = ({ requirementId }) => {
                 <button
                   onClick={handleStatusUpdate}
                   disabled={submitting}
-                  className="btn-primary flex-1"
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitting ? 'Updating...' : 'Update Status'}
                 </button>
                 <button
                   onClick={() => setShowStatusModal(false)}
-                  className="btn-secondary"
+                  className="px-6 py-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-semibold rounded-xl transition-all duration-200 border border-neutral-200"
                 >
                   Cancel
                 </button>
@@ -353,65 +269,115 @@ const ApplicationManagement = ({ requirementId }) => {
 
 
 
-      {/* Expert Profile Modal */}
+      {/* Expert Profile Modal - Same as Expert Directory */}
       {showProfileModal && selectedExpert && (
-        <div className="modal-overlay">
-          <motion.div 
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-            className="modal-content max-w-4xl max-h-[90vh] overflow-hidden"
+            className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
           >
-            {/* Header */}
-            <div className="bg-gradient-to-r from-primary-50 to-accent-50 border-b border-neutral-200 p-6">
+            {/* Simple Header */}
+            <div className="bg-white border-b border-gray-200 p-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  <div className="w-16 h-16 bg-gradient-to-br from-primary-100 to-primary-200 rounded-2xl flex items-center justify-center text-primary-700 font-bold text-xl shadow-soft">
-                    {selectedExpert.fullName?.charAt(0) || 'E'}
-                  </div>
+                  {selectedExpert.expertprofile?.profilePicture ? (
+                    <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-200">
+                      <img
+                        src={getFullProfilePictureUrl(selectedExpert.expertprofile.profilePicture)}
+                        alt={`${selectedExpert.fullName}'s profile`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          console.log('❌ Profile picture failed to load:', selectedExpert.expertprofile.profilePicture);
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                      <div className="w-full h-full bg-gray-100 rounded-full flex items-center justify-center text-gray-600 font-semibold text-xl" style={{display: 'none'}}>
+                        {selectedExpert.fullName?.charAt(0) || 'E'}
+                      </div>
+                    </div>
+                  ) : selectedExpert.profilePicture ? (
+                    <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-200">
+                      <img
+                        src={getFullProfilePictureUrl(selectedExpert.profilePicture)}
+                        alt={`${selectedExpert.fullName}'s profile`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          console.log('❌ Profile picture failed to load:', selectedExpert.profilePicture);
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                      <div className="w-full h-full bg-gray-100 rounded-full flex items-center justify-center text-gray-600 font-semibold text-xl" style={{display: 'none'}}>
+                        {selectedExpert.fullName?.charAt(0) || 'E'}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 font-semibold text-xl">
+                      {selectedExpert.fullName?.charAt(0) || 'E'}
+                    </div>
+                  )}
                   <div>
-                    <h2 className="text-2xl font-bold text-neutral-900">
+                    <h2 className="text-2xl font-bold text-gray-900">
                       {selectedExpert.fullName}
                     </h2>
-                    <p className="text-neutral-600 font-medium">
-                      {selectedExpert.expertprofile?.primaryExpertise || 'Expert'}
-                    </p>
+                    <p className="text-gray-600">{selectedExpert.expertprofile?.primaryExpertise?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Expert'}</p>
+                    {selectedExpert.expertprofile?.jobTitle && (
+                      <p className="text-gray-500 text-sm">{selectedExpert.expertprofile.jobTitle}</p>
+                    )}
                   </div>
                 </div>
                 <button
                   onClick={closeProfileModal}
-                  className="w-10 h-10 bg-neutral-100 hover:bg-neutral-200 rounded-xl flex items-center justify-center text-neutral-600 hover:text-neutral-800 transition-all duration-200"
+                  className="text-gray-400 hover:text-gray-600 transition-colors p-2"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-6 h-6" />
                 </button>
+              </div>
+              
+              {/* Quick Info Row */}
+              <div className="flex items-center space-x-6 mt-4 pt-4 border-t border-gray-100">
+                {selectedExpert.expertprofile?.experience && (
+                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <Clock className="w-4 h-4" />
+                    <span>{selectedExpert.expertprofile.experience} years experience</span>
+                  </div>
+                )}
+                {selectedExpert.expertprofile?.location && (
+                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <MapPin className="w-4 h-4" />
+                    <span>{selectedExpert.expertprofile.location}</span>
+                  </div>
+                )}
+                {selectedExpert.expertprofile?.hourlyRate && (
+                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <TrendingUp className="w-4 h-4" />
+                    <span className="font-semibold text-green-600">${parseFloat(selectedExpert.expertprofile.hourlyRate).toFixed(0)}/hr</span>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Content */}
             <div className="p-6 max-h-[60vh] overflow-y-auto">
-              <div className="space-y-8">
+              <div className="space-y-6">
                 {/* About */}
                 {selectedExpert.expertprofile?.bio && (
-                  <div className="card p-6">
-                    <h3 className="text-lg font-bold text-neutral-900 mb-4 flex items-center gap-2">
-                      <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
-                      About
-                    </h3>
-                    <p className="text-neutral-700 leading-relaxed text-base">{selectedExpert.expertprofile.bio}</p>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">About</h3>
+                    <p className="text-gray-700 leading-relaxed">{selectedExpert.expertprofile.bio}</p>
                   </div>
                 )}
 
                 {/* Primary Expertise */}
                 {selectedExpert.expertprofile?.primaryExpertise && (
-                  <div className="card p-6">
-                    <h3 className="text-lg font-bold text-neutral-900 mb-4 flex items-center gap-2">
-                      <div className="w-2 h-2 bg-accent-500 rounded-full"></div>
-                      Primary Expertise
-                    </h3>
-                    <div className="p-4 bg-gradient-to-r from-primary-50 to-accent-50 rounded-xl border border-primary-200">
-                      <p className="text-primary-800 font-semibold text-lg">
-                        {selectedExpert.expertprofile.primaryExpertise.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Primary Expertise</h3>
+                    <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
+                      <p className="text-gray-700 font-medium">
+                        {selectedExpert.expertprofile.primaryExpertise?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                       </p>
                     </div>
                   </div>
@@ -419,20 +385,17 @@ const ApplicationManagement = ({ requirementId }) => {
 
                 {/* Skills */}
                 {selectedExpert.expertprofile?.expertskill && selectedExpert.expertprofile.expertskill.length > 0 && (
-                  <div className="card p-6">
-                    <h3 className="text-lg font-bold text-neutral-900 mb-4 flex items-center gap-2">
-                      <div className="w-2 h-2 bg-success-500 rounded-full"></div>
-                      Skills & Expertise
-                    </h3>
-                    <div className="flex flex-wrap gap-3">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Skills & Expertise</h3>
+                    <div className="flex flex-wrap gap-2">
                       {selectedExpert.expertprofile.expertskill.map(skill => (
                         <span
                           key={skill.id}
-                          className="px-4 py-2 bg-gradient-to-r from-success-50 to-success-100 text-success-800 rounded-xl text-sm font-medium border border-success-200 hover:shadow-soft transition-all duration-200"
+                          className="px-3 py-1 bg-blue-50 text-blue-700 rounded-md text-sm border border-blue-200"
                         >
                           {skill.skillName}
                           {skill.skillLevel && (
-                            <span className="ml-2 text-success-600 font-semibold">({skill.skillLevel})</span>
+                            <span className="ml-2 text-blue-500">({skill.skillLevel})</span>
                           )}
                         </span>
                       ))}
@@ -440,29 +403,23 @@ const ApplicationManagement = ({ requirementId }) => {
                   </div>
                 )}
 
-                {/* Work Experience */}
+                {/* Work Experience Details */}
                 {selectedExpert.expertprofile?.workexperience && selectedExpert.expertprofile.workexperience.length > 0 && (
-                  <div className="card p-6">
-                    <h3 className="text-lg font-bold text-neutral-900 mb-6 flex items-center gap-2">
-                      <div className="w-2 h-2 bg-warning-500 rounded-full"></div>
-                      Work Experience
-                    </h3>
-                    <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Work Experience</h3>
+                    <div className="space-y-4">
                       {selectedExpert.expertprofile.workexperience.map((exp, index) => (
-                        <div key={exp.id} className="p-6 bg-gradient-to-r from-neutral-50 to-neutral-100 border border-neutral-200 rounded-2xl hover:shadow-soft transition-all duration-200">
-                          <div className="flex items-start justify-between mb-4">
-                            <div className="flex-1">
-                              <h4 className="font-bold text-neutral-900 text-xl mb-1">{exp.jobTitle}</h4>
-                              <p className="text-primary-600 font-semibold text-lg mb-1">{exp.company}</p>
+                        <div key={exp.id} className="p-4 bg-white border border-gray-200 rounded-lg">
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <h4 className="font-semibold text-gray-900 text-lg">{exp.jobTitle}</h4>
+                              <p className="text-blue-600 font-medium">{exp.company}</p>
                               {exp.location && (
-                                <p className="text-neutral-600 text-sm flex items-center gap-1">
-                                  <MapPin className="w-4 h-4" />
-                                  {exp.location}
-                                </p>
+                                <p className="text-gray-600 text-sm">{exp.location}</p>
                               )}
                             </div>
                             <div className="text-right">
-                              <div className="text-sm text-neutral-600 font-medium">
+                              <div className="text-sm text-gray-600">
                                 {new Date(exp.startDate).toLocaleDateString('en-US', { 
                                   month: 'short', 
                                   year: 'numeric' 
@@ -479,7 +436,7 @@ const ApplicationManagement = ({ requirementId }) => {
                                 }
                               </div>
                               {exp.isCurrent && (
-                                <span className="inline-block px-3 py-1 bg-success-100 text-success-800 text-xs font-semibold rounded-full mt-2">
+                                <span className="inline-block px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full mt-1">
                                   Current
                                 </span>
                               )}
@@ -487,16 +444,13 @@ const ApplicationManagement = ({ requirementId }) => {
                           </div>
                           
                           {exp.description && (
-                            <p className="text-neutral-700 mb-4 leading-relaxed text-base">{exp.description}</p>
+                            <p className="text-gray-700 mb-3 leading-relaxed">{exp.description}</p>
                           )}
                           
                           {exp.achievements && (
                             <div className="mb-3">
-                              <p className="text-sm font-semibold text-neutral-900 mb-2 flex items-center gap-2">
-                                <Award className="w-4 h-4 text-warning-600" />
-                                Key Achievements:
-                              </p>
-                              <p className="text-neutral-700 text-sm leading-relaxed bg-white p-3 rounded-xl border border-neutral-200">{exp.achievements}</p>
+                              <p className="text-sm font-medium text-gray-900 mb-2">Key Achievements:</p>
+                              <p className="text-gray-700 text-sm leading-relaxed">{exp.achievements}</p>
                             </div>
                           )}
                         </div>
@@ -505,66 +459,65 @@ const ApplicationManagement = ({ requirementId }) => {
                   </div>
                 )}
 
-                {/* Contact Information */}
-                <div className="card p-6">
-                  <h3 className="text-lg font-bold text-neutral-900 mb-4 flex items-center gap-2">
-                    <div className="w-2 h-2 bg-accent-500 rounded-full"></div>
-                    Contact Information
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-accent-50 to-primary-50 rounded-xl border border-accent-200">
-                      <div className="w-8 h-8 bg-accent-100 rounded-lg flex items-center justify-center">
-                        <Mail className="w-4 h-4 text-accent-600" />
+                {/* Contact & Documents */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Contact */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Contact Information</h3>
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-3 p-2">
+                        <Mail className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm text-gray-700">{selectedExpert.email}</span>
                       </div>
-                      <span className="text-sm text-neutral-700 font-medium">{selectedExpert.email}</span>
-                    </div>
-                    {selectedExpert.phone && (
-                      <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-accent-50 to-primary-50 rounded-xl border border-accent-200">
-                        <div className="w-8 h-8 bg-accent-100 rounded-lg flex items-center justify-center">
-                          <Phone className="w-4 h-4 text-accent-600" />
+                      {selectedExpert.phone && (
+                        <div className="flex items-center space-x-3 p-2">
+                          <Phone className="w-4 h-4 text-gray-500" />
+                          <span className="text-sm text-gray-700">{selectedExpert.phone}</span>
                         </div>
-                        <span className="text-sm text-neutral-700 font-medium">{selectedExpert.phone}</span>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                {/* Resume */}
-                {selectedExpert.expertprofile?.resumeUrl && (
-                  <div className="card p-6">
-                    <h3 className="text-lg font-bold text-neutral-900 mb-4 flex items-center gap-2">
-                      <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
-                      Documents
-                    </h3>
-                    <div className="space-y-3">
-                      <a
-                        href={selectedExpert.expertprofile.resumeUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center space-x-3 p-4 bg-gradient-to-r from-primary-50 to-accent-50 hover:from-primary-100 hover:to-accent-100 rounded-xl border border-primary-200 transition-all duration-200 group"
-                      >
-                        <div className="w-10 h-10 bg-primary-100 group-hover:bg-primary-200 rounded-xl flex items-center justify-center transition-colors duration-200">
-                          <FileText className="w-5 h-5 text-primary-600" />
-                        </div>
-                        <div>
-                          <span className="text-sm text-neutral-700 font-semibold">View Resume</span>
-                          <p className="text-xs text-neutral-500">Click to download or view</p>
-                        </div>
-                      </a>
+                  {/* Documents */}
+                  {selectedExpert.expertprofile?.resumeUrl && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3">Documents</h3>
+                      <div className="space-y-2">
+                        <a
+                          href={selectedExpert.expertprofile.resumeUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-md transition-colors"
+                        >
+                          <FileText className="w-4 h-4 text-gray-500" />
+                          <span className="text-sm text-gray-700">View Resume</span>
+                        </a>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Footer */}
-            <div className="bg-gradient-to-r from-neutral-50 to-neutral-100 border-t border-neutral-200 p-6">
-              <div className="flex justify-end">
+            {/* Simple Footer */}
+            <div className="bg-gray-50 border-t border-gray-200 p-4">
+              <div className="flex space-x-3">
                 <button
                   onClick={closeProfileModal}
-                  className="btn-secondary"
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
                 >
                   Close
+                </button>
+                <button
+                  onClick={() => {
+                    const subject = `Application Inquiry - ${selectedApplication?.requirement?.title || 'Position'}`;
+                    const body = `Dear ${selectedExpert.fullName},\n\nI hope this email finds you well. I am reaching out regarding your application.\n\nBest regards,`;
+                    const mailtoLink = `mailto:${selectedExpert.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                    window.open(mailtoLink);
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  Contact Expert
                 </button>
               </div>
             </div>

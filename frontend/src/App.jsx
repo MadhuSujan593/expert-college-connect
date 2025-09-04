@@ -55,7 +55,7 @@ const AppContent = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      {!isAuthPage && !isDashboardPage && <Navbar />}
+      {!isAuthPage && !isDashboardPage && !isRequirementPage && <Navbar />}
       <main className="flex-1">
         <Routes>
           {/* Public Routes */}

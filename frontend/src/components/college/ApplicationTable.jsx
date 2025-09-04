@@ -31,6 +31,10 @@ const ApplicationTable = ({
   const [totalPages, setTotalPages] = useState(1);
   const [totalApplications, setTotalApplications] = useState(0);
   const [selectedApplications, setSelectedApplications] = useState(new Set());
+  const [applicationStats, setApplicationStats] = useState({
+    shortlisted: 0,
+    rejected: 0
+  });
   const [filters, setFilters] = useState({
     status: '',
     search: ''
@@ -40,6 +44,13 @@ const ApplicationTable = ({
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
 
   const ITEMS_PER_PAGE = 25;
+
+  // Calculate application stats
+  const calculateStats = (apps) => {
+    const shortlisted = apps.filter(app => app.status === 'SHORTLISTED').length;
+    const rejected = apps.filter(app => app.status === 'REJECTED').length;
+    return { shortlisted, rejected };
+  };
 
   // Debounced search
   useEffect(() => {
@@ -76,13 +87,16 @@ const ApplicationTable = ({
       console.log('🔍 Query Params:', queryParams.toString());
       
       // Handle both response structures (with and without data wrapper)
+      let applicationsData = [];
       if (response.success && response.data) {
-        setApplications(response.data.applications || []);
+        applicationsData = response.data.applications || [];
+        setApplications(applicationsData);
         setTotalPages(response.data.totalPages || 1);
         setTotalApplications(response.data.total || 0);
       } else if (response.applications && Array.isArray(response.applications)) {
         // Direct response structure
-        setApplications(response.applications);
+        applicationsData = response.applications;
+        setApplications(applicationsData);
         setTotalPages(response.totalPages || 1);
         setTotalApplications(response.total || 0);
       } else {
@@ -91,6 +105,10 @@ const ApplicationTable = ({
         setTotalPages(1);
         setTotalApplications(0);
       }
+
+      // Calculate and set stats
+      const stats = calculateStats(applicationsData);
+      setApplicationStats(stats);
     } catch (error) {
       console.error('Error fetching applications:', error);
       setApplications([]);
@@ -178,20 +196,20 @@ const ApplicationTable = ({
 
   const SortableHeader = ({ field, children }) => (
     <th 
-      className="px-6 py-4 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider cursor-pointer hover:bg-neutral-100 transition-colors duration-200"
+      className="px-3 py-2 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider cursor-pointer hover:bg-neutral-100 transition-colors duration-200"
       onClick={() => handleSort(field)}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
         {children}
         {sortBy === field && (
-          sortOrder === 'asc' ? <ChevronUp className="w-4 h-4 text-primary-600" /> : <ChevronDown className="w-4 h-4 text-primary-600" />
+          sortOrder === 'asc' ? <ChevronUp className="w-3 h-3 text-primary-600" /> : <ChevronDown className="w-3 h-3 text-primary-600" />
         )}
       </div>
     </th>
   );
 
   return (
-    <div className="card">
+    <div className="card w-full">
       {/* Header with Bulk Actions */}
       <div className="p-6 border-b border-neutral-200">
         <div className="flex items-center justify-between">
@@ -201,9 +219,19 @@ const ApplicationTable = ({
                 <User className="w-5 h-5 text-primary-600" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-neutral-900">
-                  Applications
-            </h3>
+                <div className="flex items-center gap-4">
+                  <h3 className="text-xl font-bold text-neutral-900">
+                    Applications
+                  </h3>
+                  <div className="flex items-center gap-3 text-sm">
+                    <span className="px-2 py-1 bg-green-100 text-green-700 rounded-md font-medium">
+                      {applicationStats.shortlisted} Shortlisted
+                    </span>
+                    <span className="px-2 py-1 bg-red-100 text-red-700 rounded-md font-medium">
+                      {applicationStats.rejected} Rejected
+                    </span>
+                  </div>
+                </div>
                 <p className="text-sm text-neutral-500">
                   {totalApplications} total applications
                 </p>
@@ -223,9 +251,9 @@ const ApplicationTable = ({
                 className="input text-sm"
               >
                 <option value="">Bulk Update Status</option>
-                <option value="SHORTLISTED">Shortlist Selected</option>
-                <option value="REJECTED">Reject Selected</option>
-                <option value="ACCEPTED">Accept Selected</option>
+                <option value="SHORTLISTED">Shortlist</option>
+                <option value="REJECTED">Rejected</option>
+                <option value="PENDING">Pending</option>
               </select>
               <button
                 onClick={() => setSelectedApplications(new Set())}
@@ -267,21 +295,35 @@ const ApplicationTable = ({
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="table-modern">
+      <div className="overflow-x-auto w-full">
+        <table className="table-modern w-full">
           <thead>
             <tr>
-              <th className="px-6 py-4 text-left">
+              <th className="px-3 py-2 text-left w-12">
                 <input
                   type="checkbox"
                   checked={selectedApplications.size === applications.length && applications.length > 0}
                   onChange={handleSelectAll}
-                  className="rounded-lg border-neutral-300 text-primary-600 focus:ring-primary-500"
+                  className="rounded border-neutral-300 text-primary-600 focus:ring-primary-500 w-4 h-4"
                 />
               </th>
-                             <SortableHeader field="expert.fullName">Expert</SortableHeader>
-               <SortableHeader field="status">Status</SortableHeader>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">
+              <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider w-1/3">
+                <div className="flex items-center gap-1.5">
+                  Expert
+                  {sortBy === 'expert.fullName' && (
+                    sortOrder === 'asc' ? <ChevronUp className="w-3 h-3 text-primary-600" /> : <ChevronDown className="w-3 h-3 text-primary-600" />
+                  )}
+                </div>
+              </th>
+              <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider w-32">
+                <div className="flex items-center gap-1.5">
+                  Status
+                  {sortBy === 'status' && (
+                    sortOrder === 'asc' ? <ChevronUp className="w-3 h-3 text-primary-600" /> : <ChevronDown className="w-3 h-3 text-primary-600" />
+                  )}
+                </div>
+              </th>
+              <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider w-1/3">
                  Actions
                </th>
             </tr>
@@ -289,22 +331,22 @@ const ApplicationTable = ({
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="4" className="px-6 py-16 text-center">
-                  <div className="flex flex-col items-center justify-center gap-4">
-                    <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary-200 border-t-primary-600"></div>
-                    <p className="text-neutral-500 font-medium">Loading applications...</p>
+                <td colSpan="4" className="px-3 py-8 text-center">
+                  <div className="flex flex-col items-center justify-center gap-3">
+                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary-200 border-t-primary-600"></div>
+                    <p className="text-neutral-500 font-medium text-sm">Loading applications...</p>
                   </div>
                 </td>
               </tr>
             ) : applications.length === 0 ? (
               <tr>
-                <td colSpan="4" className="px-6 py-16 text-center">
-                  <div className="flex flex-col items-center justify-center gap-4">
-                    <div className="w-16 h-16 bg-neutral-100 rounded-2xl flex items-center justify-center">
-                      <User className="w-8 h-8 text-neutral-400" />
+                <td colSpan="4" className="px-3 py-8 text-center">
+                  <div className="flex flex-col items-center justify-center gap-3">
+                    <div className="w-12 h-12 bg-neutral-100 rounded-xl flex items-center justify-center">
+                      <User className="w-6 h-6 text-neutral-400" />
                     </div>
                     <div>
-                      <p className="text-neutral-600 font-semibold text-lg">No applications found</p>
+                      <p className="text-neutral-600 font-semibold text-base">No applications found</p>
                       <p className="text-neutral-500 text-sm">Try adjusting your search or filter criteria</p>
                     </div>
                   </div>
@@ -318,153 +360,90 @@ const ApplicationTable = ({
                                  return (
                    <tr 
                      key={application.id} 
-                     className="hover:bg-gradient-to-r hover:from-primary-50 hover:to-accent-50 cursor-pointer transition-all duration-200 border-l-4 border-l-transparent hover:border-l-primary-500 group"
-                     onClick={() => {
-                       // Navigate to requirement details with application context
-                       if (application.requirement?.id) {
-                         window.open(`/requirement/${application.requirement.id}`, '_blank');
-                       }
-                     }}
-                     title="Click to view requirement details"
+                     className="hover:bg-gradient-to-r hover:from-primary-50 hover:to-accent-50 transition-all duration-200 border-l-4 border-l-transparent hover:border-l-primary-500 group"
                    >
-                    <td className="px-6 py-6 whitespace-nowrap">
+                    <td className="px-3 py-2 w-12">
                       <input
                         type="checkbox"
                         checked={selectedApplications.has(application.id)}
                         onChange={() => handleSelectApplication(application.id)}
-                        className="rounded-lg border-neutral-300 text-primary-600 focus:ring-primary-500"
+                        className="rounded border-neutral-300 text-primary-600 focus:ring-primary-500 w-4 h-4"
                       />
                     </td>
-                    <td className="px-6 py-6 whitespace-nowrap">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-gradient-to-br from-primary-100 to-primary-200 rounded-xl flex items-center justify-center shadow-soft">
-                          <User className="w-6 h-6 text-primary-600" />
+                    <td className="px-3 py-2 w-1/3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-gradient-to-br from-primary-100 to-primary-200 rounded-lg flex items-center justify-center shadow-sm">
+                          <User className="w-4 h-4 text-primary-600" />
                         </div>
-                        <div className="flex-1">
-                          <div className="text-base font-semibold text-neutral-900 mb-1">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-semibold text-neutral-900 truncate">
                             {application.expert.fullName}
                           </div>
-                          <div className="text-sm text-neutral-600 mb-1">
+                          <div className="text-xs text-neutral-600 truncate">
                             {application.expert.email}
-                          </div>
-                          <div className="text-xs text-primary-600 opacity-0 group-hover:opacity-100 transition-opacity duration-200 font-medium">
-                            Click to view requirement details →
                           </div>
                         </div>
                       </div>
                     </td>
-                                         <td className="px-6 py-6 whitespace-nowrap">
-                       <div className="flex items-center gap-3">
-                         <span className={`inline-flex items-center px-3 py-1.5 rounded-xl text-sm font-semibold border ${statusInfo.bgColor} ${statusInfo.color}`}>
-                           <StatusIcon className="w-4 h-4 mr-2" />
-                           {statusInfo.label}
-                         </span>
-                         {application.reviewNotes && (
-                           <span className="inline-flex items-center px-3 py-1.5 rounded-xl text-sm font-semibold bg-accent-100 text-accent-800 border border-accent-200">
-                             <MessageSquare className="w-4 h-4 mr-2" />
-                             Feedback
-                           </span>
-                         )}
-                       </div>
-                     </td>
-                                         <td className="px-6 py-6 whitespace-nowrap">
-                       <div className="flex items-center gap-2">
-                         <button
-                           onClick={(e) => {
-                             e.stopPropagation(); // Prevent row click when clicking button
-                             if (application.requirement?.id) {
-                               window.open(`/requirement/${application.requirement.id}`, '_blank');
-                             }
-                           }}
-                           className="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 transition-all duration-200 border border-primary-200"
-                           title="View Requirement Details"
-                         >
-                           <Eye className="w-4 h-4 mr-1.5" />
-                           View
-                         </button>
-                         <button
-                           onClick={(e) => {
-                             e.stopPropagation(); // Prevent row click when clicking button
-                             onUpdateStatus(application);
-                           }}
-                           className="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-accent-600 bg-accent-50 rounded-lg hover:bg-accent-100 transition-all duration-200 border border-accent-200"
-                           title="Update Status"
-                         >
-                           <CheckCircle className="w-4 h-4 mr-1.5" />
-                           Status
-                         </button>
-                         {application.reviewNotes ? (
-                           // Show feedback when available
-                           <div className="flex items-center gap-2">
-                             <button
-                               onClick={(e) => {
-                                 e.stopPropagation();
-                                 // Show feedback in a tooltip or expand the row
-                                 const feedback = `Feedback for ${application.expert.fullName}:\n\n${application.reviewNotes}`;
-                                 alert(feedback);
-                               }}
-                               className="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-accent-600 bg-accent-50 rounded-lg hover:bg-accent-100 transition-all duration-200 border border-accent-200"
-                               title="View Feedback"
-                             >
-                               <MessageSquare className="w-4 h-4 mr-1.5" />
-                               Feedback
-                             </button>
-                             <button
-                               onClick={(e) => {
-                                 e.stopPropagation();
-                                 // Try to get the job title from different possible locations
-                                 let jobTitle = 'Position';
-                                 if (application.requirement?.title) {
-                                   jobTitle = application.requirement.title;
-                                 } else if (application.requirementTitle) {
-                                   jobTitle = application.requirementTitle;
-                                 } else if (application.jobTitle) {
-                                   jobTitle = application.jobTitle;
-                                 }
-                                 
-                                 const subject = `Application Inquiry - ${jobTitle}`;
-                                 const body = `Dear ${application.expert.fullName},\n\nI hope this email finds you well. I am reaching out regarding your application for the ${jobTitle} position.\n\nBest regards,\n${adminName}`;
-                                 
-                                 const mailtoLink = `mailto:${application.expert.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                                 window.open(mailtoLink);
-                               }}
-                               className="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-success-600 bg-success-50 rounded-lg hover:bg-success-100 transition-all duration-200 border border-success-200"
-                               title="Contact Expert via Email"
-                             >
-                               <Mail className="w-4 h-4 mr-1.5" />
-                               Contact
-                             </button>
-                           </div>
-                         ) : (
-                           // Show contact button when no feedback
-                           <button
-                             onClick={(e) => {
-                               e.stopPropagation();
-                               // Try to get the job title from different possible locations
-                               let jobTitle = 'Position';
-                               if (application.requirement?.title) {
-                                 jobTitle = application.requirement.title;
-                               } else if (application.requirementTitle) {
-                                 jobTitle = application.requirementTitle;
-                               } else if (application.jobTitle) {
-                                 jobTitle = application.jobTitle;
-                               }
-                               
-                               const subject = `Application Inquiry - ${jobTitle}`;
-                               const body = `Dear ${application.expert.fullName},\n\nI hope this email finds you well. I am reaching out regarding your application for the ${jobTitle} position.\n\nBest regards,\n${adminName}`;
-                               
-                               const mailtoLink = `mailto:${application.expert.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                               window.open(mailtoLink);
-                             }}
-                             className="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-success-600 bg-success-50 rounded-lg hover:bg-success-100 transition-all duration-200 border border-success-200"
-                             title="Contact Expert via Email"
-                           >
-                             <Mail className="w-4 h-4 mr-1.5" />
-                             Contact
-                           </button>
-                         )}
-                       </div>
-                     </td>
+                    <td className="px-3 py-2 w-32">
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-semibold border ${statusInfo.bgColor} ${statusInfo.color}`}>
+                          <StatusIcon className="w-3 h-3 mr-1.5" />
+                          {statusInfo.label}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-3 py-2 w-1/3">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onViewProfile(application.expert);
+                          }}
+                          className="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 transition-all duration-200 border border-primary-200"
+                          title="View Expert Profile"
+                        >
+                          <User className="w-3 h-3 mr-1.5" />
+                          View Profile
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onUpdateStatus(application);
+                          }}
+                          className="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 transition-all duration-200 border border-primary-200"
+                          title="Update Status"
+                        >
+                          <CheckCircle className="w-3 h-3 mr-1.5" />
+                          Update Status
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Try to get the job title from different possible locations
+                            let jobTitle = 'Position';
+                            if (application.requirement?.title) {
+                              jobTitle = application.requirement.title;
+                            } else if (application.requirementTitle) {
+                              jobTitle = application.requirementTitle;
+                            } else if (application.jobTitle) {
+                              jobTitle = application.jobTitle;
+                            }
+                            
+                            const subject = `Application Inquiry - ${jobTitle}`;
+                            const body = `Dear ${application.expert.fullName},\n\nI hope this email finds you well. I am reaching out regarding your application for the ${jobTitle} position.\n\nBest regards,\n${adminName}`;
+                            
+                            const mailtoLink = `mailto:${application.expert.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                            window.open(mailtoLink);
+                          }}
+                          className="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-success-600 bg-success-50 rounded-lg hover:bg-success-100 transition-all duration-200 border border-success-200"
+                          title="Contact Expert via Email"
+                        >
+                          <Mail className="w-3 h-3 mr-1.5" />
+                          Contact
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 );
               })

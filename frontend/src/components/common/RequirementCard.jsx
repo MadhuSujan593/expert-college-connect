@@ -7,6 +7,7 @@ const RequirementCard = ({
   showActions = true, 
   compact = false,
   onClick = null,
+  onView = null,
   onEdit = null,
   onDelete = null
 }) => {
@@ -84,8 +85,8 @@ const RequirementCard = ({
   };
 
   const cardClasses = compact 
-    ? "group relative bg-white border border-neutral-200 rounded-xl p-6 min-h-[120px] hover:shadow-lg hover:shadow-primary-500/10 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary-300 cursor-pointer"
-    : "group relative bg-white border border-neutral-200 rounded-xl sm:rounded-2xl p-6 sm:p-8 min-h-[160px] hover:shadow-xl hover:shadow-primary-500/10 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary-300";
+    ? "group relative bg-white border border-gray-200 rounded-xl p-4 min-h-[100px] hover:shadow-md hover:shadow-indigo-500/10 transition-all duration-300 hover:-translate-y-0.5 hover:border-indigo-300 cursor-pointer overflow-hidden"
+    : "group relative bg-white border border-gray-200 rounded-xl p-5 min-h-[120px] hover:shadow-lg hover:shadow-indigo-500/10 transition-all duration-300 hover:-translate-y-0.5 hover:border-indigo-300 overflow-hidden";
 
   return (
     <motion.div
@@ -95,107 +96,117 @@ const RequirementCard = ({
       className={cardClasses}
       onClick={onClick}
     >
-      {/* Card Background Pattern */}
-      <div className="absolute inset-0 opacity-[0.02] rounded-xl sm:rounded-2xl">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `
-            radial-gradient(circle at 30% 70%, #3B82F6 1px, transparent 1px),
-            radial-gradient(circle at 70% 30%, #6366F1 1px, transparent 1px)
-          `,
-          backgroundSize: '40px 40px'
-        }}></div>
-      </div>
+      {/* Modern Card Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/30 via-transparent to-purple-50/30 rounded-2xl sm:rounded-3xl"></div>
+      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-indigo-100/20 to-purple-100/20 rounded-full -translate-y-16 translate-x-16"></div>
+      <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-emerald-100/20 to-teal-100/20 rounded-full translate-y-12 -translate-x-12"></div>
 
-      <div className="relative z-10">
-        {/* Header */}
-        <div className={`flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-0 ${compact ? 'mb-3' : 'mb-4 sm:mb-5'}`}>
-          <div className="flex-1 min-w-0">
-            <div className={`flex flex-col gap-2 ${compact ? 'mb-2' : 'mb-3'}`}>
-              <div className="flex items-start justify-between gap-2">
-                <h3 className={`font-bold text-slate-900 group-hover:text-blue-900 transition-colors duration-300 line-clamp-1 flex-1 min-w-0 ${
-                  compact ? 'text-lg' : 'text-xl sm:text-2xl'
-                }`}>
-                  {requirement.title}
-                </h3>
-                {requirement.isUrgent && (
-                  <span className="px-3 py-1.5 bg-gradient-to-r from-red-500 to-pink-600 text-white text-sm font-semibold rounded-full shadow-md flex-shrink-0">
-                    Urgent
-                  </span>
-                )}
+      <div className="relative z-10 flex flex-col h-full">
+        {/* Title Row */}
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <h3 className={`font-bold text-gray-900 group-hover:text-indigo-900 transition-colors duration-300 line-clamp-1 flex-1 min-w-0 ${
+            compact ? 'text-base' : 'text-lg'
+          }`}>
+            {requirement.title}
+          </h3>
+          {requirement.isUrgent && (
+            <span className="px-2 py-1 bg-gradient-to-r from-red-500 to-pink-600 text-white text-xs font-bold rounded-full shadow-md flex-shrink-0">
+              Urgent
+            </span>
+          )}
+        </div>
+        
+        {/* Description */}
+        {!compact && (
+          <p className="text-gray-600 text-sm leading-relaxed line-clamp-2 mb-3">
+            {requirement.description}
+          </p>
+        )}
+        
+        {/* Tags Section */}
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <span className={`px-3 py-1.5 bg-gradient-to-r ${getCategoryColor(requirement.category)} text-white text-xs font-semibold rounded-lg shadow-sm`}>
+            {getCategoryLabel(requirement.category)}
+          </span>
+          
+          {requirement.budget && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-lg">
+              <div className="w-4 h-4 bg-gradient-to-r from-emerald-500 to-teal-500 rounded flex items-center justify-center">
+                <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                </svg>
               </div>
+              <span className="text-xs font-semibold text-emerald-800">{formatBudget(requirement.budget)}</span>
             </div>
-            
-            {!compact && (
-              <p className="text-slate-600 text-base sm:text-lg leading-relaxed mb-4 sm:mb-5 line-clamp-2">
-                {requirement.description}
-              </p>
-            )}
-            
-            {/* Tags and Info */}
-            <div className={`flex flex-wrap items-center gap-2 sm:gap-3 ${compact ? 'gap-2' : 'gap-3'}`}>
-              <span className={`px-3 sm:px-4 py-1.5 bg-gradient-to-r ${getCategoryColor(requirement.category)} text-white text-sm font-semibold rounded-full shadow-md`}>
-                {getCategoryLabel(requirement.category)}
-              </span>
-              
-              {requirement.budget && (
-                <div className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 bg-gradient-to-r from-emerald-100 to-teal-100 rounded-full">
-                  <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                  </svg>
-                  <span className="text-sm font-semibold text-emerald-800">{formatBudget(requirement.budget)}</span>
-                </div>
-              )}
-              
-              {requirement.deadline && (
-                <div className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 bg-gradient-to-r from-orange-100 to-red-100 rounded-full">
-                  <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <span className="text-sm font-semibold text-orange-800">{formatDate(requirement.deadline)}</span>
-                </div>
-              )}
+          )}
+          
+          {requirement.deadline && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-lg">
+              <div className="w-4 h-4 bg-gradient-to-r from-orange-500 to-red-500 rounded flex items-center justify-center">
+                <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <span className="text-xs font-semibold text-orange-800">{formatDate(requirement.deadline)}</span>
             </div>
-          </div>
+          )}
         </div>
         
         {/* Footer - Only show if not compact or if actions are enabled */}
         {(!compact || showActions) && (
-          <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 ${compact ? 'pt-2' : 'pt-3 sm:pt-4'} border-t border-slate-200/50`}>
-            <div className="flex items-center gap-2 text-sm text-slate-500">
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span className="font-medium">Posted {formatDate(requirement.createdAt)}</span>
-            </div>
-            
-            {showActions && (
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit && onEdit();
-                  }}
-                  className="px-2 sm:px-3 py-1 text-sm font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all duration-200"
-                >
-                  <svg className="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          <div className="mt-auto pt-3 border-t border-gray-200/60">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+              <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                <div className="w-4 h-4 bg-gradient-to-r from-gray-400 to-gray-500 rounded flex items-center justify-center">
+                  <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  Edit
-                </button>
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete && onDelete();
-                  }}
-                  className="px-2 sm:px-3 py-1 text-sm font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all duration-200"
-                >
-                  <svg className="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 00-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                  Delete
-                </button>
+                </div>
+                <span className="font-medium">Posted {formatDate(requirement.createdAt)}</span>
               </div>
-            )}
+              
+              {showActions && (
+                <div className="flex items-center gap-1.5">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onView && onView();
+                    }}
+                    className="group flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all duration-200 border border-blue-200 hover:border-blue-300"
+                  >
+                    <svg className="w-3 h-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    View
+                  </button>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit && onEdit();
+                    }}
+                    className="group flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-all duration-200 border border-indigo-200 hover:border-indigo-300"
+                  >
+                    <svg className="w-3 h-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Edit
+                  </button>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete && onDelete();
+                    }}
+                    className="group flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all duration-200 border border-red-200 hover:border-red-300"
+                  >
+                    <svg className="w-3 h-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 00-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Delete
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

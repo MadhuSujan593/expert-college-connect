@@ -71,6 +71,10 @@ const CollegeDashboard = () => {
   const [logoPreview, setLogoPreview] = useState(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
+  
+  // View requirement modal state
+  const [viewingRequirement, setViewingRequirement] = useState(null);
+  const [showViewModal, setShowViewModal] = useState(false);
 
   // Verification states
   const [showEmailVerification, setShowEmailVerification] = useState(false);
@@ -109,6 +113,11 @@ const CollegeDashboard = () => {
     const url = new URL(window.location);
     url.searchParams.set('tab', tabId);
     window.history.pushState({}, '', url);
+  };
+
+  const handleView = (requirement) => {
+    setViewingRequirement(requirement);
+    setShowViewModal(true);
   };
 
   // Listen for browser back/forward buttons
@@ -198,9 +207,9 @@ const CollegeDashboard = () => {
     return user?.isEmailVerified || user?.isPhoneVerified;
   };
 
-  // Check if user can access expert directory (only requires authentication)
+  // Check if user can access expert directory (requires verification)
   const canAccessExperts = () => {
-    return !!user; // Only requires user to be logged in
+    return user?.isEmailVerified || user?.isPhoneVerified;
   };
 
   // Handle requirements access attempt
@@ -306,14 +315,21 @@ const CollegeDashboard = () => {
     try {
       console.log('🔄 Starting email OTP process...');
       
-      // Check if email is unique before sending OTP
-      const isAvailable = await checkEmailAvailability(profileForm.email);
-      if (!isAvailable) {
-        showToast('error', 'This email is already in use by another account.');
-        return;
-      }
+      // For profile updates, we need to check if the email is different from current user's email
+      // If it's the same email, allow verification. If it's different, check availability.
+      const isOwnEmail = profileForm.email === user?.email;
       
-      console.log('✅ Email is available, sending OTP...');
+      if (!isOwnEmail) {
+        // Only check availability if it's a different email
+        const isAvailable = await checkEmailAvailability(profileForm.email);
+        if (!isAvailable) {
+          showToast('error', 'This email is already in use by another account.');
+          return;
+        }
+        console.log('✅ New email is available, sending OTP...');
+      } else {
+        console.log('✅ Verifying own email, sending OTP...');
+      }
       
       // For dashboard updates, we need to use a different approach
       // since the user is already authenticated and we're updating their profile
@@ -328,7 +344,9 @@ const CollegeDashboard = () => {
             'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
           },
           body: JSON.stringify({ 
-            email: profileForm.email
+            email: profileForm.email,
+            isProfileUpdate: true,
+            userId: user?.id
           }),
         });
 
@@ -433,6 +451,22 @@ const CollegeDashboard = () => {
     try {
       console.log('🔄 Starting phone OTP process...');
       
+      // For profile updates, we need to check if the phone is different from current user's phone
+      // If it's the same phone, allow verification. If it's different, check availability.
+      const isOwnPhone = profileForm.phone === user?.phone;
+      
+      if (!isOwnPhone) {
+        // Only check availability if it's a different phone
+        const isAvailable = await checkPhoneAvailability(profileForm.phone);
+        if (!isAvailable) {
+          showToast('error', 'This phone number is already in use by another account.');
+          return;
+        }
+        console.log('✅ New phone is available, sending OTP...');
+      } else {
+        console.log('✅ Verifying own phone, sending OTP...');
+      }
+      
       // For dashboard updates, we need to use a different approach
       // since the user is already authenticated and we're updating their profile
       setIsPhoneSending(true);
@@ -446,7 +480,9 @@ const CollegeDashboard = () => {
             'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
           },
           body: JSON.stringify({ 
-            phone: profileForm.phone
+            phone: profileForm.phone,
+            isProfileUpdate: true,
+            userId: user?.id
           }),
         });
 
@@ -481,6 +517,19 @@ const CollegeDashboard = () => {
       return result.available;
     } catch (error) {
       console.error('Error checking email availability:', error);
+      return false;
+    }
+  };
+
+  // Check phone availability
+  const checkPhoneAvailability = async (phone) => {
+    try {
+      // Import the checkAvailability function from verificationUtils
+      const { checkAvailability } = await import('../../utils/verificationUtils');
+      const result = await checkAvailability('phone', phone);
+      return result.available;
+    } catch (error) {
+      console.error('Error checking phone availability:', error);
       return false;
     }
   };
@@ -930,63 +979,55 @@ const CollegeDashboard = () => {
   );
 
   const SidebarItem = ({ id, label, icon: Icon, isActive, onClick }) => (
-    <motion.button
+    <button
       onClick={() => onClick(id)}
-      whileHover={{ x: 4 }}
-      whileTap={{ scale: 0.98 }}
-      className={`group flex items-center space-x-3 w-full px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
+      className={`group flex items-center space-x-3 w-full px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
         isActive
-          ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-lg shadow-primary-600/25'
-          : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100'
+          ? 'bg-blue-600 text-white'
+          : 'text-gray-300 hover:text-white hover:bg-gray-800'
       }`}
     >
-      <Icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-neutral-500 group-hover:text-neutral-700'}`} />
-      <span className="font-semibold">{label}</span>
-      {isActive && (
-        <motion.div
-          layoutId="activeTab"
-          className="ml-auto w-2 h-2 bg-white rounded-full"
-        />
-      )}
-    </motion.button>
+      <Icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'}`} />
+      <span>{label}</span>
+    </button>
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Modern Layout with Sidebar */}
+    <div className="min-h-screen bg-gray-100">
+      {/* Classic Theme Layout with Dark Sidebar */}
       <div className="flex h-screen overflow-hidden">
-        {/* Sidebar */}
-        <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-80 bg-white/95 backdrop-blur-sm border-r border-neutral-200/60 transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 shadow-large`}>
+        {/* Dark Sidebar */}
+        <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
           <div className="flex flex-col h-full">
-            {/* Sidebar Header */}
-            <div className="flex items-center justify-between px-6 py-8 border-b border-neutral-200/60 bg-gradient-to-r from-primary-50/50 to-accent-50/50">
-              <div className="flex items-center space-x-4">
+            {/* Dark Sidebar Header */}
+            <div className="flex items-center justify-between px-6 py-6 border-b border-gray-700">
+              <div className="flex items-center space-x-3">
                 {profile?.logoUrl ? (
                   <img 
                     src={getFullLogoUrl(profile.logoUrl)} 
                     alt="Institution Logo" 
-                    className="w-12 h-12 rounded-2xl object-cover shadow-soft border-2 border-white"
+                    className="w-10 h-10 rounded-lg object-cover"
                   />
                 ) : (
-                  <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-soft border-2 border-white">
-                    <Building2 className="w-6 h-6 text-white" />
+                  <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                    <Building2 className="w-5 h-5 text-white" />
                   </div>
                 )}
                 <div>
-                  <h1 className="text-xl font-bold text-neutral-900 font-heading">{profile?.institutionName || 'College'}</h1>
-                  <p className="text-sm text-neutral-500 font-medium">Institution Panel</p>
+                  <h1 className="text-lg font-semibold text-white">{profile?.institutionName || 'College'}</h1>
+                  <p className="text-sm text-gray-400">Dashboard</p>
                 </div>
-              </div>
+                </div>
               <button
                 onClick={() => setSidebarOpen(false)}
-                className="lg:hidden w-10 h-10 bg-neutral-100 hover:bg-neutral-200 rounded-xl flex items-center justify-center text-neutral-500 hover:text-neutral-700 transition-all duration-200"
+                className="lg:hidden w-8 h-8 bg-gray-800 hover:bg-gray-700 rounded-lg flex items-center justify-center text-gray-400 hover:text-white transition-colors"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
               </button>
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 px-6 py-6 space-y-2">
+            <nav className="flex-1 px-4 py-4 space-y-1">
               <SidebarItem
                 id="overview"
                 label="Overview"
@@ -1013,7 +1054,14 @@ const CollegeDashboard = () => {
                 label="Applications"
                 icon={CheckCircle}
                 isActive={activeTab === 'applications'}
-                onClick={handleTabChange}
+                onClick={(tabId) => {
+                  if (tabId === 'applications' && !canAccessRequirements()) {
+                    setVerificationFeatureName("Application Management");
+                    setShowVerificationRequirement(true);
+                  } else {
+                    handleTabChange(tabId);
+                  }
+                }}
               />
               <SidebarItem
                 id="experts"
@@ -1021,7 +1069,7 @@ const CollegeDashboard = () => {
                 icon={Users}
                 isActive={activeTab === 'experts'}
                 onClick={(tabId) => {
-                  if (tabId === 'experts' && !canAccessExperts()) {
+                  if (tabId === 'experts' && !canAccessRequirements()) {
                     setVerificationFeatureName("Expert Directory");
                     setShowVerificationRequirement(true);
                   } else {
@@ -1034,233 +1082,223 @@ const CollegeDashboard = () => {
 
 
             {/* Logout Button */}
-            <div className="px-6 py-6 border-t border-neutral-200/60 mt-auto bg-gradient-to-r from-neutral-50/50 to-neutral-100/50">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+            <div className="px-4 py-4 border-t border-gray-700 mt-auto">
+              <button
                 onClick={() => setShowLogoutConfirm(true)}
-                className="group flex items-center space-x-3 w-full px-4 py-3 rounded-xl font-medium transition-all duration-200 text-neutral-600 hover:text-error-600 hover:bg-error-50 border border-transparent hover:border-error-200"
+                className="group flex items-center space-x-3 w-full px-4 py-3 rounded-lg font-medium transition-all duration-200 text-gray-300 hover:text-red-400 hover:bg-red-900/20"
               >
-                <LogOut className="h-5 w-5 text-neutral-500 group-hover:text-error-600" />
-                <span className="font-semibold">Sign Out</span>
-              </motion.button>
+                <LogOut className="h-5 w-5 text-gray-400 group-hover:text-red-400" />
+                <span>Sign Out</span>
+              </button>
+                </div>
+                </div>
             </div>
-          </div>
-        </div>
 
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col overflow-hidden bg-background">
-          {/* Top Header */}
-          <header className="bg-white/80 backdrop-blur-sm border-b border-neutral-200/60 px-8 py-6 shadow-soft">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-6">
+        {/* Main Content - Classic Theme */}
+        <div className="flex-1 flex flex-col overflow-hidden bg-white rounded-l-3xl shadow-lg">
+          {/* Classic Header */}
+          <header className="bg-white border-b border-gray-200 px-8 py-6">
+              <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
                 <button
                   onClick={() => setSidebarOpen(true)}
-                  className="lg:hidden w-10 h-10 bg-neutral-100 hover:bg-neutral-200 rounded-xl flex items-center justify-center text-neutral-600 hover:text-neutral-800 transition-all duration-200"
+                  className="lg:hidden w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors"
                 >
                   <Menu className="h-5 w-5" />
                 </button>
                 <div>
-                  <h1 className="text-3xl font-bold text-neutral-900 font-heading">
-                    {activeTab === 'overview' && 'Dashboard Overview'}
+                  <h1 className="text-3xl font-bold text-gray-900">
+                    {activeTab === 'overview' && 'Monitor your institution'}
                     {activeTab === 'profile' && 'Institution Profile'}
                     {activeTab === 'requirements' && 'Requirements Management'}
                     {activeTab === 'applications' && 'Application Management'}
                     {activeTab === 'experts' && 'Expert Directory'}
                     {activeTab === 'ratings' && 'Ratings & Trust'}
                   </h1>
-                  <div className="flex items-center space-x-2 text-sm text-neutral-500 mt-2">
-                    <Home className="h-4 w-4" />
-                    <ChevronRight className="h-4 w-4" />
-                    <span className="capitalize font-medium">{activeTab}</span>
-                  </div>
+                  <p className="text-gray-600 mt-1">
+                    {activeTab === 'overview' && 'Control and analyze your academic data in the easiest way'}
+                    {activeTab === 'profile' && 'Manage your institution profile'}
+                    {activeTab === 'requirements' && 'Create and manage requirements'}
+                    {activeTab === 'applications' && 'Review and manage applications'}
+                    {activeTab === 'experts' && 'Browse and connect with experts'}
+                    {activeTab === 'ratings' && 'View ratings and trust scores'}
+                  </p>
                 </div>
-              </div>
+                </div>
+
             </div>
           </header>
 
           {/* Scrollable Content */}
-          <main className="flex-1 overflow-y-auto bg-background">
+          <main className="flex-1 overflow-y-auto bg-gray-50">
             <div className="p-8 space-y-8">
               {/* Overview Tab */}
               {activeTab === 'overview' && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
                   className="space-y-6"
                 >
-                  {/* Stats Grid */}
+                  {/* Classic Stats Grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.1 }}
-                      className="stat-card-gradient group hover:scale-105 transition-transform duration-200"
-                    >
+                    <div className="p-6 rounded-2xl shadow-sm bg-gradient-to-br from-blue-500 to-purple-600 text-white">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-neutral-600 font-medium mb-1">Profile Completeness</p>
-                          <p className="text-3xl font-bold text-neutral-900">{stats.profileCompleteness}%</p>
+                          <p className="text-sm text-white/80 mb-1">Profile Completeness</p>
+                          <p className="text-3xl font-bold text-white">{stats.profileCompleteness}%</p>
                         </div>
-                        <div className="w-14 h-14 bg-gradient-to-br from-primary-100 to-primary-200 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                          <CheckCircle className="w-7 h-7 text-primary-600" />
+                        <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+                          <CheckCircle className="w-7 h-7 text-white" />
                         </div>
                       </div>
-                    </motion.div>
+      </div>
 
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 }}
-                      className="stat-card-gradient group hover:scale-105 transition-transform duration-200"
-                    >
+                    <div className="p-6 rounded-2xl shadow-sm bg-gradient-to-br from-green-400 to-blue-500 text-white">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-neutral-600 font-medium mb-1">Total Requirements</p>
-                          <p className="text-3xl font-bold text-neutral-900">{stats.totalRequirements}</p>
+                          <p className="text-sm text-white/80 mb-1">Total Requirements</p>
+                          <p className="text-3xl font-bold text-white">{stats.totalRequirements}</p>
                         </div>
-                        <div className="w-14 h-14 bg-gradient-to-br from-success-100 to-success-200 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                          <FileText className="w-7 h-7 text-success-600" />
+                        <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+                          <FileText className="w-7 h-7 text-white" />
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
 
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.3 }}
-                      className="stat-card-gradient group hover:scale-105 transition-transform duration-200"
-                    >
+                    <div className="p-6 rounded-2xl shadow-sm bg-gradient-to-br from-purple-500 to-pink-500 text-white">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-neutral-600 font-medium mb-1">Urgent Requirements</p>
-                          <p className="text-3xl font-bold text-neutral-900">{stats.urgentRequirements}</p>
+                          <p className="text-sm text-white/80 mb-1">Urgent Requirements</p>
+                          <p className="text-3xl font-bold text-white">{stats.urgentRequirements}</p>
                         </div>
-                        <div className="w-14 h-14 bg-gradient-to-br from-error-100 to-error-200 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                          <AlertCircle className="w-7 h-7 text-error-600" />
+                        <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+                          <AlertCircle className="w-7 h-7 text-white" />
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
 
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.4 }}
-                      className="stat-card-gradient group hover:scale-105 transition-transform duration-200"
-                    >
+                    <div className="p-6 rounded-2xl shadow-sm bg-white text-gray-900">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-neutral-600 font-medium mb-1">Upcoming Deadlines</p>
-                          <p className="text-3xl font-bold text-neutral-900">{stats.upcomingDeadlines}</p>
+                          <p className="text-sm text-gray-600 mb-1">Upcoming Deadlines</p>
+                          <p className="text-3xl font-bold text-gray-900">{stats.upcomingDeadlines}</p>
                         </div>
-                        <div className="w-14 h-14 bg-gradient-to-br from-warning-100 to-warning-200 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                          <Calendar className="w-7 h-7 text-warning-600" />
+                        <div className="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center">
+                          <Calendar className="w-7 h-7 text-gray-600" />
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                   </div>
 
-                  {/* Quick Actions */}
-                  <div className="card p-8">
-                    <div className="flex items-center gap-3 mb-8">
-                      <div className="w-10 h-10 bg-gradient-to-br from-primary-100 to-primary-200 rounded-xl flex items-center justify-center">
-                        <Plus className="w-5 h-5 text-primary-600" />
-                      </div>
-                      <h3 className="text-2xl font-bold text-neutral-900">Quick Actions</h3>
+                  {/* Clean Quick Actions */}
+                  <div className="bg-white rounded-2xl shadow-sm p-6">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-xl font-semibold text-gray-900">Quick Actions</h3>
+                      <div className="w-8 h-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full"></div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <button
                         onClick={handleRequirementsAccess}
-                        className="group flex items-center space-x-4 p-6 bg-gradient-to-br from-primary-50 to-primary-100/50 rounded-2xl hover:from-primary-100 hover:to-primary-200/50 transition-all duration-300 border border-primary-200 hover:border-primary-300"
+                        className="group flex items-center space-x-4 p-4 bg-white hover:bg-blue-50 rounded-xl border border-gray-100 hover:border-blue-200 transition-all duration-200 hover:shadow-md"
                       >
-                        <div className="p-4 bg-primary-600 rounded-2xl group-hover:bg-primary-700 transition-colors shadow-soft">
-                          <Plus className="h-6 w-6 text-white" />
-                        </div>
+                        <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center group-hover:bg-blue-700 transition-colors">
+                          <Plus className="h-5 w-5 text-white" />
+    </div>
                         <div className="text-left">
-                          <p className="font-bold text-neutral-900 text-lg">Post Requirement</p>
-                          <p className="text-sm text-neutral-600">Add new academic requirement</p>
-                        </div>
-                      </motion.button>
+                          <p className="font-semibold text-gray-900">Post Requirement</p>
+                          <p className="text-sm text-gray-600">Add new academic requirement</p>
+          </div>
+                      </button>
                       
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
+                      <button
                         onClick={() => handleTabChange('experts')}
-                        className="group flex items-center space-x-4 p-6 bg-gradient-to-br from-success-50 to-success-100/50 rounded-2xl hover:from-success-100 hover:to-success-200/50 transition-all duration-300 border border-success-200 hover:border-success-300"
+                        className="group flex items-center space-x-4 p-4 bg-white hover:bg-emerald-50 rounded-xl border border-gray-100 hover:border-emerald-200 transition-all duration-200 hover:shadow-md"
                       >
-                        <div className="p-4 bg-success-600 rounded-2xl group-hover:bg-success-700 transition-colors shadow-soft">
-                          <Search className="h-6 w-6 text-white" />
-                        </div>
+                        <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center group-hover:bg-emerald-700 transition-colors">
+                          <Search className="h-5 w-5 text-white" />
+          </div>
                         <div className="text-left">
-                          <p className="font-bold text-neutral-900 text-lg">Find Experts</p>
-                          <p className="text-sm text-neutral-600">Search for qualified experts</p>
-                        </div>
-                      </motion.button>
+                          <p className="font-semibold text-gray-900">Find Experts</p>
+                          <p className="text-sm text-gray-600">Search for qualified experts</p>
+        </div>
+                      </button>
                       
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
+                      <button
                         onClick={() => handleTabChange('profile')}
-                        className="group flex items-center space-x-4 p-6 bg-gradient-to-br from-accent-50 to-accent-100/50 rounded-2xl hover:from-accent-100 hover:to-accent-200/50 transition-all duration-300 border border-accent-200 hover:border-accent-300"
+                        className="group flex items-center space-x-4 p-4 bg-white hover:bg-violet-50 rounded-xl border border-gray-100 hover:border-violet-200 transition-all duration-200 hover:shadow-md"
                       >
-                        <div className="p-4 bg-accent-600 rounded-2xl group-hover:bg-accent-700 transition-colors shadow-soft">
-                          <Edit3 className="h-6 w-6 text-white" />
-                        </div>
+                        <div className="w-10 h-10 bg-violet-600 rounded-lg flex items-center justify-center group-hover:bg-violet-700 transition-colors">
+                          <Edit3 className="h-5 w-5 text-white" />
+            </div>
                         <div className="text-left">
-                          <p className="font-bold text-neutral-900 text-lg">Update Profile</p>
-                          <p className="text-sm text-neutral-600">Keep information current</p>
-                        </div>
-                      </motion.button>
-                    </div>
-                  </div>
+                          <p className="font-semibold text-gray-900">Update Profile</p>
+                          <p className="text-sm text-gray-600">Keep information current</p>
+          </div>
+                      </button>
+      </div>
+    </div>
 
-                  {/* Recent Requirements */}
-                  <div className="card p-8">
-                    <div className="flex items-center justify-between mb-8">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-accent-100 to-accent-200 rounded-xl flex items-center justify-center">
-                          <FileText className="w-5 h-5 text-accent-600" />
+                                    {/* Modern Recent Requirements */}
+                  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    {/* Modern Header with Gradient */}
+                    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 px-4 py-4 border-b border-gray-100">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                            <FileText className="w-5 h-5 text-white" />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-bold text-gray-900">Recent Requirements</h3>
+                            <p className="text-xs text-gray-600">Your latest academic postings</p>
+                          </div>
                         </div>
-                        <h3 className="text-2xl font-bold text-neutral-900">Recent Requirements</h3>
+                        {recentRequirements.length > 0 && (
+                          <button
+                            onClick={() => handleTabChange('requirements')}
+                            className="group flex items-center gap-1.5 px-4 py-2 bg-white text-indigo-600 font-semibold rounded-lg border border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-200 shadow-sm hover:shadow-md text-sm"
+                          >
+                            <span>View All</span>
+                            <svg className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </button>
+                        )}
                       </div>
-                      {recentRequirements.length > 0 && (
-                        <button
-                          onClick={() => handleTabChange('requirements')}
-                          className="btn-primary btn-md"
-                        >
-                          View All
-                        </button>
-                      )}
                     </div>
                       
-                    <div className="space-y-6">
+                    <div className="p-4">
                       {recentRequirements.length === 0 ? (
                         <div className="text-center py-12">
-                          <div className="w-20 h-20 bg-neutral-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                            <FileText className="w-10 h-10 text-neutral-400" />
+                          <div className="relative mb-6">
+                            <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+                              <FileText className="w-8 h-8 text-gray-400" />
+                            </div>
+                            <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-indigo-400 to-purple-500 rounded-full flex items-center justify-center">
+                              <Plus className="w-2.5 h-2.5 text-white" />
+                            </div>
                           </div>
-                          <h4 className="text-lg font-semibold text-neutral-600 mb-3">No requirements posted yet</h4>
-                          <p className="text-neutral-500 mb-6">Start by posting your first academic requirement to connect with experts.</p>
+                          <h4 className="text-lg font-bold text-gray-900 mb-2">Ready to get started?</h4>
+                          <p className="text-gray-600 mb-6 max-w-sm mx-auto text-sm leading-relaxed">Post your first academic requirement and connect with qualified experts.</p>
                           {canAccessRequirements() ? (
-                            <button 
+                            <button
                               onClick={handleRequirementsAccess}
-                              className="btn-primary"
+                              className="group inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
                             >
-                              Post Your First Requirement
+                              <Plus className="w-4 h-4" />
+                              <span>Post Your First Requirement</span>
                             </button>
                           ) : (
-                            <button 
+                            <button
                               onClick={() => handleTabChange('requirements')}
-                              className="btn-primary"
+                              className="group inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
                             >
-                              Post Your First Requirement
+                              <Plus className="w-4 h-4" />
+                              <span>Post Your First Requirement</span>
                             </button>
                           )}
                         </div>
                       ) : (
-                        <>
+                        <div className="space-y-3">
                           {/* Show only latest 2 requirements */}
                           {recentRequirements.slice(0, 2).map((requirement, index) => (
                             <RequirementCard
@@ -1272,7 +1310,19 @@ const CollegeDashboard = () => {
                               onClick={() => handleTabChange('requirements')}
                             />
                           ))}
-                        </>
+                          
+                          {/* Show more indicator if there are more requirements */}
+                          {recentRequirements.length > 2 && (
+                            <div className="pt-3 border-t border-gray-100">
+                              <button
+                                onClick={() => handleTabChange('requirements')}
+                                className="w-full py-2 text-center text-indigo-600 font-medium hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors text-sm"
+                              >
+                                View {recentRequirements.length - 2} more requirements
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -1330,6 +1380,7 @@ const CollegeDashboard = () => {
                     onPostRequirement={refreshRequirements}
                     showToast={showToast}
                     setActiveTab={handleTabChange}
+                    onView={handleView}
                     onDelete={handleDelete}
                     requirements={requirements}
                     setRequirements={setRequirements}
@@ -1347,17 +1398,44 @@ const CollegeDashboard = () => {
 
               {/* Applications Tab */}
               {activeTab === 'applications' && (
-                <>
-                  <ApplicationManagement 
-                    requirementId={null}
-                    user={user}
-                  />
-                </>
+                canAccessRequirements() ? (
+                  <>
+                    <ApplicationManagement 
+                      requirementId={null}
+                      user={user}
+                    />
+                  </>
+                ) : (
+                  <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+                    <div className="text-center py-8">
+                      <CheckCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-500 mb-3">Verification required to access Application Management</p>
+                      <div className="space-y-2">
+                        {!user?.isEmailVerified && (
+                          <button
+                            onClick={handleVerifyEmailFromRequirements}
+                            className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700"
+                          >
+                            Verify Email
+                          </button>
+                        )}
+                        {!user?.isPhoneVerified && (
+                          <button
+                            onClick={handleVerifyPhoneFromRequirements}
+                            className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700"
+                          >
+                            Verify Phone
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
               )}
 
               {/* Experts Tab */}
               {activeTab === 'experts' && (
-                canAccessExperts() ? (
+                canAccessRequirements() ? (
                   <>
                     {console.log('Rendering ExpertsTab, user:', user)}
                     {console.log('User object structure:', JSON.stringify(user, null, 2))}
@@ -1542,6 +1620,109 @@ const CollegeDashboard = () => {
         user={user}
         featureName={verificationFeatureName}
       />
+
+      {/* View Requirement Modal */}
+      {showViewModal && viewingRequirement && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="relative w-full max-w-2xl bg-white rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto"
+          >
+            <div className="flex items-center justify-between p-4 border-b border-slate-200">
+              <h3 className="text-lg font-bold text-slate-900">View Requirement</h3>
+              <button
+                onClick={() => {
+                  setShowViewModal(false);
+                  setViewingRequirement(null);
+                }}
+                className="p-2 text-slate-400 hover:text-slate-600 transition-colors rounded-lg hover:bg-slate-100"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-4 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Title</label>
+                  <p className="text-slate-900 font-medium">{viewingRequirement.title}</p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Category</label>
+                  <p className="text-slate-900">{viewingRequirement.category?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>
+                <p className="text-slate-900 leading-relaxed">{viewingRequirement.description}</p>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Budget (₹)</label>
+                  <p className="text-slate-900">{viewingRequirement.budget ? `₹${parseInt(viewingRequirement.budget).toLocaleString()}` : 'Not specified'}</p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Deadline</label>
+                  <p className="text-slate-900">
+                    {viewingRequirement.deadline 
+                      ? new Date(viewingRequirement.deadline).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })
+                      : 'No deadline'
+                    }
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-center">
+                <label className="block text-sm font-medium text-slate-700 mr-2">Urgent:</label>
+                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                  viewingRequirement.isUrgent 
+                    ? 'bg-red-100 text-red-800' 
+                    : 'bg-gray-100 text-gray-800'
+                }`}>
+                  {viewingRequirement.isUrgent ? 'Yes' : 'No'}
+                </span>
+              </div>
+
+              {viewingRequirement.requiredSkills && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Required Skills</label>
+                  <p className="text-slate-900 leading-relaxed">{viewingRequirement.requiredSkills}</p>
+                </div>
+              )}
+
+              {viewingRequirement.experience && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Experience</label>
+                  <p className="text-slate-900 leading-relaxed">{viewingRequirement.experience}</p>
+                </div>
+              )}
+              
+              <div className="flex gap-3 pt-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowViewModal(false);
+                    setViewingRequirement(null);
+                  }}
+                  className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal
@@ -2245,7 +2426,7 @@ const ProfileTab = ({
 };
 
 // Requirements Tab Component - Enhanced with form
-const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhone, onPostRequirement, showToast, setActiveTab, onDelete, requirements, setRequirements, refreshRequirements, totalRequirements, loading, loadingMore, hasMore, loadMoreRequirements }) => {
+const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhone, onPostRequirement, showToast, setActiveTab, onView, onDelete, requirements, setRequirements, refreshRequirements, totalRequirements, loading, loadingMore, hasMore, loadMoreRequirements }) => {
   // Check if user can access requirements creation
   const canAccessRequirements = () => {
     return user?.isEmailVerified || user?.isPhoneVerified;
@@ -2483,47 +2664,6 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
           }}></div>
         </div>
         
-        {/* Glassmorphism Header */}
-        <div className="relative backdrop-blur-xl bg-white/70 border border-white/20 rounded-2xl shadow-xl p-4 sm:p-6 mb-4 sm:mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
-                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">Streamline your academic requirements with enterprise-grade tools</p>
-              </div>
-            </div>
-            
-          <button 
-            onClick={() => setShowForm(!showForm)}
-              disabled={!canAccessRequirements()}
-              className={`relative group w-full sm:w-auto px-4 sm:px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform ${
-                canAccessRequirements()
-                  ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl hover:-translate-y-0.5'
-                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-              }`}
-            >
-              {showForm ? (
-                <span className="flex items-center justify-center sm:justify-start gap-2 text-sm">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                  Cancel
-                </span>
-              ) : (
-                <span className="flex items-center justify-center sm:justify-start gap-2 text-sm">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                  Create Requirement
-                </span>
-              )}
-      </button>
-          </div>
-    </div>
 
         {/* Premium Form */}
         {showForm && (
@@ -2730,10 +2870,10 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-2xl bg-white rounded-xl shadow-2xl"
+              className="relative w-full max-w-lg bg-white rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto"
             >
-              <div className="flex items-center justify-between p-6 border-b border-slate-200">
-                <h3 className="text-xl font-bold text-slate-900">Edit Requirement</h3>
+              <div className="flex items-center justify-between p-4 border-b border-slate-200">
+                <h3 className="text-lg font-bold text-slate-900">Edit Requirement</h3>
                 <button
                   onClick={handleCancelEdit}
                   className="p-2 text-slate-400 hover:text-slate-600 transition-colors rounded-lg hover:bg-slate-100"
@@ -2742,7 +2882,7 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
                 </button>
               </div>
               
-              <form onSubmit={handleUpdate} className="p-6 space-y-4">
+              <form onSubmit={handleUpdate} className="p-4 space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">Title</label>
@@ -2799,7 +2939,7 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
                     name="description"
                     value={requirementForm.description}
                     onChange={handleInputChange}
-                    rows={3}
+                    rows={2}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   />
@@ -2865,17 +3005,17 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
                   />
                 </div>
                 
-                <div className="flex gap-3 pt-4">
+                <div className="flex gap-3 pt-3">
                   <button
                     type="submit"
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
                   >
                     Update Requirement
                   </button>
                   <button
                     type="button"
                     onClick={handleCancelEdit}
-                    className="px-6 py-2 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200 transition-colors"
+                    className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200 transition-colors"
                   >
                     Cancel
                   </button>
@@ -2896,14 +3036,31 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
               </div>
                   </div>
             
-            {requirements.length > 0 && (
-              <div className="flex items-center gap-2 text-xs text-slate-500">
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Sorted by latest first</span>
-              </div>
-            )}
+            <button 
+              onClick={() => setShowForm(!showForm)}
+              disabled={!canAccessRequirements()}
+              className={`relative group px-4 py-2 rounded-lg font-semibold transition-all duration-300 transform ${
+                canAccessRequirements()
+                  ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl hover:-translate-y-0.5'
+                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+              }`}
+            >
+              {showForm ? (
+                <span className="flex items-center gap-2 text-sm">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Cancel
+                </span>
+              ) : (
+                <span className="flex items-center gap-2 text-sm">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Create Requirement
+                </span>
+              )}
+            </button>
                 </div>
 
           {loading && requirements.length === 0 ? (
@@ -2952,6 +3109,7 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
                     index={index}
                     showActions={true}
                     compact={false}
+                    onView={() => onView(requirement)}
                     onEdit={() => handleEdit(requirement)}
                     onDelete={() => onDelete(requirement.id)}
                   />
@@ -3719,10 +3877,10 @@ Best regards,`}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+              className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden"
             >
               {/* Simple Header */}
-              <div className="bg-white border-b border-gray-200 p-6">
+              <div className="bg-white border-b border-gray-200 p-6 flex-shrink-0">
                 <div className="flex items-center justify-between">
                                   <div className="flex items-center space-x-4">
                   {selectedExpert.profilePicture ? (
@@ -3781,14 +3939,14 @@ Best regards,`}
                   {selectedExpert.hourlyRate && (
                     <div className="flex items-center space-x-2 text-sm text-gray-600">
                       <TrendingUp className="w-4 h-4" />
-                      <span className="font-semibold text-green-600">${parseFloat(selectedExpert.hourlyRate).toFixed(0)}/hr</span>
+                      <span className="font-semibold text-green-600">₹{parseFloat(selectedExpert.hourlyRate).toFixed(0)}/hr</span>
                     </div>
                   )}
                 </div>
               </div>
 
               {/* Content */}
-              <div className="p-6 max-h-[60vh] overflow-y-auto">
+              <div className="flex-1 p-6 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
                 <div className="space-y-6">
                                      {/* About */}
                    {selectedExpert.bio && (
@@ -3986,7 +4144,7 @@ Best regards,`}
               </div>
 
               {/* Simple Footer */}
-              <div className="bg-gray-50 border-t border-gray-200 p-4">
+              <div className="bg-gray-50 border-t border-gray-200 p-4 flex-shrink-0">
                 <div className="flex space-x-3">
                   <button
                     onClick={closeProfileModal}

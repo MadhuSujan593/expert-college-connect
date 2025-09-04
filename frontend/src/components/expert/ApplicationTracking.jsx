@@ -23,13 +23,6 @@ const ApplicationTracking = () => {
     page: 1,
     limit: 10
   });
-  const [stats, setStats] = useState({
-    total: 0,
-    pending: 0,
-    shortlisted: 0,
-    rejected: 0,
-    accepted: 0
-  });
 
   // Fetch applications
   const fetchApplications = async () => {
@@ -46,7 +39,6 @@ const ApplicationTracking = () => {
       
       if (response.success && response.data) {
         setApplications(response.data.applications || []);
-        calculateStats(response.data.applications || []);
       }
     } catch (err) {
       console.error('Error fetching applications:', err);
@@ -55,17 +47,6 @@ const ApplicationTracking = () => {
     }
   };
 
-  // Calculate statistics
-  const calculateStats = (apps) => {
-    const stats = {
-      total: apps.length,
-      pending: apps.filter(app => app.status === 'PENDING').length,
-      shortlisted: apps.filter(app => app.status === 'SHORTLISTED').length,
-      rejected: apps.filter(app => app.status === 'REJECTED').length,
-      accepted: apps.filter(app => app.status === 'ACCEPTED').length
-    };
-    setStats(stats);
-  };
 
   // Format budget
   const formatBudget = (budget, budgetType) => {
@@ -162,74 +143,7 @@ const ApplicationTracking = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Application Tracking</h1>
-        <p className="text-gray-600">Monitor the status of your job applications</p>
-      </div>
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Applications</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-            </div>
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Clock className="w-6 h-6 text-blue-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Pending</p>
-              <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
-            </div>
-            <div className="p-2 bg-yellow-100 rounded-lg">
-              <Clock className="w-6 h-6 text-yellow-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Shortlisted</p>
-              <p className="text-2xl font-bold text-blue-600">{stats.shortlisted}</p>
-            </div>
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Star className="w-6 h-6 text-blue-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Rejected</p>
-              <p className="text-2xl font-bold text-red-600">{stats.rejected}</p>
-            </div>
-            <div className="p-2 bg-red-100 rounded-lg">
-              <XCircle className="w-6 h-6 text-red-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Accepted</p>
-              <p className="text-2xl font-bold text-green-600">{stats.accepted}</p>
-            </div>
-            <div className="p-2 bg-green-100 rounded-lg">
-              <CheckCircle className="w-6 h-6 text-green-600" />
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Filters */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">

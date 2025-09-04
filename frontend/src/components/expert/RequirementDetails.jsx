@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, MapPin, Calendar, IndianRupee, Clock, Building2, Star, Zap, Briefcase, Heart } from 'lucide-react';
+import { CheckCircle, MapPin, Calendar, IndianRupee, Clock, Building2, Star, Zap, Briefcase, Heart } from 'lucide-react';
 import apiService from '../../utils/api';
 
 const RequirementDetails = () => {
@@ -121,27 +121,6 @@ const RequirementDetails = () => {
 
   return (
     <div className="min-h-screen bg-secondary-50">
-      {/* Modern Header */}
-      <div className="bg-white border-b border-secondary-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center py-6">
-            <button
-              onClick={() => {
-                if (applicationData?.fromApplications) {
-                  navigate('/dashboard/expert');
-                } else {
-                  navigate('/dashboard/expert');
-                }
-              }}
-              className="flex items-center gap-2 text-secondary-600 hover:text-secondary-900 transition-colors group"
-            >
-              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-              <span className="font-medium">Back to Dashboard</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Modern Application Status Banner */}
         {hasApplied && (
