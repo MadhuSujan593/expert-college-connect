@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import apiService from '../../utils/api';
 
-const ApplicationTracking = () => {
+const ApplicationTracking = ({ onRequestRating, ratingRequests = [] }) => {
   const navigate = useNavigate();
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,6 +23,14 @@ const ApplicationTracking = () => {
     page: 1,
     limit: 10
   });
+
+  // Check if there's already a rating request for this application
+  const hasRatingRequest = (application) => {
+    return ratingRequests.some(request => 
+      request.requirementId === application.requirementId && 
+      request.applicationId === application.id
+    );
+  };
 
   // Fetch applications
   const fetchApplications = async () => {
@@ -185,7 +193,7 @@ const ApplicationTracking = () => {
               key={application.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md hover:border-blue-300 transition-all duration-200 cursor-pointer group"
+              className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-lg hover:border-gray-300 transition-all duration-200 cursor-pointer group"
                              onClick={() => {
                  // Navigate to requirement details with application status
                  console.log('Navigating to requirement details for:', application.requirement?.title || 'Unknown Requirement');
@@ -267,6 +275,32 @@ const ApplicationTracking = () => {
                        <p className="text-sm text-gray-700">
                          <strong>Feedback:</strong> {application.reviewNotes}
                        </p>
+                     </div>
+                   )}
+
+                   {/* Rating Request Button for Selected/Shortlisted Applications */}
+                   {(application.status === 'ACCEPTED' || application.status === 'SHORTLISTED') && onRequestRating && !hasRatingRequest(application) && (
+                     <div className="mt-4 pt-4 border-t border-gray-200">
+                       <button
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           onRequestRating(application.requirement, application);
+                         }}
+                         className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                       >
+                         <Star className="w-4 h-4" />
+                         Request Rating
+                       </button>
+                     </div>
+                   )}
+
+                   {/* Show status if rating request already exists */}
+                   {(application.status === 'ACCEPTED' || application.status === 'SHORTLISTED') && hasRatingRequest(application) && (
+                     <div className="mt-4 pt-4 border-t border-gray-200">
+                       <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium">
+                         <Star className="w-4 h-4" />
+                         Rating Requested
+                       </div>
                      </div>
                    )}
                    

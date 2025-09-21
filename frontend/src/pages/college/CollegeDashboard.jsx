@@ -28,7 +28,8 @@ import {
   AlertCircle,
   Shield,
   Mail,
-  Phone
+  Phone,
+  MessageCircle
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import apiService from '../../utils/api';
@@ -36,6 +37,9 @@ import Toast from '../../components/common/Toast';
 import FileUpload from '../../components/common/FileUpload';
 import EmailVerificationModal from '../../components/verification/EmailVerificationModal';
 import PhoneVerificationModal from '../../components/verification/PhoneVerificationModal';
+import ExpertRatingModal from '../../components/college/ExpertRatingModal';
+import ExpertRatingDisplay from '../../components/college/ExpertRatingDisplay';
+import RatingRequestsList from '../../components/college/RatingRequestsList';
 import VerificationRequirementModal from '../../components/common/VerificationRequirementModal';
 import RequirementCard from '../../components/common/RequirementCard';
 import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
@@ -52,6 +56,14 @@ const CollegeDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  // Rating state
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [selectedExpert, setSelectedExpert] = useState(null);
+  const [selectedRequirement, setSelectedRequirement] = useState(null);
+  const [selectedApplication, setSelectedApplication] = useState(null);
+  const [expertRatings, setExpertRatings] = useState([]);
+  const [ratingRequests, setRatingRequests] = useState([]);
   const [stats, setStats] = useState({
     profileCompleteness: 0,
     totalRequirements: 0,
@@ -189,6 +201,53 @@ const CollegeDashboard = () => {
     setShowDeleteModal(false);
     setRequirementToDelete(null);
     setIsDeleting(false);
+  };
+
+  // Rating functions
+  const handleRateExpert = (requirement, application = null) => {
+    // For now, we'll use a mock expert. In a real scenario, you'd get this from the application
+    const mockExpert = {
+      id: 'expert-123',
+      user: {
+        fullName: 'Dr. John Smith',
+        profileImage: null
+      }
+    };
+    
+    setSelectedExpert(mockExpert);
+    setSelectedRequirement(requirement);
+    setSelectedApplication(application);
+    setShowRatingModal(true);
+  };
+
+  const handleRatingSubmitted = () => {
+    setShowRatingModal(false);
+    setSelectedExpert(null);
+    setSelectedRequirement(null);
+    setSelectedApplication(null);
+    showToast('success', 'Rating submitted successfully!');
+    // Refresh rating requests to update the UI
+    fetchRatingRequests();
+  };
+
+  const fetchExpertRatings = async (expertId) => {
+    try {
+      const response = await apiService.get(`/ratings?expertProfileId=${expertId}`);
+      setExpertRatings(response.data || []);
+    } catch (error) {
+      console.error('Error fetching expert ratings:', error);
+    }
+  };
+
+  const fetchRatingRequests = async () => {
+    try {
+      const response = await apiService.get('/rating-requests');
+      if (response.success) {
+        setRatingRequests(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch rating requests:', error);
+    }
   };
 
   // Helper function to convert relative URLs to full URLs
@@ -679,6 +738,7 @@ const CollegeDashboard = () => {
 
   useEffect(() => {
     fetchDashboardData();
+    fetchRatingRequests();
   }, []);
 
   // Load requirements when requirements tab is active
@@ -1077,6 +1137,13 @@ const CollegeDashboard = () => {
                   }
                 }}
               />
+              <SidebarItem
+                id="rating-requests"
+                label="Rating Requests"
+                icon={MessageCircle}
+                isActive={activeTab === 'rating-requests'}
+                onClick={() => setActiveTab('rating-requests')}
+              />
             </nav>
 
 
@@ -1114,6 +1181,7 @@ const CollegeDashboard = () => {
                     {activeTab === 'applications' && 'Application Management'}
                     {activeTab === 'experts' && 'Expert Directory'}
                     {activeTab === 'ratings' && 'Ratings & Trust'}
+                    {activeTab === 'rating-requests' && 'Rating Requests'}
                   </h1>
                   <p className="text-gray-600 mt-1">
                     {activeTab === 'overview' && 'Control and analyze your academic data in the easiest way'}
@@ -1122,6 +1190,7 @@ const CollegeDashboard = () => {
                     {activeTab === 'applications' && 'Review and manage applications'}
                     {activeTab === 'experts' && 'Browse and connect with experts'}
                     {activeTab === 'ratings' && 'View ratings and trust scores'}
+                    {activeTab === 'rating-requests' && 'Review and respond to rating requests'}
                   </p>
                 </div>
                 </div>
@@ -1382,6 +1451,7 @@ const CollegeDashboard = () => {
                     setActiveTab={handleTabChange}
                     onView={handleView}
                     onDelete={handleDelete}
+                    onRate={handleRateExpert}
                     requirements={requirements}
                     setRequirements={setRequirements}
                     refreshRequirements={refreshRequirements}
@@ -1499,6 +1569,20 @@ const CollegeDashboard = () => {
                     </div>
                   </div>
                 )
+              )}
+
+              {/* Rating Requests Tab */}
+              {activeTab === 'rating-requests' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-6"
+                >
+                  <RatingRequestsList 
+                    ratingRequests={ratingRequests} 
+                    onUpdate={fetchRatingRequests}
+                  />
+                </motion.div>
               )}
           </div>
           </main>
@@ -1733,6 +1817,16 @@ const CollegeDashboard = () => {
         message="Are you sure you want to delete this requirement? This action will remove it from your dashboard and cannot be undone."
         itemName={requirementToDelete?.title}
         isLoading={isDeleting}
+      />
+
+      {/* Expert Rating Modal */}
+      <ExpertRatingModal
+        isOpen={showRatingModal}
+        onClose={() => setShowRatingModal(false)}
+        expert={selectedExpert}
+        requirement={selectedRequirement}
+        application={selectedApplication}
+        onRatingSubmitted={handleRatingSubmitted}
       />
   </div>
 );
@@ -2426,7 +2520,7 @@ const ProfileTab = ({
 };
 
 // Requirements Tab Component - Enhanced with form
-const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhone, onPostRequirement, showToast, setActiveTab, onView, onDelete, requirements, setRequirements, refreshRequirements, totalRequirements, loading, loadingMore, hasMore, loadMoreRequirements }) => {
+const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhone, onPostRequirement, showToast, setActiveTab, onView, onDelete, onRate, requirements, setRequirements, refreshRequirements, totalRequirements, loading, loadingMore, hasMore, loadMoreRequirements }) => {
   // Check if user can access requirements creation
   const canAccessRequirements = () => {
     return user?.isEmailVerified || user?.isPhoneVerified;
@@ -2442,6 +2536,8 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
     requiredSkills: '',
     experience: ''
   });
+  const [customCategory, setCustomCategory] = useState('');
+  const [showCustomCategoryInput, setShowCustomCategoryInput] = useState(false);
   const [editingRequirement, setEditingRequirement] = useState(null);
   const [showEditForm, setShowEditForm] = useState(false);
 
@@ -2470,18 +2566,71 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setRequirementForm(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    
+    // Handle category selection
+    if (name === 'category') {
+      if (value === 'OTHERS') {
+        setShowCustomCategoryInput(true);
+        setRequirementForm(prev => ({
+          ...prev,
+          [name]: value
+        }));
+      } else {
+        setShowCustomCategoryInput(false);
+        setCustomCategory('');
+        setRequirementForm(prev => ({
+          ...prev,
+          [name]: value
+        }));
+      }
+    } else {
+      setRequirementForm(prev => ({
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      }));
+    }
+  };
+
+  const handleCustomCategoryChange = (e) => {
+    setCustomCategory(e.target.value);
+    // Don't update requirementForm.category here, keep it as 'OTHERS'
+    // The actual custom value will be used during form submission
+  };
+
+  const handleCancelEdit = () => {
+    setShowEditForm(false);
+    setEditingRequirement(null);
+    setShowCustomCategoryInput(false);
+    setCustomCategory('');
+    setRequirementForm({
+      title: '',
+      category: '',
+      description: '',
+      budget: '',
+      deadline: '',
+      isUrgent: false,
+      requiredSkills: '',
+      experience: ''
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Validate custom category if "OTHERS" is selected
+    if (requirementForm.category === 'OTHERS' && showCustomCategoryInput && !customCategory.trim()) {
+      showToast('error', 'Please enter a custom category');
+      return;
+    }
+    
     try {
       // Prepare the data, handling empty deadline properly
       const formData = { ...requirementForm };
+      
+      // If category is "OTHERS", use the custom category value instead
+      if (formData.category === 'OTHERS' && showCustomCategoryInput && customCategory.trim()) {
+        formData.category = customCategory.trim();
+      }
       
       // If deadline is empty string, set it to undefined to avoid validation issues
       if (formData.deadline === '') {
@@ -2502,7 +2651,9 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
         console.log('✅ Requirement created successfully:', result);
         
         // Reset form and close
-    setShowForm(false);
+        setShowForm(false);
+        setShowCustomCategoryInput(false);
+        setCustomCategory('');
         setRequirementForm({
           title: '',
           category: '',
@@ -2539,9 +2690,22 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
 
   const handleEdit = (requirement) => {
     setEditingRequirement(requirement);
+    
+    // Check if the category is a custom one (not in predefined list)
+    const predefinedCategories = [
+      'DATA_SCIENCE_AI', 'CYBERSECURITY', 'SOFTWARE_DEVELOPMENT', 'INNOVATION',
+      'DIGITAL_MARKETING', 'BUSINESS_STRATEGY', 'FINANCE', 'CONSULTING',
+      'EDUCATION', 'RESEARCH', 'WORKSHOP', 'GUEST_LECTURE', 'MENTORING',
+      'CURRICULUM_REVIEW', 'INDUSTRY_PROJECT', 'QUESTION_PAPER_SETTING',
+      'QUESTION_PAPER_EVALUATION', 'TRAINING', 'PUBLIC_SPEAKING', 'LEADERSHIP',
+      'HEALTHCARE', 'ENGINEERING', 'SUSTAINABILITY'
+    ];
+    
+    const isCustomCategory = !predefinedCategories.includes(requirement.category);
+    
     setRequirementForm({
       title: requirement.title,
-      category: requirement.category,
+      category: isCustomCategory ? 'OTHERS' : requirement.category,
       description: requirement.description,
       budget: requirement.budget?.toString() || '',
       deadline: requirement.deadline ? new Date(requirement.deadline).toISOString().split('T')[0] : '',
@@ -2549,12 +2713,28 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
       requiredSkills: requirement.requiredSkills || '',
       experience: requirement.experience || ''
     });
+    
+    // Set custom category state if it's a custom category
+    if (isCustomCategory) {
+      setCustomCategory(requirement.category);
+      setShowCustomCategoryInput(true);
+    } else {
+      setCustomCategory('');
+      setShowCustomCategoryInput(false);
+    }
+    
     setShowEditForm(true);
     setShowForm(false);
   };
 
   const handleUpdate = async (e) => {
     e.preventDefault();
+    
+    // Validate custom category if "OTHERS" is selected
+    if (requirementForm.category === 'OTHERS' && showCustomCategoryInput && !customCategory.trim()) {
+      showToast('error', 'Please enter a custom category');
+      return;
+    }
     
     console.log('🔍 [FRONTEND] UPDATE BUTTON CLICKED');
     console.log('🔍 [FRONTEND] editingRequirement:', editingRequirement);
@@ -2568,6 +2748,11 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
     
     try {
       const formData = { ...requirementForm };
+      
+      // If category is "OTHERS", use the custom category value instead
+      if (formData.category === 'OTHERS' && showCustomCategoryInput && customCategory.trim()) {
+        formData.category = customCategory.trim();
+      }
       
       // If deadline is empty string, set it to undefined
       if (formData.deadline === '') {
@@ -2600,6 +2785,8 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
         // Reset form and close
         setShowEditForm(false);
         setEditingRequirement(null);
+        setShowCustomCategoryInput(false);
+        setCustomCategory('');
         setRequirementForm({
           title: '',
           category: '',
@@ -2629,23 +2816,6 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
       console.error('❌ [FRONTEND] Error message:', error.message);
       showToast('error', 'Failed to update requirement');
     }
-  };
-
-
-
-  const handleCancelEdit = () => {
-    setShowEditForm(false);
-    setEditingRequirement(null);
-    setRequirementForm({
-      title: '',
-      category: '',
-      description: '',
-      budget: '',
-      deadline: '',
-      isUrgent: false,
-      requiredSkills: '',
-      experience: ''
-    });
   };
 
   return (
@@ -2746,9 +2916,29 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
                      <option value="ENGINEERING">Engineering</option>
                      <option value="SUSTAINABILITY">Sustainability</option>
                    </optgroup>
+                   <optgroup label="Other">
+                     <option value="OTHERS">Others (Custom)</option>
+                   </optgroup>
                  </select>
               </div>
             </div>
+
+            {/* Custom Category Input */}
+            {showCustomCategoryInput && (
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-slate-700 uppercase tracking-wide">
+                  Custom Category *
+                </label>
+                <input
+                  type="text"
+                  value={customCategory}
+                  onChange={handleCustomCategoryChange}
+                  placeholder="Enter your custom category..."
+                  required
+                  className="w-full px-3 py-2 bg-white/50 backdrop-blur-sm border border-slate-200/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 placeholder:text-slate-400"
+                />
+              </div>
+            )}
 
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-slate-700 uppercase tracking-wide">
@@ -2929,9 +3119,25 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
                       <option value="HEALTHCARE">Healthcare</option>
                       <option value="ENGINEERING">Engineering</option>
                       <option value="SUSTAINABILITY">Sustainability</option>
+                      <option value="OTHERS">Others (Custom)</option>
                     </select>
                   </div>
                 </div>
+
+                {/* Custom Category Input for Edit Form */}
+                {showCustomCategoryInput && (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Custom Category</label>
+                    <input
+                      type="text"
+                      value={customCategory}
+                      onChange={handleCustomCategoryChange}
+                      placeholder="Enter your custom category..."
+                      required
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                )}
                 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>

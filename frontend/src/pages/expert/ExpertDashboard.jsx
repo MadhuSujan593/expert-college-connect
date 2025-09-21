@@ -28,6 +28,8 @@ import EmailVerificationModal from '../../components/verification/EmailVerificat
 import PhoneVerificationModal from '../../components/verification/PhoneVerificationModal';
 import ExpertOpportunities from '../../components/expert/ExpertOpportunities';
 import ApplicationTracking from '../../components/expert/ApplicationTracking';
+import RatingRequestModal from '../../components/expert/RatingRequestModal';
+import ExpertRatingRequestsList from '../../components/expert/ExpertRatingRequestsList';
 import { 
   checkAvailability 
 } from '../../utils/verificationUtils';
@@ -144,6 +146,10 @@ const ExpertDashboard = () => {
 
   const [serviceTypes, setServiceTypes] = useState([]);
 
+  const [customServiceInput, setCustomServiceInput] = useState('');
+
+  const [showCustomInput, setShowCustomInput] = useState(false);
+
   const [availableServiceTypes] = useState([
 
     // Technology & Innovation Group
@@ -234,6 +240,26 @@ const ExpertDashboard = () => {
 
       services: ['Healthcare', 'Engineering', 'Sustainability']
 
+    },
+
+    // Others Group
+
+    { 
+
+      id: 'others', 
+
+      name: 'Others', 
+
+      icon: Plus, 
+
+      description: 'Specify your custom service area',
+
+      group: 'others',
+
+      services: [],
+
+      isCustom: true
+
     }
 
   ]);
@@ -264,15 +290,57 @@ const ExpertDashboard = () => {
   const [showVerificationRequirement, setShowVerificationRequirement] = useState(false);
   const [verificationFeatureName, setVerificationFeatureName] = useState("this feature");
 
+  // Rating request states
+  const [showRatingRequestModal, setShowRatingRequestModal] = useState(false);
+  const [selectedRequirement, setSelectedRequirement] = useState(null);
+  const [selectedApplication, setSelectedApplication] = useState(null);
+  const [ratingRequests, setRatingRequests] = useState([]);
+  const [trustScore, setTrustScore] = useState(0);
+
   // Check if user can access features that require verification
   const canAccessFeatures = () => {
     return user?.isEmailVerified || user?.isPhoneVerified;
+  };
+
+  // Rating request functions
+  const handleRequestRating = (requirement, application = null) => {
+    setSelectedRequirement(requirement);
+    setSelectedApplication(application);
+    setShowRatingRequestModal(true);
+  };
+
+  const handleRatingRequestSubmitted = (ratingRequest) => {
+    setRatingRequests(prev => [ratingRequest, ...prev]);
+    setShowRatingRequestModal(false);
+    setSelectedRequirement(null);
+    setSelectedApplication(null);
+    // Toast is now handled in the modal itself
+  };
+
+  const fetchRatingRequests = async () => {
+    try {
+      const response = await api.get('/rating-requests');
+      if (response.success && Array.isArray(response.data)) {
+        setRatingRequests(response.data);
+      } else {
+        setRatingRequests([]);
+      }
+    } catch (error) {
+      console.error('Failed to fetch rating requests:', error);
+      setRatingRequests([]);
+    }
   };
 
   // Handle feature access attempts
   const handleFeatureAccess = (featureName, tabId) => {
     if (canAccessFeatures()) {
       handleTabChange(tabId);
+      // Refresh data when switching to specific tabs
+      if (tabId === 'rating-requests') {
+        fetchRatingRequests();
+      } else if (tabId === 'ratings') {
+        fetchRatings();
+      }
     } else {
       setVerificationFeatureName(featureName);
       setShowVerificationRequirement(true);
@@ -331,6 +399,8 @@ const ExpertDashboard = () => {
     fetchCollegePosts();
 
     fetchRatings();
+
+    fetchRatingRequests();
 
   }, []);
 
@@ -522,6 +592,30 @@ const ExpertDashboard = () => {
 
         }));
 
+        // Check for custom "Others" services that don't match any predefined group
+
+        const predefinedServices = availableServiceTypes.flatMap(ast => ast.services);
+
+        const customServices = profile.availableFor.filter(service => 
+
+          !predefinedServices.includes(service)
+
+        );
+
+        if (customServices.length > 0) {
+
+          selectedTypes.push({
+
+            id: 'others',
+
+            name: 'Others',
+
+            services: customServices
+
+          });
+
+        }
+
         setServiceTypes(selectedTypes);
 
       } else {
@@ -559,19 +653,29 @@ const ExpertDashboard = () => {
 
 
   const fetchRatings = async () => {
-
     try {
-
-      setRatings([]);
-
-      setTrustScore(85); // Demo trust score
-
+      const response = await api.get('/ratings');
+      console.log('Ratings API response:', response);
+      if (response.success && Array.isArray(response.data)) {
+        console.log('Ratings data:', response.data);
+        setRatings(response.data);
+        
+        // Calculate average rating for trust score
+        if (response.data.length > 0) {
+          const avgRating = response.data.reduce((sum, rating) => sum + rating.overallRating, 0) / response.data.length;
+          setTrustScore(Math.round(avgRating * 20)); // Convert 1-5 scale to 0-100
+        } else {
+          setTrustScore(0);
+        }
+      } else {
+        setRatings([]);
+        setTrustScore(0);
+      }
     } catch (error) {
-
       console.error('Error fetching ratings:', error);
-
+      setRatings([]);
+      setTrustScore(0);
     }
-
   };
 
 
@@ -1130,9 +1234,40 @@ const ExpertDashboard = () => {
 
         updatedServiceTypes = serviceTypes.filter(st => st.id !== serviceTypeId);
 
+        // If removing "Others", hide the custom input
+
+        if (serviceTypeId === 'others') {
+
+          setShowCustomInput(false);
+
+          setCustomServiceInput('');
+
+        }
+
       } else {
 
         const serviceType = availableServiceTypes.find(ast => ast.id === serviceTypeId);
+
+        
+        // If selecting "Others", show the custom input
+
+        if (serviceTypeId === 'others') {
+
+          setShowCustomInput(true);
+
+          // If there are already custom services, populate the input field
+
+          const existingOthersService = serviceTypes.find(st => st.id === 'others');
+
+          if (existingOthersService && existingOthersService.services && existingOthersService.services.length > 0) {
+
+            setCustomServiceInput(existingOthersService.services.join(', '));
+
+          }
+
+          return; // Don't add to serviceTypes yet, wait for custom input
+
+        }
 
         // When adding a service group, include all individual services in that group
 
@@ -1178,7 +1313,89 @@ const ExpertDashboard = () => {
 
   };
 
+  // Handle custom service input submission
 
+  const handleCustomServiceSubmit = async () => {
+
+    if (!customServiceInput.trim()) {
+
+      showToast('error', 'Please enter a custom service');
+
+      return;
+
+    }
+
+    try {
+
+      // Parse the input to handle multiple services separated by commas
+
+      const customServices = customServiceInput.split(',').map(service => service.trim()).filter(service => service.length > 0);
+
+      // Check if "Others" service already exists
+
+      const existingOthersIndex = serviceTypes.findIndex(st => st.id === 'others');
+
+      let updatedServiceTypes;
+
+      if (existingOthersIndex !== -1) {
+
+        // Update existing "Others" service
+
+        updatedServiceTypes = [...serviceTypes];
+
+        updatedServiceTypes[existingOthersIndex] = {
+
+          id: 'others',
+
+          name: 'Others',
+
+          services: customServices
+
+        };
+
+      } else {
+
+        // Add new "Others" service
+
+        updatedServiceTypes = [...serviceTypes, { 
+
+          id: 'others', 
+
+          name: 'Others',
+
+          services: customServices 
+
+        }];
+
+      }
+
+      // Flatten all services from selected groups for the API
+
+      const allServices = updatedServiceTypes.flatMap(st => st.services || [st.name]);
+
+      await api.updateExpertProfile({
+
+        availableFor: allServices
+
+      });
+
+      setServiceTypes(updatedServiceTypes);
+
+      setShowCustomInput(false);
+
+      setCustomServiceInput('');
+
+      showToast('success', 'Custom service updated successfully!');
+
+    } catch (error) {
+
+      console.error('Error adding custom service:', error);
+
+      showToast('error', 'Failed to add custom service');
+
+    }
+
+  };
 
   const formatDate = (dateString) => {
 
@@ -1427,6 +1644,20 @@ const ExpertDashboard = () => {
 
               />
 
+              <SidebarItem
+
+                id="rating-requests"
+
+                label="Rating Requests"
+
+                icon={MessageCircle}
+
+                isActive={activeTab === 'rating-requests'}
+
+                onClick={() => handleFeatureAccess("Rating Requests", 'rating-requests')}
+
+              />
+
             </nav>
 
 
@@ -1484,6 +1715,7 @@ const ExpertDashboard = () => {
                     {activeTab === 'colleges' && 'Opportunities'}
                     {activeTab === 'applications' && 'Applications'}
                     {activeTab === 'ratings' && 'Reviews & Ratings'}
+                    {activeTab === 'rating-requests' && 'Rating Requests'}
                   </h1>
                   <p className="text-gray-600 mt-1">
                     {activeTab === 'overview' && 'Manage your expert profile and track your opportunities'}
@@ -1492,6 +1724,7 @@ const ExpertDashboard = () => {
                     {activeTab === 'colleges' && 'Find new opportunities'}
                     {activeTab === 'applications' && 'Track your applications'}
                     {activeTab === 'ratings' && 'View your reviews and ratings'}
+                    {activeTab === 'rating-requests' && 'Request ratings from colleges'}
                   </p>
                 </div>
               </div>
@@ -2653,6 +2886,22 @@ const ExpertDashboard = () => {
 
                         const Icon = serviceType.icon;
 
+                        // For "Others" service type, show custom services if they exist
+
+                        let displayDescription = serviceType.description;
+
+                        if (serviceType.id === 'others' && isSelected) {
+
+                          const othersService = serviceTypes.find(st => st.id === 'others');
+
+                          if (othersService && othersService.services && othersService.services.length > 0) {
+
+                            displayDescription = othersService.services.join(', ');
+
+                          }
+
+                        }
+
                         
                         
                         return (
@@ -2715,7 +2964,7 @@ const ExpertDashboard = () => {
 
                                   }`}>
 
-                                    {serviceType.description}
+                                    {displayDescription}
 
                                   </p>
 
@@ -2732,6 +2981,94 @@ const ExpertDashboard = () => {
                       })}
 
                     </div>
+
+                    
+
+                    {/* Custom Service Input for Others */}
+
+                    {showCustomInput && (
+
+                      <motion.div
+
+                        initial={{ opacity: 0, y: -10 }}
+
+                        animate={{ opacity: 1, y: 0 }}
+
+                        exit={{ opacity: 0, y: -10 }}
+
+                        className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg"
+
+                      >
+
+                        <div className="mb-3">
+
+                          <label className="block text-sm font-semibold text-blue-900 mb-2">
+
+                            Specify your custom service area
+
+                          </label>
+
+                          <p className="text-xs text-blue-700 mb-3">
+
+                            Enter the specific service or expertise area you'd like to offer
+
+                          </p>
+
+                        </div>
+
+                        <div className="flex gap-3">
+
+                          <input
+
+                            type="text"
+
+                            value={customServiceInput}
+
+                            onChange={(e) => setCustomServiceInput(e.target.value)}
+
+                            placeholder="e.g., Blockchain Consulting, Digital Art, Music Production (separate multiple services with commas)"
+
+                            className="flex-1 px-4 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+
+                            onKeyPress={(e) => e.key === 'Enter' && handleCustomServiceSubmit()}
+
+                          />
+
+                          <button
+
+                            onClick={handleCustomServiceSubmit}
+
+                            className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+
+                          >
+
+                            Add
+
+                          </button>
+
+                          <button
+
+                            onClick={() => {
+
+                              setShowCustomInput(false);
+
+                              setCustomServiceInput('');
+
+                            }}
+
+                            className="px-4 py-2 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
+
+                          >
+
+                            Cancel
+
+                          </button>
+
+                        </div>
+
+                      </motion.div>
+
+                    )}
 
                   </div>
 
@@ -3548,7 +3885,7 @@ const ExpertDashboard = () => {
                   >
 
                     {/* Application Tracking Component */}
-                    <ApplicationTracking />
+                    <ApplicationTracking onRequestRating={handleRequestRating} ratingRequests={ratingRequests} />
 
                   </motion.div>
                 ) : (
@@ -3600,9 +3937,17 @@ const ExpertDashboard = () => {
 
                   {/* Reviews List */}
 
-                  <div className="bg-white rounded-2xl border border-slate-200/60 p-6">
+                  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
 
-                    <h3 className="text-lg font-semibold text-slate-900 mb-6">Recent Reviews</h3>
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-xl font-bold text-slate-900">Recent Reviews</h3>
+                      <div className="flex items-center space-x-2">
+                        <Star className="h-5 w-5 text-yellow-500 fill-current" />
+                        <span className="text-sm font-medium text-slate-600">
+                          {ratings.length} review{ratings.length !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                    </div>
 
                     
                     
@@ -3614,64 +3959,113 @@ const ExpertDashboard = () => {
 
                           <motion.div
 
-                            key={index}
+                            key={rating.id || index}
 
                             initial={{ opacity: 0, y: 10 }}
 
                             animate={{ opacity: 1, y: 0 }}
 
-                            className="p-6 bg-slate-50 rounded-xl border border-slate-200/60"
+                            className="p-4 bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-shadow"
 
                           >
 
                             <div className="flex items-start space-x-4">
 
-                              <div className="p-2 bg-blue-100 rounded-xl">
-
-                                <Star className="h-5 w-5 text-blue-600" />
-
+                              <div className="flex-shrink-0">
+                                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                                  <Star className="h-4 w-4 text-white fill-current" />
+                                </div>
                               </div>
 
-                              <div className="flex-1">
+                              <div className="flex-1 min-w-0">
 
-                                <div className="flex items-center space-x-3 mb-2">
+                                <div className="flex items-center justify-between mb-2">
 
-                                  <h4 className="font-semibold text-slate-900">Excellent Workshop</h4>
+                                  <h4 className="font-semibold text-slate-900">
+                                    {rating.requirement?.title || 'Project Rating'}
+                                  </h4>
 
-                                  <div className="flex items-center space-x-1">
+                                  <div className="flex items-center space-x-2">
 
-                                    {[...Array(5)].map((_, i) => (
+                                    <div className="flex items-center space-x-1">
 
-                                      <Star
+                                      {[...Array(5)].map((_, i) => (
 
-                                        key={i}
+                                        <Star
 
-                                        className={`h-4 w-4 ${
+                                          key={i}
 
-                                          i < 5 ? 'text-yellow-400 fill-current' : 'text-slate-300'
+                                          className={`h-4 w-4 ${
 
-                                        }`}
+                                            i < rating.overallRating ? 'text-yellow-400 fill-current' : 'text-gray-300'
 
-                                      />
+                                          }`}
 
-                                    ))}
+                                        />
+
+                                      ))}
+
+                                    </div>
+
+                                    <span className="text-sm font-semibold text-slate-700">
+                                      {rating.overallRating}/5
+                                    </span>
 
                                   </div>
 
                                 </div>
 
-                                <p className="text-slate-600 mb-2">
+                                {rating.review && (
+                                  <p className="text-slate-600 mb-2">
+                                    "{rating.review}"
+                                  </p>
+                                )}
 
-                                  "The workshop was very informative and well-structured. The expert explained complex concepts clearly."
+                                {/* Detailed Rating Questions */}
+                                {rating.ratingQuestions && rating.ratingQuestions.length > 0 && (
+                                  <div className="mt-3 p-3 bg-slate-50 rounded-lg">
+                                    <h5 className="text-xs font-semibold text-slate-700 mb-2 flex items-center">
+                                      <Star className="h-3 w-3 text-yellow-500 mr-1" />
+                                      Breakdown
+                                    </h5>
+                                    <div className="grid grid-cols-2 gap-2">
+                                      {rating.ratingQuestions.map((question, qIndex) => (
+                                        <div key={qIndex} className="flex items-center justify-between text-xs">
+                                          <span className="text-slate-600 truncate">{question.question}</span>
+                                          <div className="flex items-center space-x-1 ml-2">
+                                            {[...Array(5)].map((_, i) => (
+                                              <Star
+                                                key={i}
+                                                className={`h-3 w-3 ${
+                                                  i < question.answer ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                                                }`}
+                                              />
+                                            ))}
+                                            <span className="ml-1 text-slate-600">
+                                              {question.answer}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
 
-                                </p>
-
-                                <div className="flex items-center space-x-4 text-sm text-slate-500">
-
-                                  <span>MIT College</span>
-
-                                  <span>2 days ago</span>
-
+                                <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-200">
+                                  <div className="flex items-center space-x-2">
+                                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                    <span className="text-xs font-medium text-slate-600">
+                                      {rating.collegeprofile?.institutionName || 
+                                       rating.collegeprofile?.name || 
+                                       'College'}
+                                    </span>
+                                  </div>
+                                  <span className="text-xs text-slate-500">
+                                    {new Date(rating.createdAt).toLocaleDateString('en-US', {
+                                      month: 'short',
+                                      day: 'numeric'
+                                    })}
+                                  </span>
                                 </div>
 
                               </div>
@@ -3706,6 +4100,54 @@ const ExpertDashboard = () => {
                     <div className="text-center py-8">
                       <Star className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                       <p className="text-gray-500 mb-3">Verification required to access Reviews</p>
+                      <div className="space-y-2">
+                        {!user?.isEmailVerified && (
+                          <button
+                            onClick={handleVerifyEmailFromFeature}
+                            className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700"
+                          >
+                            Verify Email
+                          </button>
+                        )}
+                        {!user?.isPhoneVerified && (
+                          <button
+                            onClick={handleVerifyPhoneFromFeature}
+                            className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700"
+                          >
+                            Verify Phone
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
+              )}
+
+              {/* Rating Requests Tab */}
+              {activeTab === 'rating-requests' && (
+                canAccessFeatures() ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="space-y-6"
+                  >
+                    {/* Rating Requests List */}
+                    <div className="bg-white rounded-2xl border border-slate-200/60 p-6">
+                      <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-lg font-semibold text-slate-900">Rating Requests</h3>
+                        <div className="text-sm text-slate-500">
+                          {ratingRequests.length} request{ratingRequests.length !== 1 ? 's' : ''}
+                        </div>
+                      </div>
+
+                      <ExpertRatingRequestsList ratingRequests={ratingRequests} />
+                    </div>
+                  </motion.div>
+                ) : (
+                  <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+                    <div className="text-center py-8">
+                      <MessageCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-500 mb-3">Verification required to access Rating Requests</p>
                       <div className="space-y-2">
                         {!user?.isEmailVerified && (
                           <button
@@ -3888,6 +4330,17 @@ const ExpertDashboard = () => {
         user={user}
         featureName={verificationFeatureName}
       />
+
+      {/* Rating Request Modal */}
+      {showRatingRequestModal && selectedRequirement && (
+        <RatingRequestModal
+          isOpen={showRatingRequestModal}
+          onClose={() => setShowRatingRequestModal(false)}
+          requirement={selectedRequirement}
+          application={selectedApplication}
+          onRequestSubmitted={handleRatingRequestSubmitted}
+        />
+      )}
 
     </div>
 

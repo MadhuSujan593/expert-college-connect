@@ -62,12 +62,12 @@ export class ExpertProfileService {
     // Calculate average rating
     const avgRating = await this.prisma.rating.aggregate({
       where: { expertProfileId: expertProfile.id },
-      _avg: { rating: true },
+      _avg: { overallRating: true },
     });
 
     const result = {
       ...expertProfile,
-      averageRating: avgRating._avg.rating || 0,
+      averageRating: avgRating._avg.overallRating || 0,
       totalRatings: expertProfile._count.rating,
       totalServices: expertProfile._count.service,
     };
@@ -194,12 +194,12 @@ export class ExpertProfileService {
     // Calculate average rating
     const avgRating = await this.prisma.rating.aggregate({
       where: { expertProfileId: updatedProfile.id },
-      _avg: { rating: true },
+      _avg: { overallRating: true },
     });
 
     return {
       ...updatedProfile,
-      averageRating: avgRating._avg.rating || 0,
+      averageRating: avgRating._avg.overallRating || 0,
       totalRatings: updatedProfile._count.rating,
       totalServices: updatedProfile._count.service,
     };
@@ -326,7 +326,7 @@ export class ExpertProfileService {
       }),
       this.prisma.rating.aggregate({
         where: { expertProfileId: expertProfile.id },
-        _avg: { rating: true },
+        _avg: { overallRating: true },
       }),
       // Profile views would need to be tracked separately
       0, // Placeholder for now
@@ -336,7 +336,7 @@ export class ExpertProfileService {
       totalServices,
       activeServices,
       totalRatings,
-      averageRating: averageRating._avg.rating || 0,
+      averageRating: averageRating._avg.overallRating || 0,
       profileViews,
       profileCompleteness: this.calculateProfileCompleteness(expertProfile),
     };
@@ -701,7 +701,7 @@ export class ExpertProfileService {
               orderBy: { startDate: 'desc' },
             },
             rating: {
-              select: { rating: true },
+              select: { overallRating: true },
             },
             _count: {
               select: { rating: true },
@@ -744,7 +744,7 @@ export class ExpertProfileService {
               orderBy: { startDate: 'desc' },
             },
             rating: {
-              select: { rating: true },
+              select: { overallRating: true },
             },
             _count: {
               select: { rating: true },
@@ -806,7 +806,7 @@ export class ExpertProfileService {
             orderBy: { startDate: 'desc' },
           },
           rating: {
-            select: { rating: true },
+            select: { overallRating: true },
           },
           _count: {
             select: { rating: true },

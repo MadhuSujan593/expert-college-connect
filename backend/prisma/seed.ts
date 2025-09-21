@@ -323,8 +323,6 @@ async function main() {
         deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
         isUrgent: false,
         isActive: true,
-        requiredSkills: 'Deep Learning, Neural Networks, Python, TensorFlow/PyTorch',
-        experience: 'Minimum 5 years of experience in ML, preferably with teaching experience',
         createdAt: new Date(),
         updatedAt: new Date()
       },
@@ -340,8 +338,6 @@ async function main() {
         deadline: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000), // 45 days from now
         isUrgent: true,
         isActive: true,
-        requiredSkills: 'Cybersecurity, Ethical Hacking, Network Security, Penetration Testing',
-        experience: 'Certified security professional with 3+ years of industry experience',
         createdAt: new Date(),
         updatedAt: new Date()
       },
@@ -357,8 +353,6 @@ async function main() {
         deadline: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days from now
         isUrgent: false,
         isActive: true,
-        requiredSkills: 'Data Analysis, Statistical Modeling, Python/R, Predictive Analytics',
-        experience: 'PhD in Data Science or related field, 5+ years of research experience',
         createdAt: new Date(),
         updatedAt: new Date()
       }

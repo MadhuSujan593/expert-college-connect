@@ -149,6 +149,17 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  async patch(url, data, options = {}) {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}${url}`, {
+      method: 'PATCH',
+      headers: { ...headers, ...options.headers },
+      body: JSON.stringify(data),
+      ...options
+    });
+    return this.handleResponse(response);
+  }
+
   async delete(url, options = {}) {
     const headers = await this.getAuthHeaders();
     const response = await fetch(`${this.baseURL}${url}`, {
