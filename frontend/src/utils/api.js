@@ -714,6 +714,112 @@ class ApiService {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
   }
+
+  // ============ SUPER ADMIN METHODS ============
+  
+  async getSuperAdminDashboardStats() {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}/super-admin/dashboard`, {
+      method: 'GET',
+      headers,
+    });
+    return this.handleResponse(response);
+  }
+
+  async getSuperAdminOverview() {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}/super-admin/overview`, {
+      method: 'GET',
+      headers,
+    });
+    return this.handleResponse(response);
+  }
+
+  async getAllUsers(page = 1, limit = 10, role = null, search = '', isActive = null) {
+    const queryParams = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+
+    if (role) queryParams.append('role', role);
+    if (search) queryParams.append('search', search);
+    if (isActive !== null) queryParams.append('isActive', isActive.toString());
+
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}/super-admin/users?${queryParams}`, {
+      method: 'GET',
+      headers,
+    });
+    return this.handleResponse(response);
+  }
+
+  async getUserById(userId) {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}/super-admin/users/${userId}`, {
+      method: 'GET',
+      headers,
+    });
+    return this.handleResponse(response);
+  }
+
+  async toggleUserStatus(userId) {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}/super-admin/users/${userId}/toggle-status`, {
+      method: 'PUT',
+      headers,
+    });
+    return this.handleResponse(response);
+  }
+
+  async deleteUser(userId) {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}/super-admin/users/${userId}`, {
+      method: 'DELETE',
+      headers,
+    });
+    return this.handleResponse(response);
+  }
+
+  async restoreUser(userId) {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}/super-admin/users/${userId}/restore`, {
+      method: 'PUT',
+      headers,
+    });
+    return this.handleResponse(response);
+  }
+
+  async getUserActivity(userId, page = 1, limit = 20) {
+    const queryParams = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}/super-admin/users/${userId}/activity?${queryParams}`, {
+      method: 'GET',
+      headers,
+    });
+    return this.handleResponse(response);
+  }
+
+  async getUsersByRole() {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}/super-admin/stats/users-by-role`, {
+      method: 'GET',
+      headers,
+    });
+    return this.handleResponse(response);
+  }
+
+  async getRecentActivity() {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}/super-admin/recent-activity`, {
+      method: 'GET',
+      headers,
+    });
+    return this.handleResponse(response);
+  }
 }
 
 // Create and export a single instance

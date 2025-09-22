@@ -157,6 +157,8 @@ export const AuthProvider = ({ children }) => {
         return '/dashboard/expert';
       case 'COLLEGE_ADMIN':
         return '/dashboard/college';
+      case 'SUPER_ADMIN':
+        return '/dashboard/super-admin';
       default:
         return '/dashboard';
     }
@@ -170,6 +172,8 @@ export const AuthProvider = ({ children }) => {
         return '/dashboard/expert';
       case 'COLLEGE_ADMIN':
         return '/dashboard/college';
+      case 'SUPER_ADMIN':
+        return '/dashboard/super-admin';
       default:
         return '/dashboard';
     }

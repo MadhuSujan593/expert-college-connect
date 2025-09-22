@@ -50,6 +50,8 @@ const getDashboardRouteForRole = (role) => {
       return '/dashboard/expert';
     case 'COLLEGE_ADMIN':
       return '/dashboard/college';
+    case 'SUPER_ADMIN':
+      return '/dashboard/super-admin';
     default:
       return '/dashboard';
   }

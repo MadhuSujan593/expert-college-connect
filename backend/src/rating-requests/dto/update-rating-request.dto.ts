@@ -9,3 +9,5 @@ export class UpdateRatingRequestDto extends PartialType(CreateRatingRequestDto) 
   status?: ratingrequest_status;
 }
 
+
+

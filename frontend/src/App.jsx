@@ -17,6 +17,7 @@ import {
 } from './pages/auth';
 import ExpertDashboard from './pages/expert/ExpertDashboard';
 import CollegeDashboard from './pages/college/CollegeDashboard';
+import SuperAdminDashboard from './pages/super-admin/SuperAdminDashboard';
 import RequirementDetails from './components/expert/RequirementDetails';
 // import SearchExperts from './pages/search/SearchExperts';
 // import SearchRequirements from './pages/search/SearchRequirements';
@@ -79,6 +80,14 @@ const AppContent = () => {
             element={
               <ProtectedRoute requiredRole="COLLEGE_ADMIN">
                 <CollegeDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/dashboard/super-admin" 
+            element={
+              <ProtectedRoute requiredRole="SUPER_ADMIN">
+                <SuperAdminDashboard />
               </ProtectedRoute>
             } 
           />

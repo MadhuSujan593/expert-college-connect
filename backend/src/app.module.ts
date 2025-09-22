@@ -14,6 +14,7 @@ import { NotificationModule } from './notifications/notification.module';
 import { MessagesModule } from './messages/messages.module';
 import { RatingsModule } from './ratings/ratings.module';
 import { RatingRequestsModule } from './rating-requests/rating-requests.module';
+import { SuperAdminModule } from './super-admin/super-admin.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { RatingRequestsModule } from './rating-requests/rating-requests.module';
     MessagesModule,
     RatingsModule,
     RatingRequestsModule,
+    SuperAdminModule,
   ],
 })
 export class AppModule {}
