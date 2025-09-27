@@ -17,6 +17,9 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { user_role } from '@prisma/client';
+import { CreatePlanDto } from './dto/create-plan.dto';
+import { UpdatePlanDto } from './dto/update-plan.dto';
+import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 
 @Controller('super-admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -127,5 +130,67 @@ export class SuperAdminController {
       recentUsers: recentUsers.users,
       // Add more recent activity data
     };
+  }
+
+  // ===== Plans Management =====
+  @Get('plans')
+  async listPlans() {
+    return this.superAdminService.listPlans();
+  }
+
+  @Post('plans')
+  async createPlan(@Body() dto: CreatePlanDto) {
+    return this.superAdminService.createPlan(dto);
+  }
+
+  @Put('plans/:id')
+  async updatePlan(@Param('id') id: string, @Body() dto: UpdatePlanDto) {
+    return this.superAdminService.updatePlan(id, dto);
+  }
+
+  @Put('plans/:id/toggle')
+  async togglePlan(@Param('id') id: string) {
+    return this.superAdminService.togglePlan(id);
+  }
+
+  @Delete('plans/:id')
+  async deletePlan(@Param('id') id: string) {
+    return this.superAdminService.deletePlan(id);
+  }
+
+  // ===== Subscriptions visibility =====
+  @Get('subscriptions')
+  async listSubscriptions(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query('userId') userId?: string,
+    @Query('planId') planId?: string,
+    @Query('status') status?: string,
+  ) {
+    return this.superAdminService.listSubscriptions({ page, limit, userId, planId, status });
+  }
+
+  @Get('subscriptions/:id')
+  async getSubscription(@Param('id') id: string) {
+    return this.superAdminService.getSubscription(id);
+  }
+
+  @Post('subscriptions')
+  async createSubscription(@Body() dto: CreateSubscriptionDto) {
+    return this.superAdminService.createSubscription(dto);
+  }
+
+  @Put('subscriptions/:id/cancel')
+  async cancelSubscription(@Param('id') id: string) {
+    return this.superAdminService.cancelSubscription(id);
+  }
+
+  @Get('plans/:id/subscribers')
+  async listPlanSubscribers(
+    @Param('id') planId: string,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+  ) {
+    return this.superAdminService.listPlanSubscribers(planId, page, limit);
   }
 }

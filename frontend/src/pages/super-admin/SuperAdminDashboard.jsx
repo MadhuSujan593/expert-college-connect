@@ -23,7 +23,9 @@ import {
   ChevronRight,
   Shield,
   Activity,
-  X
+  X,
+  BadgeDollarSign,
+  Plus
 } from 'lucide-react';
 
 const SuperAdminDashboard = () => {
@@ -64,6 +66,7 @@ const SuperAdminDashboard = () => {
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Home },
     { id: 'users', label: 'User Management', icon: Users },
+    { id: 'plans', label: 'Plans', icon: BadgeDollarSign },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
@@ -75,6 +78,9 @@ const SuperAdminDashboard = () => {
   useEffect(() => {
     if (activeTab === 'users') {
       loadUsers();
+    }
+    if (activeTab === 'plans') {
+      loadPlans();
     }
   }, [filters, activeTab]);
 
@@ -123,6 +129,71 @@ const SuperAdminDashboard = () => {
 
   const handlePageChange = (newPage) => {
     setFilters(prev => ({ ...prev, page: newPage }));
+  };
+
+  // ===== Plans state =====
+  const [plans, setPlans] = useState([]);
+  const [plansLoading, setPlansLoading] = useState(false);
+  const [showCreatePlan, setShowCreatePlan] = useState(false);
+  const [createPlanForm, setCreatePlanForm] = useState({
+    name: '',
+    description: '',
+    audience: 'COLLEGE',
+    billingPeriod: 'MONTHLY',
+    priceDisplay: '',
+    currency: 'INR',
+    maxRequirements: '',
+    maxExpertContacts: '',
+  });
+  const [creatingPlan, setCreatingPlan] = useState(false);
+
+  const loadPlans = async () => {
+    try {
+      setPlansLoading(true);
+      const data = await apiService.adminListPlans();
+      setPlans(data);
+    } catch (e) {
+      console.error('Failed to load plans', e);
+    } finally {
+      setPlansLoading(false);
+    }
+  };
+
+  const handleCreatePlan = async () => {
+    try {
+      setCreatingPlan(true);
+      const payload = {
+        name: createPlanForm.name,
+        description: createPlanForm.description,
+        audience: createPlanForm.audience,
+        billingPeriod: createPlanForm.billingPeriod,
+        priceCents: Math.round((Number(createPlanForm.priceDisplay || '0')) * 100),
+        currency: createPlanForm.currency,
+        maxRequirements: createPlanForm.maxRequirements === '' ? null : Number(createPlanForm.maxRequirements),
+        maxExpertContacts: createPlanForm.maxExpertContacts === '' ? null : Number(createPlanForm.maxExpertContacts),
+      };
+      if (!payload.priceCents || payload.priceCents <= 0) {
+        alert('Please enter a price greater than 0.');
+        return;
+      }
+      await apiService.adminCreatePlan(payload);
+      setShowCreatePlan(false);
+      setCreatePlanForm({ name: '', description: '', audience: 'COLLEGE', billingPeriod: 'MONTHLY', priceDisplay: '', currency: 'INR', maxRequirements: '', maxExpertContacts: '' });
+      await loadPlans();
+    } catch (e) {
+      console.error('Create plan failed', e);
+    } finally {
+      setCreatingPlan(false);
+    }
+  };
+
+  const handleTogglePlan = async (id) => {
+    try {
+      await apiService.adminTogglePlan(id);
+      await loadPlans();
+    } catch (e) {
+      console.error('Toggle plan failed', e);
+    }
   };
 
   const handleUserAction = async (action, userId, userData = null) => {
@@ -676,6 +747,174 @@ const SuperAdminDashboard = () => {
                     </div>
                   )}
                 </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'plans' && (
+              <motion.div
+                key="plans"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="bg-white rounded-lg shadow mb-6">
+                  <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-gray-900">Subscription Plans</h3>
+                    <button onClick={() => setShowCreatePlan(true)} className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md">
+                      <Plus className="h-4 w-4 mr-2" /> New Plan
+                    </button>
+                  </div>
+                  <div className="px-6 py-4">
+                    {plansLoading ? (
+                      <div className="text-gray-600">Loading plans...</div>
+                    ) : plans.length === 0 ? (
+                      <div className="text-gray-600">No plans yet.</div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {plans.map((plan) => (
+                          <div key={plan.id} className="rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow">
+                            <div className="p-5 border-b border-gray-100 flex items-start justify-between">
+                              <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h4 className="text-lg font-semibold text-gray-900">{plan.name}</h4>
+                                  <span className={`px-2 py-0.5 text-xs rounded-full ${plan.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>{plan.isActive ? 'Active' : 'Inactive'}</span>
+                                </div>
+                                <p className="text-xs text-gray-500 uppercase tracking-wide">{plan.audience} • {plan.billingPeriod}</p>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-sm text-gray-700">₹{(plan.priceCents/100).toFixed(2)} <span className="text-gray-500">/ {plan.billingPeriod.toLowerCase()}</span></div>
+                              </div>
+                            </div>
+                            {plan.description && (
+                              <div className="px-5 py-3 text-sm text-gray-700">{plan.description}</div>
+                            )}
+                            <div className="px-5 py-3 grid grid-cols-2 gap-3 text-sm">
+                              <div className="rounded-lg bg-gray-50 p-3">
+                                <div className="text-xs text-gray-500">Requirements / mo</div>
+                                <div className="font-semibold text-gray-900">{plan.maxRequirements ?? 'Unlimited'}</div>
+                              </div>
+                              <div className="rounded-lg bg-gray-50 p-3">
+                                <div className="text-xs text-gray-500">Expert contacts / mo</div>
+                                <div className="font-semibold text-gray-900">{plan.maxExpertContacts ?? 'Unlimited'}</div>
+                              </div>
+                            </div>
+                            <div className="px-5 py-4 flex items-center justify-between border-t border-gray-100">
+                              <div className="flex gap-3">
+                                <button onClick={() => handleTogglePlan(plan.id)} className="text-sm text-indigo-600 hover:text-indigo-800">{plan.isActive ? 'Deactivate' : 'Activate'}</button>
+                                <button onClick={async () => {
+                                  const subs = await apiService.adminListPlanSubscribers(plan.id, { page: 1, limit: 10 });
+                                  alert(`Subscribers: ${subs.pagination.total}`);
+                                }} className="text-sm text-gray-600 hover:text-gray-800">View Subscribers</button>
+                              </div>
+                              <div className="flex gap-3">
+                                <button onClick={() => {
+                                  setCreatePlanForm({
+                                    name: plan.name,
+                                    description: plan.description || '',
+                                    audience: plan.audience,
+                                    billingPeriod: plan.billingPeriod,
+                                    priceDisplay: String((plan.priceCents/100).toFixed(2)),
+                                    currency: plan.currency,
+                                    maxRequirements: plan.maxRequirements ?? '',
+                                    maxExpertContacts: plan.maxExpertContacts ?? '',
+                                  });
+                                  setShowCreatePlan('edit-' + plan.id);
+                                }} className="text-sm text-blue-600 hover:text-blue-800">Edit</button>
+                                <button onClick={async () => {
+                                  if (confirm('Delete this plan? This cannot be undone.')) {
+                                    try { await apiService.adminDeletePlan(plan.id); await loadPlans(); } catch (e) { alert(e.message || 'Delete failed'); }
+                                  }
+                                }} className="text-sm text-red-600 hover:text-red-800">Delete</button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Create Plan Modal */}
+                {showCreatePlan && (
+                  <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+                    <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-gray-900">{String(showCreatePlan).startsWith('edit-') ? 'Edit Plan' : 'Create Plan'}</h3>
+                        <button onClick={() => setShowCreatePlan(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                          <input value={createPlanForm.name} onChange={e => setCreatePlanForm({ ...createPlanForm, name: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Audience</label>
+                          <select value={createPlanForm.audience} onChange={e => setCreatePlanForm({ ...createPlanForm, audience: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md">
+                            <option value="COLLEGE">College</option>
+                            <option value="EXPERT">Expert</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Billing Period</label>
+                          <select value={createPlanForm.billingPeriod} onChange={e => setCreatePlanForm({ ...createPlanForm, billingPeriod: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md">
+                            <option value="MONTHLY">Monthly</option>
+                            <option value="QUARTERLY">Quarterly</option>
+                            <option value="YEARLY">Yearly</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            step="0.01"
+                            min="0.01"
+                            placeholder="0"
+                            value={createPlanForm.priceDisplay}
+                            onFocus={(e) => { if (e.target.value === '0') { e.target.value = ''; } }}
+                            onChange={e => setCreatePlanForm({ ...createPlanForm, priceDisplay: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                          <textarea rows={3} value={createPlanForm.description} onChange={e => setCreatePlanForm({ ...createPlanForm, description: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Max Requirements / mo (empty for unlimited)</label>
+                          <input type="number" value={createPlanForm.maxRequirements} onChange={e => setCreatePlanForm({ ...createPlanForm, maxRequirements: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Max Expert Contacts / mo (empty for unlimited)</label>
+                          <input type="number" value={createPlanForm.maxExpertContacts} onChange={e => setCreatePlanForm({ ...createPlanForm, maxExpertContacts: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                        </div>
+                      </div>
+                      <div className="mt-4 flex justify-end space-x-2">
+                        <button onClick={() => setShowCreatePlan(false)} className="px-4 py-2 border border-gray-300 rounded-md">Cancel</button>
+                        <button onClick={async () => {
+                          if (String(showCreatePlan).startsWith('edit-')) {
+                            const id = String(showCreatePlan).replace('edit-','');
+                            try {
+                              const payload = {
+                                ...createPlanForm,
+                                priceCents: Math.round((Number(createPlanForm.priceDisplay || '0')) * 100),
+                                maxRequirements: createPlanForm.maxRequirements === '' ? null : Number(createPlanForm.maxRequirements),
+                                maxExpertContacts: createPlanForm.maxExpertContacts === '' ? null : Number(createPlanForm.maxExpertContacts),
+                              };
+                              if (!payload.priceCents || payload.priceCents <= 0) { alert('Please enter a price greater than 0.'); return; }
+                              await apiService.adminUpdatePlan(id, payload);
+                              setShowCreatePlan(false);
+                              await loadPlans();
+                            } catch (e) { alert(e.message || 'Update failed'); }
+                          } else {
+                            await handleCreatePlan();
+                          }
+                        }} disabled={creatingPlan} className="px-4 py-2 bg-red-600 text-white rounded-md disabled:opacity-50">{creatingPlan ? 'Saving...' : (String(showCreatePlan).startsWith('edit-') ? 'Save Changes' : 'Create Plan')}</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </motion.div>
             )}
 

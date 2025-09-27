@@ -117,6 +117,14 @@ const CollegeDashboard = () => {
   const [requirementToDelete, setRequirementToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Subscription state
+  const [mySubscription, setMySubscription] = useState(null);
+  const [subsLoading, setSubsLoading] = useState(false);
+  const [showPlansModal, setShowPlansModal] = useState(false);
+  const [availablePlans, setAvailablePlans] = useState([]);
+  const [loadingPlans, setLoadingPlans] = useState(false);
+  const [subscribingPlanId, setSubscribingPlanId] = useState(null);
+
   // Tab management with URL persistence
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
@@ -125,6 +133,79 @@ const CollegeDashboard = () => {
     const url = new URL(window.location);
     url.searchParams.set('tab', tabId);
     window.history.pushState({}, '', url);
+  };
+
+  // Load my subscription
+  const loadMySubscription = async () => {
+    try {
+      setSubsLoading(true);
+      const data = await apiService.getMySubscription();
+      setMySubscription(data);
+    } catch (e) {
+      console.error('Failed to load subscription', e);
+    } finally {
+      setSubsLoading(false);
+    }
+  };
+
+  const openPlansModal = async () => {
+    try {
+      setShowPlansModal(true);
+      setLoadingPlans(true);
+      const plans = await apiService.listActivePlans('COLLEGE');
+      setAvailablePlans(plans || []);
+    } catch (e) {
+      console.error('Failed to load plans', e);
+      showToast('error', 'Failed to load plans');
+    } finally {
+      setLoadingPlans(false);
+    }
+  };
+
+  const subscribeToPlan = async (planId) => {
+    try {
+      setSubscribingPlanId(planId);
+      // Create order on backend
+      const { order, keyId } = await apiService.createRazorpayOrder(planId);
+      if (!order || !keyId) throw new Error('Failed to create payment order');
+
+      // Load Razorpay script if not present
+      if (typeof window.Razorpay === 'undefined') {
+        await new Promise((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+          s.onload = resolve; s.onerror = reject; document.body.appendChild(s);
+        });
+      }
+
+      await new Promise((resolve, reject) => {
+        const rzp = new window.Razorpay({
+          key: keyId,
+          order_id: order.id,
+          name: 'Expert College Connect',
+          description: 'Subscription Purchase',
+          handler: async () => {
+            try {
+              await apiService.subscribeToPlan(planId);
+              showToast('success', 'Subscription activated');
+              setShowPlansModal(false);
+              await loadMySubscription();
+              resolve(null);
+            } catch (err) { reject(err); }
+          },
+          theme: { color: '#4f46e5' },
+        });
+        rzp.on('payment.failed', (resp) => {
+          reject(new Error(resp?.error?.description || 'Payment failed'));
+        });
+        rzp.open();
+      });
+    } catch (e) {
+      console.error('Subscribe failed', e);
+      showToast('error', e.message || 'Failed to subscribe');
+    } finally {
+      setSubscribingPlanId(null);
+    }
   };
 
   const handleView = (requirement) => {
@@ -144,6 +225,12 @@ const CollegeDashboard = () => {
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'overview' || activeTab === 'requirements') {
+      loadMySubscription();
+    }
   }, [activeTab]);
 
   // Delete functions
@@ -263,7 +350,10 @@ const CollegeDashboard = () => {
 
   // Check if user can access requirements creation
   const canAccessRequirements = () => {
-    return user?.isEmailVerified || user?.isPhoneVerified;
+    // Require verification and subscription for posting
+    const isVerified = user?.isEmailVerified || user?.isPhoneVerified;
+    const hasPlan = !!mySubscription?.plan;
+    return isVerified && hasPlan;
   };
 
   // Check if user can access expert directory (requires verification)
@@ -1259,6 +1349,44 @@ const CollegeDashboard = () => {
                     </div>
                   </div>
 
+                  {/* Subscription Summary (Overview) */}
+                  <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-xl font-semibold text-gray-900">Subscription</h3>
+                      <button onClick={openPlansModal} className="text-sm px-3 py-1.5 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50">Change Plan</button>
+                    </div>
+                    {subsLoading ? (
+                      <p className="text-gray-600">Loading subscription...</p>
+                    ) : mySubscription ? (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <div className="text-sm text-gray-600">Current Plan</div>
+                          <div className="font-semibold text-gray-900">{mySubscription.plan.name}</div>
+                          <div className="text-sm text-gray-600">₹{(mySubscription.plan.priceCents/100).toFixed(2)} / {mySubscription.plan.billingPeriod.toLowerCase()}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-gray-600 mb-1">Requirements this period</div>
+                          <div className="w-full bg-gray-100 rounded-full h-2.5">
+                            <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: `${Math.min(100, Math.round(((mySubscription.usages?.[0]?.usedRequirements || 0) / (mySubscription.plan.maxRequirements || Infinity)) * 100))}%` }}></div>
+                          </div>
+                          <div className="text-xs text-gray-600 mt-1">{(mySubscription.usages?.[0]?.usedRequirements || 0)} / {mySubscription.plan.maxRequirements ?? '∞'}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-gray-600 mb-1">Expert contacts this period</div>
+                          <div className="w-full bg-gray-100 rounded-full h-2.5">
+                            <div className="bg-purple-600 h-2.5 rounded-full" style={{ width: `${Math.min(100, Math.round(((mySubscription.usages?.[0]?.usedExpertContacts || 0) / (mySubscription.plan.maxExpertContacts || Infinity)) * 100))}%` }}></div>
+                          </div>
+                          <div className="text-xs text-gray-600 mt-1">{(mySubscription.usages?.[0]?.usedExpertContacts || 0)} / {mySubscription.plan.maxExpertContacts ?? '∞'}</div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <p className="text-gray-700">No active subscription. Choose a plan to unlock requirements and expert contacts.</p>
+                        <button onClick={openPlansModal} className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">View Plans</button>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Clean Quick Actions */}
                   <div className="bg-white rounded-2xl shadow-sm p-6">
                     <div className="flex items-center justify-between mb-6">
@@ -1358,11 +1486,11 @@ const CollegeDashboard = () => {
                             </button>
                           ) : (
                             <button
-                              onClick={() => handleTabChange('requirements')}
+                              onClick={openPlansModal}
                               className="group inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
                             >
                               <Plus className="w-4 h-4" />
-                              <span>Post Your First Requirement</span>
+                              <span>Get a Plan to Post Requirements</span>
                             </button>
                           )}
                         </div>
@@ -1705,6 +1833,59 @@ const CollegeDashboard = () => {
         featureName={verificationFeatureName}
       />
 
+      {/* Plans Modal */}
+      {showPlansModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="w-full max-w-2xl bg-white rounded-xl shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-semibold text-gray-900">Choose a Plan</h3>
+              <button onClick={() => setShowPlansModal(false)} className="text-gray-500 hover:text-gray-700">✕</button>
+            </div>
+            <div className="p-4">
+              {loadingPlans ? (
+                <div className="text-gray-500">Loading plans...</div>
+              ) : availablePlans.length === 0 ? (
+                <div className="text-gray-500">No plans available.</div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {availablePlans.map(plan => (
+                    <div key={plan.id} className="rounded-lg border border-gray-200 p-4">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="text-lg font-semibold text-gray-900">{plan.name}</div>
+                          <div className="text-sm text-gray-500 uppercase">{plan.billingPeriod}</div>
+                        </div>
+                        <div className="text-right text-gray-800 font-semibold">₹{(plan.priceCents/100).toFixed(2)}</div>
+                      </div>
+                      {plan.description && (
+                        <p className="text-sm text-gray-600 mt-2">{plan.description}</p>
+                      )}
+                      <div className="mt-3 text-sm grid grid-cols-2 gap-2">
+                        <div className="bg-gray-50 rounded-md p-2">
+                          <div className="text-xs text-gray-500">Requirements / mo</div>
+                          <div className="font-medium">{plan.maxRequirements ?? 'Unlimited'}</div>
+                        </div>
+                        <div className="bg-gray-50 rounded-md p-2">
+                          <div className="text-xs text-gray-500">Expert contacts / mo</div>
+                          <div className="font-medium">{plan.maxExpertContacts ?? 'Unlimited'}</div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => subscribeToPlan(plan.id)}
+                        disabled={subscribingPlanId === plan.id}
+                        className="mt-4 w-full px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                      >
+                        {subscribingPlanId === plan.id ? 'Subscribing...' : 'Subscribe'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* View Requirement Modal */}
       {showViewModal && viewingRequirement && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
@@ -1738,6 +1919,47 @@ const CollegeDashboard = () => {
                   <label className="block text-sm font-medium text-slate-700 mb-2">Category</label>
                   <p className="text-slate-900">{viewingRequirement.category?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
                 </div>
+              </div>
+
+              {/* Subscription Summary */}
+              <div className="bg-white rounded-2xl shadow-sm p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-semibold text-gray-900">Subscription</h3>
+                  {mySubscription ? (
+                    <span className="text-sm text-gray-600">Renews {mySubscription.endsAt ? new Date(mySubscription.endsAt).toLocaleDateString() : ''}</span>
+                  ) : null}
+                </div>
+                {subsLoading ? (
+                  <p className="text-gray-600">Loading subscription...</p>
+                ) : mySubscription ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <p className="text-sm text-gray-700 mb-2">Plan: <span className="font-semibold">{mySubscription.plan.name}</span> • {mySubscription.plan.billingPeriod.toLowerCase()}</p>
+                      <p className="text-sm text-gray-700 mb-2">Price: ₹{(mySubscription.plan.priceCents/100).toFixed(2)} / {mySubscription.plan.billingPeriod.toLowerCase()}</p>
+                    </div>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <p className="text-xs text-gray-600 mb-1">Requirements this period</p>
+                        <div className="w-full bg-gray-100 rounded-full h-2.5">
+                          <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: `${Math.min(100, Math.round(((mySubscription.usages?.[0]?.usedRequirements || 0) / (mySubscription.plan.maxRequirements || Infinity)) * 100))}%` }}></div>
+                        </div>
+                        <p className="text-xs text-gray-600 mt-1">{(mySubscription.usages?.[0]?.usedRequirements || 0)} / {mySubscription.plan.maxRequirements ?? '∞'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-600 mb-1">Expert contacts this period</p>
+                        <div className="w-full bg-gray-100 rounded-full h-2.5">
+                          <div className="bg-purple-600 h-2.5 rounded-full" style={{ width: `${Math.min(100, Math.round(((mySubscription.usages?.[0]?.usedExpertContacts || 0) / (mySubscription.plan.maxExpertContacts || Infinity)) * 100))}%` }}></div>
+                        </div>
+                        <p className="text-xs text-gray-600 mt-1">{(mySubscription.usages?.[0]?.usedExpertContacts || 0)} / {mySubscription.plan.maxExpertContacts ?? '∞'}</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <p className="text-gray-700">You don’t have an active subscription. Upgrade to post requirements and reveal expert contact info.</p>
+                    <a href="#" onClick={(e) => { e.preventDefault(); handleTabChange('requirements'); }} className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">View Plans</a>
+                  </div>
+                )}
               </div>
               
               <div>

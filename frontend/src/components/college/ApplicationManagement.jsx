@@ -465,14 +465,44 @@ const ApplicationManagement = ({ requirementId }) => {
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-3">Contact Information</h3>
                     <div className="space-y-2">
-                      <div className="flex items-center space-x-3 p-2">
-                        <Mail className="w-4 h-4 text-gray-500" />
-                        <span className="text-sm text-gray-700">{selectedExpert.email}</span>
+                      <div className="flex items-center justify-between p-2">
+                        <div className="flex items-center space-x-3">
+                          <Mail className="w-4 h-4 text-gray-500" />
+                          <span className="text-sm text-gray-700">{selectedExpert.email ? '••••••••••@•••' : 'Not provided'}</span>
+                        </div>
+                        <button
+                          onClick={async () => {
+                            try {
+                              await apiService.revealExpertContact(selectedExpert.id);
+                              window.location.href = `mailto:${selectedExpert.email}`;
+                            } catch (e) {
+                              alert(e.message || 'Unable to reveal contact. Please upgrade your plan.');
+                            }
+                          }}
+                          className="text-sm text-indigo-600 hover:text-indigo-800"
+                        >
+                          Reveal
+                        </button>
                       </div>
                       {selectedExpert.phone && (
-                        <div className="flex items-center space-x-3 p-2">
-                          <Phone className="w-4 h-4 text-gray-500" />
-                          <span className="text-sm text-gray-700">{selectedExpert.phone}</span>
+                        <div className="flex items-center justify-between p-2">
+                          <div className="flex items-center space-x-3">
+                            <Phone className="w-4 h-4 text-gray-500" />
+                            <span className="text-sm text-gray-700">••••••••••</span>
+                          </div>
+                          <button
+                            onClick={async () => {
+                              try {
+                                await apiService.revealExpertContact(selectedExpert.id);
+                                alert(`Phone: ${selectedExpert.phone}`);
+                              } catch (e) {
+                                alert(e.message || 'Unable to reveal contact. Please upgrade your plan.');
+                              }
+                            }}
+                            className="text-sm text-indigo-600 hover:text-indigo-800"
+                          >
+                            Reveal
+                          </button>
                         </div>
                       )}
                     </div>

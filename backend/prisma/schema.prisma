@@ -140,6 +140,90 @@ model payment {
   @@index([userId], map: "Payment_userId_idx")
 }
 
+// ===================== SUBSCRIPTIONS =====================
+
+model subscriptionplan {
+  id               String                     @id @default(cuid())
+  name             String                     @db.VarChar(100)
+  description      String?                    @db.Text
+  audience         subscription_audience      // COLLEGE or EXPERT
+  billingPeriod    subscription_billingPeriod // MONTHLY, QUARTERLY, YEARLY
+  priceCents       Int                        // price stored in smallest currency unit
+  currency         String                     @default("INR") @db.VarChar(10)
+  // Limits (null means unlimited)
+  maxRequirements  Int?
+  maxExpertContacts Int?
+  isActive         Boolean                    @default(true)
+  createdAt        DateTime                   @default(now())
+  updatedAt        DateTime                   @default(now())
+  subscriptions    subscription[]
+
+  @@index([audience], map: "SubscriptionPlan_audience_idx")
+  @@index([isActive], map: "SubscriptionPlan_isActive_idx")
+}
+
+model subscription {
+  id                 String                @id @default(cuid())
+  userId             String
+  planId             String
+  status             subscription_status   @default(ACTIVE)
+  startsAt           DateTime              @default(now())
+  endsAt             DateTime?
+  canceledAt         DateTime?
+  autoRenews         Boolean               @default(true)
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @default(now())
+  // Payment gateway references
+  provider           String?               @db.VarChar(50) // e.g., RAZORPAY
+  providerCustomerId String?               @db.VarChar(255)
+  providerSubscriptionId String?          @db.VarChar(255)
+  metadata           Json?
+
+  user               user                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan               subscriptionplan      @relation(fields: [planId], references: [id], onDelete: Restrict)
+  usages             subscriptionusage[]
+
+  @@index([userId], map: "Subscription_userId_idx")
+  @@index([planId], map: "Subscription_planId_idx")
+  @@index([status], map: "Subscription_status_idx")
+}
+
+// Tracks per-reset-period usage for a subscription
+model subscriptionusage {
+  id                String                      @id @default(cuid())
+  subscriptionId    String
+  // The month bucket for usage reset, e.g., 2025-09-01T00:00:00.000Z
+  periodStart       DateTime
+  periodEnd         DateTime
+  usedRequirements  Int                          @default(0)
+  usedExpertContacts Int                          @default(0)
+  createdAt         DateTime                     @default(now())
+  updatedAt         DateTime                     @default(now())
+
+  subscription      subscription                 @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriptionId, periodStart, periodEnd], map: "SubscriptionUsage_unique_period")
+  @@index([subscriptionId], map: "SubscriptionUsage_subscriptionId_idx")
+}
+
+enum subscription_audience {
+  COLLEGE
+  EXPERT
+}
+
+enum subscription_billingPeriod {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+enum subscription_status {
+  ACTIVE
+  CANCELED
+  EXPIRED
+  PAST_DUE
+}
+
 model phoneverification {
   id        String    @id @default(cuid())
   userId    String?
@@ -345,6 +429,7 @@ model user {
   notifications     notification[]
   sentMessages      message[]           @relation("MessageSender")
   receivedMessages  message[]           @relation("MessageReceiver")
+  subscriptions     subscription[]
 
   @@index([createdAt], map: "User_createdAt_idx")
   @@index([email], map: "User_email_idx")

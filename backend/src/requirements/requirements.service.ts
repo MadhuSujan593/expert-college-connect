@@ -1,12 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRequirementDto } from './dto/create-requirement.dto';
 import { UpdateRequirementDto } from './dto/update-requirement.dto';
 import { GetRequirementsDto } from './dto/get-requirements.dto';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 
 @Injectable()
 export class RequirementsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private subscriptions: SubscriptionsService) {}
 
   // Create a new requirement
   async create(createRequirementDto: CreateRequirementDto, userId: string) {
@@ -19,6 +20,9 @@ export class RequirementsService {
     if (!collegeProfile) {
       throw new NotFoundException('College profile not found for this user');
     }
+
+    // Enforce subscription gate for college requirement creation
+    await this.subscriptions.assertCollegeCanCreateRequirement(userId);
 
     // Convert deadline to proper ISO DateTime format if provided
     const formattedDeadline = createRequirementDto.deadline 
@@ -42,6 +46,9 @@ export class RequirementsService {
         }
       }
     });
+
+    // Increment usage counter
+    await this.subscriptions.incrementRequirementUsage(userId);
 
     return requirement;
   }

@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { user_role } from '@prisma/client';
+import { CreatePlanDto } from './dto/create-plan.dto';
+import { UpdatePlanDto } from './dto/update-plan.dto';
 
 @Injectable()
 export class SuperAdminService {
@@ -469,5 +471,191 @@ export class SuperAdminService {
     } catch (error) {
       throw new BadRequestException('Failed to fetch system overview');
     }
+  }
+
+  // ===== Plans Management =====
+  async listPlans() {
+    return this.prisma.subscriptionplan.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
+  }
+
+  async createPlan(dto: CreatePlanDto) {
+    try {
+      return await this.prisma.subscriptionplan.create({
+        data: {
+          name: dto.name,
+          description: dto.description,
+          audience: dto.audience,
+          billingPeriod: dto.billingPeriod,
+          priceCents: dto.priceCents,
+          currency: dto.currency ?? 'INR',
+          maxRequirements: dto.maxRequirements ?? null,
+          maxExpertContacts: dto.maxExpertContacts ?? null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      });
+    } catch (e) {
+      throw new BadRequestException('Failed to create plan');
+    }
+  }
+
+  async updatePlan(id: string, dto: UpdatePlanDto) {
+    try {
+      return await this.prisma.subscriptionplan.update({
+        where: { id },
+        data: {
+          ...dto,
+        },
+      });
+    } catch (e) {
+      throw new NotFoundException('Plan not found');
+    }
+  }
+
+  async togglePlan(id: string) {
+    const plan = await this.prisma.subscriptionplan.findUnique({ where: { id } });
+    if (!plan) throw new NotFoundException('Plan not found');
+    return this.prisma.subscriptionplan.update({
+      where: { id },
+      data: { isActive: !plan.isActive },
+    });
+  }
+
+  async deletePlan(id: string) {
+    const plan = await this.prisma.subscriptionplan.findUnique({ where: { id } });
+    if (!plan) throw new NotFoundException('Plan not found');
+    const subscribers = await this.prisma.subscription.count({ where: { planId: id, status: { in: ['ACTIVE', 'PAST_DUE'] } } });
+    if (subscribers > 0) {
+      throw new BadRequestException('Cannot delete a plan with active subscribers');
+    }
+    await this.prisma.subscriptionplan.delete({ where: { id } });
+    return { success: true };
+  }
+
+  // ===== Subscriptions visibility =====
+  async listSubscriptions(params: { page: number; limit: number; userId?: string; planId?: string; status?: string; }) {
+    const { page, limit, userId, planId, status } = params;
+    const skip = (page - 1) * limit;
+    const where: any = {};
+    if (userId) where.userId = userId;
+    if (planId) where.planId = planId;
+    if (status) where.status = status as any;
+
+    const [items, total] = await Promise.all([
+      this.prisma.subscription.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: { select: { id: true, email: true, fullName: true, role: true } },
+          plan: true,
+          usages: {
+            orderBy: { periodStart: 'desc' },
+            take: 1,
+          },
+        },
+      }),
+      this.prisma.subscription.count({ where }),
+    ]);
+
+    return {
+      items,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async getSubscription(id: string) {
+    const sub = await this.prisma.subscription.findUnique({
+      where: { id },
+      include: {
+        user: { select: { id: true, email: true, fullName: true, role: true } },
+        plan: true,
+        usages: true,
+      },
+    });
+    if (!sub) throw new NotFoundException('Subscription not found');
+    return sub;
+  }
+
+  async createSubscription(dto: { userId: string; planId: string; startsAt?: string; autoRenews?: boolean; }) {
+    const plan = await this.prisma.subscriptionplan.findUnique({ where: { id: dto.planId } });
+    if (!plan || !plan.isActive) throw new BadRequestException('Invalid or inactive plan');
+
+    // expire any existing active subs for the user in the same audience
+    const existing = await this.prisma.subscription.findFirst({
+      where: { userId: dto.userId, status: 'ACTIVE' },
+      include: { plan: true },
+    });
+    if (existing && existing.plan.audience === plan.audience) {
+      await this.prisma.subscription.update({
+        where: { id: existing.id },
+        data: { status: 'EXPIRED', endsAt: new Date() },
+      });
+    }
+
+    const startsAt = dto.startsAt ? new Date(dto.startsAt) : new Date();
+    // naive end date based on billing period
+    const endsAt = new Date(startsAt);
+    if (plan.billingPeriod === 'MONTHLY') endsAt.setMonth(endsAt.getMonth() + 1);
+    if (plan.billingPeriod === 'QUARTERLY') endsAt.setMonth(endsAt.getMonth() + 3);
+    if (plan.billingPeriod === 'YEARLY') endsAt.setFullYear(endsAt.getFullYear() + 1);
+
+    return this.prisma.subscription.create({
+      data: {
+        userId: dto.userId,
+        planId: dto.planId,
+        status: 'ACTIVE',
+        startsAt,
+        endsAt,
+        autoRenews: dto.autoRenews ?? true,
+        updatedAt: new Date(),
+      },
+    });
+  }
+
+  async cancelSubscription(id: string) {
+    const sub = await this.prisma.subscription.findUnique({ where: { id } });
+    if (!sub) throw new NotFoundException('Subscription not found');
+    return this.prisma.subscription.update({
+      where: { id },
+      data: { status: 'CANCELED', canceledAt: new Date(), autoRenews: false },
+    });
+  }
+
+  async listPlanSubscribers(planId: string, page: number, limit: number) {
+    const skip = (page - 1) * limit;
+    const [items, total] = await Promise.all([
+      this.prisma.subscription.findMany({
+        where: { planId },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: { select: { id: true, email: true, fullName: true, role: true } },
+          usages: {
+            orderBy: { periodStart: 'desc' },
+            take: 1,
+          },
+        },
+      }),
+      this.prisma.subscription.count({ where: { planId } }),
+    ]);
+    return {
+      items,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    };
   }
 }

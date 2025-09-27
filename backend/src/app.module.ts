@@ -15,6 +15,7 @@ import { MessagesModule } from './messages/messages.module';
 import { RatingsModule } from './ratings/ratings.module';
 import { RatingRequestsModule } from './rating-requests/rating-requests.module';
 import { SuperAdminModule } from './super-admin/super-admin.module';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { SuperAdminModule } from './super-admin/super-admin.module';
     RatingsModule,
     RatingRequestsModule,
     SuperAdminModule,
+    SubscriptionsModule,
   ],
 })
 export class AppModule {}

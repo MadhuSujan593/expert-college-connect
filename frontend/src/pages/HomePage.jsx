@@ -20,7 +20,19 @@ import {
   BookOpen,
   Network,
   UserCheck,
-  Bell
+  Bell,
+  Play,
+  ChevronRight,
+  BarChart3,
+  Lightbulb,
+  Heart,
+  ThumbsUp,
+  Eye,
+  Calendar,
+  MapPin,
+  Phone,
+  Mail,
+  ExternalLink
 } from 'lucide-react';
 
 const HomePage = () => {
