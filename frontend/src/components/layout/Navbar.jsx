@@ -31,15 +31,15 @@ const Navbar = () => {
   ];
 
   return (
-    <nav className="bg-white/80 backdrop-blur-xl border-b border-gray-100 sticky top-0 z-50">
+    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
+        <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-xl">
-              <GraduationCap className="w-7 h-7 text-white" />
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
+              <GraduationCap className="w-6 h-6 text-white" />
             </div>
-            <span className="text-2xl font-bold text-gray-900 tracking-tight">
+            <span className="text-xl font-bold text-gray-900 tracking-tight">
               ExpertConnect
             </span>
           </Link>
@@ -50,10 +50,10 @@ const Navbar = () => {
               <Link
                 key={item.name}
                 to={item.path}
-                className={`text-sm font-semibold transition-all duration-300 px-6 py-3 rounded-full relative ${
+                className={`text-sm font-semibold transition-all duration-300 px-4 py-2 rounded-full relative ${
                   isActive(item.path) 
                     ? 'text-white' 
-                    : 'text-gray-600 hover:text-gray-900'
+                    : 'text-gray-700 hover:text-gray-900'
                 }`}
               >
                 {isActive(item.path) && (
@@ -71,7 +71,7 @@ const Navbar = () => {
               <div className="relative">
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center space-x-3 text-sm font-semibold text-gray-700 hover:text-gray-900 bg-white/80 hover:bg-white border border-gray-200 px-4 py-3 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl"
+                  className="flex items-center space-x-2 text-sm font-semibold text-gray-700 hover:text-gray-900 bg-white/80 hover:bg-white border border-gray-200 px-3 py-2 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl"
                 >
                   <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
                     <UserCircle className="w-5 h-5 text-white" />
@@ -122,14 +122,14 @@ const Navbar = () => {
               <>
                 <Link
                   to="/login"
-                  className="text-sm font-semibold text-gray-600 hover:text-gray-900 transition-colors px-4 py-2"
+                  className="text-sm font-semibold text-gray-700 hover:text-gray-900 transition-colors px-3 py-2"
                 >
                   Sign In
                 </Link>
                 <div className="relative">
                   <button
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className="flex items-center space-x-2 text-sm font-bold text-white bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 px-8 py-3.5 rounded-full transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:scale-105"
+                    className="flex items-center space-x-2 text-sm font-bold text-white bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 px-4 py-2 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl"
                   >
                     <span>Join Now</span>
                     <ChevronDown className="w-4 h-4" />
@@ -179,7 +179,7 @@ const Navbar = () => {
           <div className="md:hidden">
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="text-gray-600 hover:text-gray-900 transition-colors p-3 rounded-2xl hover:bg-gray-50"
+              className="text-gray-700 hover:text-gray-900 transition-colors p-3 rounded-2xl hover:bg-gray-50"
             >
               {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -194,12 +194,12 @@ const Navbar = () => {
             exit={{ opacity: 0, height: 0 }}
             className="md:hidden border-t border-gray-100 bg-white/90 backdrop-blur-xl"
           >
-            <div className="px-6 pt-6 pb-4 space-y-3">
+            <div className="px-4 pt-4 pb-3 space-y-2">
               {navItems.map((item) => (
                 <Link
                   key={item.name}
                   to={item.path}
-                  className={`block px-6 py-4 rounded-2xl text-base font-semibold transition-all duration-200 ${
+                  className={`block px-4 py-3 rounded-lg text-sm font-semibold transition-all duration-200 ${
                     isActive(item.path)
                       ? 'text-white bg-gradient-to-r from-blue-500 to-cyan-500 shadow-lg'
                       : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
@@ -223,7 +223,7 @@ const Navbar = () => {
                     </div>
                     <Link
                       to={getDashboardRoute()}
-                      className="flex items-center space-x-3 px-6 py-4 text-base font-semibold text-gray-700 hover:bg-blue-50/70 hover:text-blue-600 rounded-2xl transition-all duration-200"
+                      className="flex items-center space-x-3 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-blue-50/70 hover:text-blue-600 rounded-lg transition-all duration-200"
                       onClick={() => setIsOpen(false)}
                     >
                       <Settings className="w-5 h-5" />
@@ -234,7 +234,7 @@ const Navbar = () => {
                         setIsOpen(false);
                         logout();
                       }}
-                      className="w-full flex items-center space-x-3 px-6 py-4 text-base font-semibold text-red-600 hover:bg-red-50/70 rounded-2xl transition-all duration-200"
+                      className="w-full flex items-center space-x-3 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50/70 rounded-lg transition-all duration-200"
                     >
                       <LogOut className="w-5 h-5" />
                       <span>Sign Out</span>
@@ -245,14 +245,14 @@ const Navbar = () => {
                   <>
                     <Link
                       to="/login"
-                      className="block px-6 py-4 text-base font-semibold text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-2xl transition-all duration-200"
+                      className="block px-4 py-3 text-sm font-semibold text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-all duration-200"
                       onClick={() => setIsOpen(false)}
                     >
                       Sign In
                     </Link>
                     <Link
                       to="/register/expert"
-                      className="flex items-center space-x-4 px-6 py-4 text-base font-semibold text-gray-700 hover:bg-blue-50/70 hover:text-blue-600 rounded-2xl transition-all duration-200 group"
+                      className="flex items-center space-x-3 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-blue-50/70 hover:text-blue-600 rounded-lg transition-all duration-200 group"
                       onClick={() => setIsOpen(false)}
                     >
                       <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-200">
@@ -262,7 +262,7 @@ const Navbar = () => {
                     </Link>
                     <Link
                       to="/register/college"
-                      className="flex items-center space-x-4 px-6 py-4 text-base font-semibold text-gray-700 hover:bg-purple-50/70 hover:text-purple-600 rounded-2xl transition-all duration-200 group"
+                      className="flex items-center space-x-3 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-purple-50/70 hover:text-purple-600 rounded-lg transition-all duration-200 group"
                       onClick={() => setIsOpen(false)}
                     >
                       <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-200">
