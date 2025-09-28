@@ -177,6 +177,50 @@ export const sendEmailOtp = async (email, setEmailOtpSent, setShowEmailVerificat
   return sendOtp('send-email-otp', email, setEmailOtpSent, setShowEmailVerification, setIsEmailSending, showToast, 'email');
 };
 
+// Post-registration email OTP (skips availability check)
+export const sendPostRegistrationEmailOtp = async (email, setEmailOtpSent, setIsEmailSending, showToast) => {
+  if (!email) {
+    showToast('Please enter your email first', 'error');
+    return false;
+  }
+  
+  if (!isValidEmail(email)) {
+    showToast('Please enter a valid email address', 'error');
+    return false;
+  }
+  
+  try {
+    setIsEmailSending(true);
+    
+    // Direct API call without availability check
+    const requestBody = { email: email };
+    
+    const response = await fetch(`${API_BASE_URL}/auth/send-email-otp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      setEmailOtpSent(true);
+      showToast('OTP sent to your email address', 'success');
+      return true;
+    } else {
+      const error = await response.json();
+      showToast(error.message || 'Failed to send OTP to email', 'error');
+      return false;
+    }
+  } catch (error) {
+    showToast('Failed to send OTP. Please try again.', 'error');
+    return false;
+  } finally {
+    setIsEmailSending(false);
+  }
+};
+
 export const verifyEmailOtp = async (emailOtp, email, setIsEmailVerified, setShowEmailVerification, setIsEmailVerifying, setEmailOtp, showToast) => {
   return verifyOtp('verify-email', emailOtp, email, setIsEmailVerified, setShowEmailVerification, setIsEmailVerifying, setEmailOtp, showToast, 'email');
 };

@@ -8,12 +8,6 @@ import {
   EyeOff, 
   ArrowRight, 
   ArrowLeft,
-  GraduationCap,
-  Shield,
-  CheckCircle,
-  Sparkles,
-  Building2,
-  Users,
   Key,
   RefreshCw
 } from 'lucide-react';
@@ -224,123 +218,41 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 relative overflow-hidden">
-      {/* Enterprise Background Pattern */}
-      <div className="absolute inset-0">
-        {/* Subtle geometric pattern */}
-        <div className="absolute inset-0 opacity-[0.02]" style={{
-          backgroundImage: `
-            radial-gradient(circle at 25% 25%, #3B82F6 1px, transparent 1px),
-            radial-gradient(circle at 75% 75%, #6366F1 1px, transparent 1px)
-          `,
-          backgroundSize: '80px 80px'
-        }}></div>
-        
-        {/* Subtle gradient overlays */}
-        <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-white/40 to-transparent"></div>
-        <div className="absolute bottom-0 right-0 w-full h-32 bg-gradient-t from-indigo-50/30 to-transparent"></div>
-      </div>
-
-      <div className="relative flex min-h-screen">
-        {/* Left Panel - Brand & Info (Hidden on mobile) */}
-        <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-700 via-indigo-800 to-purple-900 relative overflow-hidden">
-          {/* Enhanced brand overlay */}
-          <div className="absolute inset-0 bg-gradient-to-br from-black/30 via-black/20 to-black/10"></div>
-          
-          {/* Subtle pattern overlay */}
-          <div className="absolute inset-0 opacity-10" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-          }}></div>
-          
-          {/* Content */}
-          <div className="relative z-10 flex flex-col justify-center px-10 py-12 text-white">
-            {/* Logo */}
-            <div className="mb-6">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl mb-3 shadow-2xl border border-white/10">
-                <Key className="w-8 h-8 text-white" />
-              </div>
-              <h1 className="text-4xl font-bold tracking-tight mb-2 bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">Password Recovery</h1>
-              <p className="text-blue-100 text-lg font-medium">Secure and Simple Password Reset</p>
-            </div>
-
-            {/* Value propositions */}
-            <div className="space-y-4 mb-8">
-              <div className="flex items-start space-x-3 group">
-                <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-1 shadow-lg border border-white/10 group-hover:bg-white/30 transition-all duration-300">
-                  <Shield className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg mb-1 text-white">Secure Process</h3>
-                  <p className="text-blue-100 leading-relaxed opacity-90">Multi-step verification ensures your account security</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start space-x-3 group">
-                <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-1 shadow-lg border border-white/10 group-hover:bg-white/30 transition-all duration-300">
-                  <CheckCircle className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg mb-1 text-white">Quick Recovery</h3>
-                  <p className="text-blue-100 leading-relaxed opacity-90">Get back to your account in just a few minutes</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start space-x-3 group">
-                <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-1 shadow-lg border border-white/10 group-hover:bg-white/30 transition-all duration-300">
-                  <Sparkles className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg mb-1 text-white">User Friendly</h3>
-                  <p className="text-blue-100 leading-relaxed opacity-90">Simple and intuitive password reset experience</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Stats or social proof */}
-            <div className="border-t border-white/20 pt-4">
-              <p className="text-blue-100 text-sm opacity-80">Trusted by thousands of users worldwide</p>
-            </div>
-          </div>
-
-          {/* Enhanced floating elements */}
-          <div className="absolute top-20 right-20 w-32 h-32 bg-white/5 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-20 left-20 w-40 h-40 bg-white/5 rounded-full blur-3xl animate-pulse" style={{animationDelay: '2s'}}></div>
-        </div>
-
-        {/* Right Panel - Form */}
-        <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-12 py-4 lg:py-8">
-          <div className="w-full max-w-md">
-            {/* Back to Login Button */}
+    <div className="min-h-screen bg-white">
+      <div className="flex items-center justify-center min-h-screen px-4 sm:px-6 lg:px-8 py-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="w-full max-w-md"
+        >
+          {/* Back to Login */}
             <Link
               to="/login"
-              className="inline-flex items-center space-x-2 text-gray-500 hover:text-gray-700 transition-all duration-300 mb-3 lg:mb-4 group hover:scale-105"
+            className="inline-flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors mb-8 group"
             >
-              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-300" />
-              <span className="text-sm font-medium">Back to Login</span>
+            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+            <span className="text-base font-medium">Back to Login</span>
             </Link>
 
             {/* Header */}
-            <div className="mb-3 lg:mb-4">
-              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1 bg-gradient-to-r from-gray-900 via-blue-900 to-indigo-900 bg-clip-text text-transparent">
-                {getStepTitle()}
-              </h1>
-              <p className="text-gray-600 text-sm lg:text-base">
-                {getStepDescription()}
-              </p>
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold text-gray-900">{getStepTitle()}</h1>
+            <p className="text-gray-600 mt-2">{getStepDescription()}</p>
             </div>
 
             {/* Form */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50 p-4 lg:p-5 shadow-2xl shadow-blue-500/5">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               {step === 'email' && (
-                <div className="space-y-4">
+              <div className="space-y-5">
                   {/* Email Field */}
                   <div>
-                    <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                       Email Address
                     </label>
-                    <div className="relative group">
+                  <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Mail className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" />
+                      <Mail className="h-4 w-4 text-gray-500" />
                       </div>
                       <input
                         id="email"
@@ -349,8 +261,8 @@ const ForgotPassword = () => {
                         required
                         value={formData.email}
                         onChange={handleInputChange}
-                        className="w-full pl-10 pr-4 py-3 bg-gray-50/80 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 focus:bg-white focus:shadow-lg focus:shadow-blue-500/20"
-                        placeholder="Enter your email address"
+                      className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200 transition-colors text-sm"
+                      placeholder="john@example.com"
                       />
                     </div>
                   </div>
@@ -359,8 +271,8 @@ const ForgotPassword = () => {
                   <button
                     type="button"
                     onClick={handleSendOtp}
-                    disabled={!isValidEmail(formData.email) || isLoading}
-                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-300 disabled:to-gray-400 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-300 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 hover:scale-[1.02] transform disabled:transform-none"
+                  disabled={isLoading}
+                  className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 disabled:from-gray-300 disabled:to-gray-400 text-white py-3 px-6 rounded-md font-semibold transition-all duration-300 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl"
                   >
                     {isLoading ? (
                       <>
@@ -378,15 +290,15 @@ const ForgotPassword = () => {
               )}
 
               {step === 'otp' && (
-                <div className="space-y-4">
+              <div className="space-y-5">
                   {/* OTP Input Field */}
                   <div>
-                    <label htmlFor="otp" className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-1">
                       Verification Code
                     </label>
-                    <div className="relative group">
+                  <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" />
+                      <Key className="h-4 w-4 text-gray-500" />
                       </div>
                       <input
                         id="otp"
@@ -397,7 +309,7 @@ const ForgotPassword = () => {
                         required
                         value={formData.otp}
                         onChange={handleInputChange}
-                        className="w-full pl-10 pr-4 py-3 bg-gray-50/80 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 focus:bg-white focus:shadow-lg focus:shadow-blue-500/20 text-center tracking-widest text-lg font-mono"
+                      className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200 transition-colors text-sm text-center tracking-widest text-lg font-mono"
                         placeholder="000000"
                         maxLength="6"
                       />
@@ -420,8 +332,8 @@ const ForgotPassword = () => {
                   <button
                     type="button"
                     onClick={handleVerifyOtp}
-                    disabled={!formData.otp || formData.otp.length !== 6 || isLoading}
-                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-300 disabled:to-gray-400 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-300 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 hover:scale-[1.02] transform disabled:transform-none"
+                  disabled={isLoading}
+                  className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 disabled:from-gray-300 disabled:to-gray-400 text-white py-3 px-6 rounded-md font-semibold transition-all duration-300 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl"
                   >
                     {isLoading ? (
                       <>
@@ -441,7 +353,7 @@ const ForgotPassword = () => {
                     <button
                       type="button"
                       onClick={resetForm}
-                      className="inline-flex items-center space-x-2 text-sm text-gray-600 hover:text-gray-800 transition-all duration-300 hover:scale-105"
+                    className="inline-flex items-center space-x-2 text-sm text-gray-600 hover:text-gray-800 transition-all duration-300"
                     >
                       <ArrowLeft className="w-4 h-4" />
                       <span>Back to email</span>
@@ -451,15 +363,15 @@ const ForgotPassword = () => {
               )}
 
               {step === 'reset' && (
-                <div className="space-y-4">
+              <div className="space-y-5">
                   {/* New Password Field */}
                   <div>
-                    <label htmlFor="newPassword" className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
                       New Password
                     </label>
-                    <div className="relative group">
+                  <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" />
+                      <Lock className="h-4 w-4 text-gray-500" />
                       </div>
                       <input
                         id="newPassword"
@@ -468,18 +380,18 @@ const ForgotPassword = () => {
                         required
                         value={formData.newPassword}
                         onChange={handleInputChange}
-                        className="w-full pl-10 pr-12 py-3 bg-gray-50/80 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 focus:bg-white focus:shadow-lg focus:shadow-blue-500/20"
-                        placeholder="Enter new password"
+                      className="w-full pl-9 pr-10 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200 transition-colors text-sm"
+                      placeholder="••••••••"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-300 hover:scale-110"
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 transition-colors"
                       >
                         {showPassword ? (
-                          <Eye className="h-5 w-5" />
+                        <Eye className="h-4 w-4" />
                         ) : (
-                          <EyeOff className="h-5 w-5" />
+                        <EyeOff className="h-4 w-4" />
                         )}
                       </button>
                     </div>
@@ -488,12 +400,12 @@ const ForgotPassword = () => {
 
                   {/* Confirm Password Field */}
                   <div>
-                    <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
                       Confirm New Password
                     </label>
-                    <div className="relative group">
+                  <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" />
+                      <Lock className="h-4 w-4 text-gray-500" />
                       </div>
                       <input
                         id="confirmPassword"
@@ -502,18 +414,18 @@ const ForgotPassword = () => {
                         required
                         value={formData.confirmPassword}
                         onChange={handleInputChange}
-                        className="w-full pl-10 pr-12 py-3 bg-gray-50/80 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 focus:bg-white focus:shadow-lg focus:shadow-blue-500/20"
-                        placeholder="Confirm new password"
+                      className="w-full pl-9 pr-10 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200 transition-colors text-sm"
+                      placeholder="••••••••"
                       />
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-300 hover:scale-110"
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 transition-colors"
                       >
                         {showConfirmPassword ? (
-                          <Eye className="h-5 w-5" />
+                        <Eye className="h-4 w-4" />
                         ) : (
-                          <EyeOff className="h-5 w-5" />
+                        <EyeOff className="h-4 w-4" />
                         )}
                       </button>
                     </div>
@@ -523,8 +435,8 @@ const ForgotPassword = () => {
                    <button
                      type="button"
                      onClick={handleResetPassword}
-                     disabled={!formData.newPassword || !formData.confirmPassword || formData.newPassword !== formData.confirmPassword || isLoading}
-                     className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-300 disabled:to-gray-400 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-300 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 hover:scale-[1.02] transform disabled:transform-none"
+                  disabled={isLoading}
+                  className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 disabled:from-gray-300 disabled:to-gray-400 text-white py-3 px-6 rounded-md font-semibold transition-all duration-300 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl"
                    >
                     {isLoading ? (
                       <>
@@ -534,7 +446,7 @@ const ForgotPassword = () => {
                     ) : (
                       <>
                         <span>Reset Password</span>
-                        <CheckCircle className="w-4 h-4" />
+                      <ArrowRight className="w-4 h-4" />
                       </>
                     )}
                   </button>
@@ -544,7 +456,7 @@ const ForgotPassword = () => {
                     <button
                       type="button"
                       onClick={() => setStep('otp')}
-                      className="inline-flex items-center space-x-2 text-sm text-gray-600 hover:text-gray-800 transition-all duration-300 hover:scale-105"
+                    className="inline-flex items-center space-x-2 text-sm text-gray-600 hover:text-gray-800 transition-all duration-300"
                     >
                       <ArrowLeft className="w-4 h-4" />
                       <span>Back to verification</span>
@@ -554,37 +466,7 @@ const ForgotPassword = () => {
               )}
             </div>
 
-            {/* Additional Help Section */}
-            <div className="mt-3 lg:mt-4 text-center">
-              <p className="text-gray-600 mb-3 font-medium">Need help?</p>
-              <div className="grid grid-cols-2 gap-3">
-                <Link
-                  to="/login"
-                  className="group bg-white/80 backdrop-blur-sm border border-gray-200/50 hover:border-blue-500/60 rounded-xl p-4 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/20 hover:scale-105 transform"
-                >
-                  <div className="flex flex-col items-center space-y-2">
-                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-all duration-300 shadow-md">
-                      <ArrowLeft className="w-4 h-4 text-blue-600" />
-                    </div>
-                    <span className="text-sm font-semibold text-gray-900">Back to Login</span>
-                  </div>
-                </Link>
-                
-                <Link
-                  to="/"
-                  className="group bg-white/80 backdrop-blur-sm border border-gray-200/50 hover:border-purple-500/60 rounded-xl p-4 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20 hover:scale-105 transform"
-                >
-                  <div className="flex flex-col items-center space-y-2">
-                    <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-all duration-300 shadow-md">
-                      <GraduationCap className="w-4 h-4 text-purple-600" />
-                    </div>
-                    <span className="text-sm font-semibold text-gray-900">Go to Home</span>
-                  </div>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* Toast Notification */}

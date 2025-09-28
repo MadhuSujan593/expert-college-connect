@@ -53,7 +53,22 @@ export const AuthProvider = ({ children }) => {
       const userProfile = await apiService.getProfile();
       console.log('✅ User profile loaded:', userProfile);
       
-      setUser(userProfile);
+      // Also check localStorage for updated user data (e.g., after email verification)
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const localUser = JSON.parse(storedUser);
+        // Merge localStorage user data with API response, prioritizing API data
+        const mergedUser = { ...localUser, ...userProfile };
+        console.log('🔄 Merged user data:', mergedUser);
+        setUser(mergedUser);
+        // Update localStorage with merged data
+        localStorage.setItem('user', JSON.stringify(mergedUser));
+      } else {
+        setUser(userProfile);
+        // Store user data in localStorage
+        localStorage.setItem('user', JSON.stringify(userProfile));
+      }
+      
       setIsAuthenticated(true);
     } catch (error) {
       console.error('❌ Auth check failed:', error);
@@ -114,6 +129,15 @@ export const AuthProvider = ({ children }) => {
       console.log('👤 Setting user state:', response.user);
       setUser(response.user);
       setIsAuthenticated(true);
+
+      // Check if email is verified
+      if (!response.user.isEmailVerified) {
+        console.log('📧 Email not verified, redirecting to verification page');
+        // Store user data in localStorage for the verification page
+        localStorage.setItem('user', JSON.stringify(response.user));
+        window.location.href = '/email-verification-required';
+        return response;
+      }
 
       // Navigate to appropriate dashboard using response user data
       const dashboardRoute = getDashboardRouteForUser(response.user);

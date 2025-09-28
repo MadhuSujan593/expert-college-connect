@@ -305,10 +305,25 @@ class ApiService {
   }
 
   async verifyEmail(email, otp) {
+    const requestBody = { email, otp };
+    console.log('API Service - verifyEmail request:', requestBody);
+    
     const response = await fetch(`${this.baseURL}/auth/verify-email`, {
       method: 'POST',
       headers: this.getHeaders(),
-      body: JSON.stringify({ email, otp }),
+      body: JSON.stringify(requestBody),
+    });
+    return this.handleResponse(response);
+  }
+
+  async sendEmailOtp(email, userName) {
+    const requestBody = { email, userName };
+    console.log('API Service - sendEmailOtp request:', requestBody);
+    
+    const response = await fetch(`${this.baseURL}/auth/send-email-otp`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify(requestBody),
     });
     return this.handleResponse(response);
   }

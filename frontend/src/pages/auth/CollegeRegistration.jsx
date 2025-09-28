@@ -30,11 +30,19 @@ import Toast from '../../components/common/Toast';
 import { EmailVerificationModal, PhoneVerificationModal, VerificationField } from '../../components/verification';
 import CountrySelector from '../../components/common/CountrySelector';
 import apiService from '../../utils/api';
+import { sendPostRegistrationEmailOtp } from '../../utils/verificationUtils';
+import { useAuth } from '../../contexts/AuthContext';
 
 const CollegeRegistration = () => {
   const navigate = useNavigate();
+  const { checkAuthStatus } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPostRegistrationModal, setShowPostRegistrationModal] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
+  const [isPostRegistrationSending, setIsPostRegistrationSending] = useState(false);
+  const [isPostRegistrationVerifying, setIsPostRegistrationVerifying] = useState(false);
+  const [postRegistrationOtpSent, setPostRegistrationOtpSent] = useState(false);
   
   // Use shared verification hook
   const {
@@ -132,6 +140,44 @@ const CollegeRegistration = () => {
     }
   };
 
+  // Custom email verification handler for post-registration
+  const handlePostRegistrationEmailVerification = async (otp) => {
+    try {
+      setIsPostRegistrationVerifying(true);
+      
+      const response = await apiService.verifyEmail(registeredEmail, otp);
+      
+      // Update user data in localStorage with verified status
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const user = JSON.parse(storedUser);
+        user.isEmailVerified = true;
+        localStorage.setItem('user', JSON.stringify(user));
+      }
+      
+      showToast('Email verified successfully! Redirecting to dashboard...', 'success');
+      setShowPostRegistrationModal(false);
+      
+      // Refresh AuthContext to get updated user data
+      await checkAuthStatus();
+      
+      // Redirect to dashboard after successful verification
+      setTimeout(() => {
+        navigate('/dashboard/college');
+      }, 2000);
+    } catch (error) {
+      console.error('Email verification error:', error);
+      showToast(error.message || 'Invalid verification code. Please try again.', 'error');
+    } finally {
+      setIsPostRegistrationVerifying(false);
+    }
+  };
+
+  // Custom OTP sending handler for post-registration
+  const handlePostRegistrationSendOtp = async (email) => {
+    await sendPostRegistrationEmailOtp(email, setPostRegistrationOtpSent, setIsPostRegistrationSending, showToast);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -162,7 +208,7 @@ const CollegeRegistration = () => {
       const registrationData = {
         fullName: formData.contactPersonName,
         email: formData.contactEmail,
-        phone: selectedCountry && formData.contactPhone ? `${selectedCountry.dialCode}${formData.contactPhone}` : undefined,
+        phone: formData.contactPhone || undefined,
         password: formData.password,
         role: 'COLLEGE_ADMIN',
         institutionName: formData.institutionName,
@@ -185,17 +231,21 @@ const CollegeRegistration = () => {
 
       const response = await apiService.register(registrationData);
       
-      showToast('Registration successful! Email and phone verification are optional but recommended for security.', 'success');
+      showToast('Registration successful! Please verify your email to complete the setup.', 'success');
       
       // Store tokens if provided
       if (response.tokens) {
         apiService.setTokens(response.tokens.accessToken, response.tokens.refreshToken);
       }
       
-      // Redirect to login or dashboard
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
+      // Store user data in localStorage for verification page
+      if (response.user) {
+        localStorage.setItem('user', JSON.stringify(response.user));
+      }
+      
+      // Store user data and show email verification modal
+      setRegisteredEmail(formData.contactEmail);
+      setShowPostRegistrationModal(true);
       
     } catch (error) {
       console.error('Registration error:', error);
@@ -206,222 +256,125 @@ const CollegeRegistration = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 relative overflow-hidden">
-      {/* Enterprise Background Pattern */}
-      <div className="absolute inset-0">
-        {/* Subtle geometric pattern */}
-        <div className="absolute inset-0 opacity-[0.02]" style={{
-          backgroundImage: `
-            radial-gradient(circle at 25% 25%, #3B82F6 1px, transparent 1px),
-            radial-gradient(circle at 75% 75%, #6366F1 1px, transparent 1px)
-          `,
-          backgroundSize: '80px 80px'
-        }}></div>
-        
-        {/* Subtle gradient overlays */}
-        <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-white/40 to-transparent"></div>
-        <div className="absolute bottom-0 right-0 w-full h-32 bg-gradient-to-t from-indigo-50/30 to-transparent"></div>
-        
-        {/* Enhanced floating elements */}
-        <div className="absolute top-20 right-20 w-64 h-64 bg-gradient-to-br from-blue-200/20 to-indigo-200/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 left-20 w-80 h-80 bg-gradient-to-br from-indigo-200/15 to-purple-200/10 rounded-full blur-3xl animate-pulse" style={{animationDelay: '2s'}}></div>
-      </div>
-
-      <div className="relative flex items-center justify-center min-h-screen py-2 px-3 sm:px-6 lg:px-8">
-        {/* Back to Home Button */}
-        <Link
-          to="/"
-          className="fixed top-4 left-4 sm:top-6 sm:left-6 flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-all duration-300 bg-white/95 backdrop-blur-sm px-3 py-1.5 sm:px-4 sm:py-2 rounded-full shadow-lg hover:shadow-xl z-50 hover:scale-105 transform"
+    <div className="min-h-screen bg-white">
+      <div className="flex items-center justify-center min-h-screen px-4 sm:px-6 lg:px-8 py-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="w-full max-w-4xl"
         >
-          <ArrowRight className="w-4 h-4 rotate-180" />
-          <span className="text-xs sm:text-sm font-medium">Back to Home</span>
-        </Link>
-        
-        <div className="max-w-4xl w-full space-y-2 sm:space-y-3 lg:space-y-3 mt-12 sm:mt-10 lg:mt-8">
-          {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center"
-          >
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-1 sm:mb-2 lg:mb-1 leading-tight bg-gradient-to-r from-gray-900 via-blue-900 to-indigo-900 bg-clip-text text-transparent">
-              Join the
-              <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent"> Elite Network</span>
-            </h1>
-           
-          </motion.div>
+            {/* Back to Home */}
+            <Link
+              to="/"
+              className="inline-flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors mb-8 group"
+            >
+              <ArrowRight className="w-5 h-5 rotate-180 group-hover:-translate-x-1 transition-transform" />
+              <span className="text-base font-medium">Back to Home</span>
+            </Link>
 
-          {/* Premium Registration Form */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl shadow-blue-500/5 border border-gray-200/50 p-2 sm:p-3 lg:p-4 pb-4 sm:pb-6 lg:pb-6 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500"
-          >
-            <form onSubmit={handleSubmit} className="space-y-2 sm:space-y-3 lg:space-y-3">
-              {/* Institution Information Section */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 lg:gap-3">
-                {/* Institution Name */}
-                <div>
-                  <label htmlFor="institutionName" className="block text-sm font-semibold text-gray-800 mb-1">
-                    Institution Name <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Building2 className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" />
-                    </div>
-                    <input
-                      id="institutionName"
-                      name="institutionName"
-                      type="text"
-                      required
-                      value={formData.institutionName}
-                      onChange={handleInputChange}
-                      className="w-full pl-10 pr-4 py-2 sm:py-2.5 lg:py-2.5 bg-gray-50/80 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 hover:border-gray-300 transition-all duration-300 focus:bg-white focus:shadow-lg focus:shadow-blue-500/20 text-sm placeholder:text-sm"
-                      placeholder="Enter your institution name"
-                    />
-                  </div>
-                </div>
+            {/* Header */}
+            <div className="mb-8">
+              <h1 className="text-2xl font-bold text-gray-900">Join as Institution</h1>
+              <p className="text-gray-600 mt-2">Create your institution account to connect with experts</p>
+            </div>
 
-                {/* Contact Person Name */}
-                <div>
-                  <label htmlFor="contactPersonName" className="block text-sm font-semibold text-gray-800 mb-1">
-                    Contact Person <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <User className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" />
-                    </div>
-                    <input
-                      id="contactPersonName"
-                      name="contactPersonName"
-                      type="text"
-                      required
-                      value={formData.contactPersonName}
-                      onChange={handleInputChange}
-                      className="w-full pl-10 pr-4 py-2 sm:py-2.5 lg:py-2.5 bg-gray-50/80 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 hover:border-gray-300 transition-all duration-300 focus:bg-white focus:shadow-lg focus:shadow-blue-500/20 text-sm placeholder:text-sm"
-                      placeholder="Enter your full name"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Contact Information Section */}
-              <div className="space-y-2 sm:space-y-2">
-                {/* Email Address with Verification */}
-                <VerificationField
-                  type="email"
-                  id="contactEmail"
-                  name="contactEmail"
-                  label="Official Email Address"
-                  value={formData.contactEmail}
-                  onChange={handleInputChange}
-                  placeholder="Enter official email address"
-                  isVerified={isEmailVerified}
-                  isSending={isEmailSending}
-                  isValid={isValidEmail}
-                  onSendOtp={handleSendEmailOtp}
-                  otpSent={emailOtpSent}
-                  buttonColor="bg-blue-600"
-                  buttonHoverColor="hover:bg-blue-700"
-                  verifiedTagColor="text-green-600"
-                />
-                  
-                {/* Email OTP Verification Modal */}
-                <EmailVerificationModal
-                  isOpen={showEmailVerification}
-                  email={formData.contactEmail}
-                  onVerify={(otp) => handleVerifyEmailOtp(otp, formData.contactEmail)}
-                  onClose={() => setShowEmailVerification(false)}
-                  onSendOtp={() => handleSendEmailOtp(formData.contactEmail)}
-                  isVerified={isEmailVerified}
-                  isSending={isEmailSending}
-                  isVerifying={isEmailVerifying}
-                  otpSent={emailOtpSent}
-                />
-
-                {/* Phone Number with Verification - Custom Design */}
-                <div>
-                  <div className="flex items-center gap-3 mb-1">
-                    <label htmlFor="contactPhone" className="block text-sm font-semibold text-gray-800">
-                      Phone Number <span className="text-red-500">*</span>
+            {/* Registration Form */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Two Column Layout for Basic Info */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Institution Name */}
+                  <div>
+                    <label htmlFor="institutionName" className="block text-sm font-medium text-gray-700 mb-1">
+                      Institution Name
                     </label>
-                    {/* Phone Verification Status - Same as Email */}
-                    {isPhoneVerified && (
-                      <div className="flex items-center gap-1 px-2 py-1 bg-green-100 border border-green-200 rounded-lg">
-                        <svg className="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        <span className="text-green-700 text-xs font-medium">Verified</span>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Building2 className="h-4 w-4 text-gray-500" />
                       </div>
-                    )}
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-0">
-                    {/* Country Selector */}
-                    <div className="w-full sm:w-32">
-                      <CountrySelector
-                        selectedCountry={selectedCountry}
-                        onCountryChange={setSelectedCountry}
-                        className="w-full"
+                      <input
+                        id="institutionName"
+                        name="institutionName"
+                        type="text"
+                        required
+                        value={formData.institutionName}
+                        onChange={handleInputChange}
+                        className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200 transition-colors text-sm"
+                        placeholder="Harvard University"
                       />
                     </div>
-                    {/* Phone Input - Custom Connected Design */}
-                    <div className="flex-1">
-                      <div className="relative group">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <svg className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                          </svg>
-                        </div>
-                        <input
-                          id="contactPhone"
-                          name="contactPhone"
-                          type="tel"
-                          required
-                          value={formData.contactPhone}
-                          onChange={handleInputChange}
-                          className="w-full pl-10 pr-4 py-2.5 sm:py-3 lg:py-3 bg-gray-50/80 border border-gray-300/50 sm:border-l-0 rounded-xl sm:rounded-r-xl sm:rounded-l-none text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 hover:border-gray-300 transition-all duration-300 focus:bg-white focus:shadow-lg focus:shadow-blue-500/20 text-sm placeholder:text-sm"
-                                                     placeholder="Enter your phone number"
-                          maxLength="15"
-                        />
+                  </div>
+
+                  {/* Contact Person Name */}
+                  <div>
+                    <label htmlFor="contactPersonName" className="block text-sm font-medium text-gray-700 mb-1">
+                      Contact Person
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <User className="h-4 w-4 text-gray-500" />
                       </div>
+                      <input
+                        id="contactPersonName"
+                        name="contactPersonName"
+                        type="text"
+                        required
+                        value={formData.contactPersonName}
+                        onChange={handleInputChange}
+                        className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200 transition-colors text-sm"
+                        placeholder="John Smith"
+                      />
                     </div>
-                    {/* Verify Button */}
-                    {!isPhoneVerified && (
-                      <button
-                        type="button"
-                        onClick={() => handleSendPhoneOtp(selectedCountry && formData.contactPhone ? `${selectedCountry.dialCode}${formData.contactPhone}` : formData.contactPhone)}
-                        disabled={isPhoneSending || !formData.contactPhone || !isValidPhone(formData.contactPhone)}
-                        className="w-full sm:w-auto sm:ml-2 px-4 py-2.5 sm:py-3 text-white text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 transform disabled:transform-none disabled:cursor-not-allowed disabled:bg-gray-400 disabled:hover:bg-gray-400"
-                      >
-                        {isPhoneSending ? (
-                          <div className="flex items-center gap-1">
-                            <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                            Sending...
-                          </div>
-                        ) : phoneOtpSent ? (
-                          'Resend OTP'
-                        ) : (
-                          'Verify Phone'
-                        )}
-                      </button>
-                    )}
                   </div>
                 </div>
 
-                {/* Phone OTP Verification Modal */}
-                <PhoneVerificationModal
-                  isOpen={showPhoneVerification}
-                  onClose={() => setShowPhoneVerification(false)}
-                  phone={selectedCountry && formData.contactPhone ? `${selectedCountry.dialCode}${formData.contactPhone}` : formData.contactPhone}
-                  onVerify={(otp) => handleVerifyPhoneOtp(otp, selectedCountry && formData.contactPhone ? `${selectedCountry.dialCode}${formData.contactPhone}` : formData.contactPhone)}
-                  onSendOtp={() => handleSendPhoneOtp(selectedCountry && formData.contactPhone ? `${selectedCountry.dialCode}${formData.contactPhone}` : formData.contactPhone)}
-                  isVerified={isPhoneVerified}
-                  isSending={isPhoneSending}
-                  isVerifying={isPhoneVerifying}
-                  otpSent={phoneOtpSent}
-                />
+                {/* Two Column Layout for Contact Info */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Email Address */}
+                  <div>
+                    <label htmlFor="contactEmail" className="block text-sm font-medium text-gray-700 mb-1">
+                      Email Address
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Mail className="h-4 w-4 text-gray-500" />
+                      </div>
+                      <input
+                        id="contactEmail"
+                        name="contactEmail"
+                        type="email"
+                        required
+                        value={formData.contactEmail}
+                        onChange={handleInputChange}
+                        className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200 transition-colors text-sm"
+                        placeholder="john@example.com"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Phone Number */}
+                  <div>
+                    <label htmlFor="contactPhone" className="block text-sm font-medium text-gray-700 mb-1">
+                      Phone Number
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Phone className="h-4 w-4 text-gray-500" />
+                      </div>
+                      <input
+                        id="contactPhone"
+                        name="contactPhone"
+                        type="tel"
+                        required
+                        value={formData.contactPhone}
+                        onChange={handleInputChange}
+                        className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200 transition-colors text-sm"
+                        placeholder="+1 (555) 123-4567"
+                      />
+                    </div>
+                  </div>
+                </div>
 
                 {/* Use Official Email Checkbox */}
                 <div className="flex items-start pt-1">
@@ -431,76 +384,74 @@ const CollegeRegistration = () => {
                     type="checkbox"
                     checked={formData.useOfficialEmail}
                     onChange={handleInputChange}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-0.5 transition-all duration-200 hover:scale-110 flex-shrink-0"
+                    className="h-4 w-4 text-gray-600 focus:ring-gray-500 border-gray-300 rounded mt-0.5 transition-all duration-200 hover:scale-110 flex-shrink-0"
                   />
                   <label htmlFor="useOfficialEmail" className="ml-3 text-sm text-gray-700 font-medium">
                     <span className="font-medium">Use official email address</span>
                     <span className="text-gray-600 block mt-1 text-xs">This will be used for all your institutional operations and communications</span>
                   </label>
                 </div>
-              </div>
 
-              {/* Security Section */}
-              <div>
-                {/* Password */}
-                <div>
-                  <label htmlFor="password" className="block text-sm font-semibold text-gray-800 mb-1">
-                    Password <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" />
+                {/* Two Column Layout for Passwords */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Password */}
+                  <div>
+                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                      Password
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Lock className="h-4 w-4 text-gray-500" />
+                      </div>
+                      <input
+                        id="password"
+                        name="password"
+                        type={showPassword ? 'text' : 'password'}
+                        required
+                        value={formData.password}
+                        onChange={handleInputChange}
+                        className="w-full pl-9 pr-10 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200 transition-colors text-sm"
+                        placeholder="••••••••"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 transition-colors"
+                      >
+                        {showPassword ? (
+                          <Eye className="h-4 w-4" />
+                        ) : (
+                          <EyeOff className="h-4 w-4" />
+                        )}
+                      </button>
                     </div>
-                    <input
-                      id="password"
-                      name="password"
-                      type={showPassword ? 'text' : 'password'}
-                      required
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      className="w-full pl-10 pr-12 py-2 sm:py-2.5 lg:py-2.5 bg-gray-50/80 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 hover:border-gray-300 transition-all duration-300 focus:bg-white focus:shadow-lg focus:shadow-blue-500/20 text-sm placeholder:text-sm"
-                      placeholder="Create a strong password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-all duration-300 hover:scale-110"
-                    >
-                                          {showPassword ? (
-                      <Eye className="h-5 w-5" />
-                    ) : (
-                      <EyeOff className="h-5 w-5" />
-                    )}
-                    </button>
                   </div>
-                                     <p className="text-xs text-gray-500 mt-1">Use at least 8 characters with a mix of letters, numbers, and symbols</p>
-                 </div>
 
-                 {/* Confirm Password */}
-                 <div>
-                   <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-800 mb-1">
-                     Confirm Password <span className="text-red-500">*</span>
-                   </label>
-                   <div className="relative group">
-                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                       <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" />
-                     </div>
-                     <input
-                       id="confirmPassword"
-                       name="confirmPassword"
-                       type={showPassword ? 'text' : 'password'}
-                       required
-                       value={formData.confirmPassword}
-                       onChange={handleInputChange}
-                       className="w-full pl-10 pr-4 py-2 sm:py-2.5 lg:py-2.5 bg-gray-50/80 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 hover:border-gray-300 transition-all duration-300 focus:bg-white focus:shadow-lg focus:shadow-blue-500/20 text-sm placeholder:text-sm"
-                       placeholder="Confirm your password"
-                     />
-                   </div>
-                 </div>
-               </div>
+                  {/* Confirm Password */}
+                  <div>
+                    <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                      Confirm Password
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Lock className="h-4 w-4 text-gray-500" />
+                      </div>
+                      <input
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        type={showPassword ? 'text' : 'password'}
+                        required
+                        value={formData.confirmPassword}
+                        onChange={handleInputChange}
+                        className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200 transition-colors text-sm"
+                        placeholder="••••••••"
+                      />
+                    </div>
+                  </div>
+                </div>
 
-              {/* Agreements Section */}
-              <div className="flex items-start pt-1">
+              {/* Terms & Conditions */}
+              <div className="flex items-center">
                 <input
                   id="agreeToTerms"
                   name="agreeToTerms"
@@ -508,53 +459,75 @@ const CollegeRegistration = () => {
                   required
                   checked={formData.agreeToTerms}
                   onChange={handleInputChange}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-0.5 transition-all duration-200 hover:scale-110 flex-shrink-0"
+                  className="h-4 w-4 text-gray-600 focus:ring-gray-500 border-gray-300 rounded"
                 />
-                <label htmlFor="agreeToTerms" className="ml-3 text-sm text-gray-700 font-medium">
-                  I agree to the <Link to="/terms" className="text-blue-600 hover:text-blue-500 font-semibold hover:underline transition-colors">Terms</Link> and <Link to="/privacy" className="text-blue-600 hover:text-blue-500 font-semibold hover:underline transition-colors">Privacy Policy</Link> *
+                <label htmlFor="agreeToTerms" className="ml-2 text-sm text-gray-700">
+                  I agree to the <Link to="/terms" className="text-blue-600 hover:text-blue-500 font-medium hover:underline transition-colors">Terms</Link> and <Link to="/privacy" className="text-blue-600 hover:text-blue-500 font-medium hover:underline transition-colors">Privacy Policy</Link>
                 </label>
               </div>
 
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="group relative w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed text-white py-2.5 sm:py-3 lg:py-3 px-6 rounded-xl text-base font-semibold shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 flex items-center justify-center transform hover:scale-[1.02] mt-2 sm:mt-2 lg:mt-3 overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <span className="relative flex items-center">
-                  {isSubmitting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Creating Account...
-                    </>
-                  ) : (
-                    <>
-                      <GraduationCap className="mr-2 w-5 h-5" />
-                      Create Institution Account
-                      <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
-                    </>
-                  )}
-                </span>
-              </button>
-            </form>
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white py-3 px-6 rounded-md font-semibold transition-all duration-300 shadow-lg hover:shadow-xl"
+                >
+                  {isSubmitting ? 'Creating Account...' : 'Create Institution Account'}
+                </button>
+              </form>
+            </div>
 
             {/* Login Link */}
-            <div className="mt-3 sm:mt-3 lg:mt-4 text-center">
-              <p className="text-sm text-gray-600 font-medium">
-                Already have an account?{' '}
-                <Link to="/login" className="text-blue-600 hover:text-blue-500 font-semibold hover:underline transition-colors">
-                  Sign in here
+            <div className="mt-8 text-center">
+              <p className="text-gray-600 mb-6">Already have an account?</p>
+              <div className="grid grid-cols-2 gap-4">
+                <Link
+                  to="/register/expert"
+                  className="group bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 hover:border-green-400 hover:from-green-100 hover:to-emerald-100 rounded-lg p-3 transition-all duration-300 hover:shadow-lg"
+                >
+                  <div className="flex flex-col items-center space-y-1">
+                    <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <User className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="text-xs font-semibold text-gray-900">Join as Expert</span>
+                  </div>
                 </Link>
-              </p>
+                
+                <Link
+                  to="/login"
+                  className="group bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-200 hover:border-blue-400 hover:from-blue-100 hover:to-cyan-100 rounded-lg p-3 transition-all duration-300 hover:shadow-lg"
+                >
+                  <div className="flex flex-col items-center space-y-1">
+                    <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <ArrowRight className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="text-xs font-semibold text-gray-900">Sign In</span>
+                  </div>
+                </Link>
+              </div>
             </div>
           </motion.div>
         </div>
-      </div>
 
-      {/* Toast Notification */}
-      <Toast toast={toast} hideToast={hideToast} />
-    </div>
+        <Toast toast={toast} hideToast={hideToast} />
+        
+        {/* Email Verification Modal */}
+        <EmailVerificationModal
+          isOpen={showPostRegistrationModal}
+          email={registeredEmail}
+          isVerifying={isPostRegistrationVerifying}
+          onVerify={handlePostRegistrationEmailVerification}
+          onClose={() => {
+            setShowPostRegistrationModal(false);
+            // Redirect to login page if they skip verification
+            navigate('/login');
+          }}
+          onSendOtp={handlePostRegistrationSendOtp}
+          isVerified={false}
+          isSending={isPostRegistrationSending}
+          otpSent={postRegistrationOtpSent}
+        />
+      </div>
   );
 };
 

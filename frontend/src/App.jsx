@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 
@@ -15,6 +15,7 @@ import {
   Login, 
   ForgotPassword 
 } from './pages/auth';
+import EmailVerificationRequired from './pages/auth/EmailVerificationRequired';
 import ExpertDashboard from './pages/expert/ExpertDashboard';
 import CollegeDashboard from './pages/college/CollegeDashboard';
 import SuperAdminDashboard from './pages/super-admin/SuperAdminDashboard';
@@ -25,8 +26,38 @@ import RequirementDetails from './components/expert/RequirementDetails';
 // import CollegeProfile from './pages/college/CollegeProfile';
 
 // Context
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/common/ProtectedRoute';
+
+// Dashboard Redirect Component
+const DashboardRedirect = () => {
+  const { user } = useAuth();
+  
+  console.log('🔄 DashboardRedirect - User data:', user);
+  console.log('🔄 DashboardRedirect - User role:', user?.role);
+  console.log('🔄 DashboardRedirect - Email verified:', user?.isEmailVerified);
+  
+  if (!user) {
+    console.log('❌ DashboardRedirect - No user, redirecting to login');
+    return <Navigate to="/login" replace />;
+  }
+  
+  // Redirect to appropriate dashboard based on user role
+  switch (user.role) {
+    case 'EXPERT':
+      console.log('✅ DashboardRedirect - Redirecting to expert dashboard');
+      return <Navigate to="/dashboard/expert" replace />;
+    case 'COLLEGE_ADMIN':
+      console.log('✅ DashboardRedirect - Redirecting to college dashboard');
+      return <Navigate to="/dashboard/college" replace />;
+    case 'SUPER_ADMIN':
+      console.log('✅ DashboardRedirect - Redirecting to super admin dashboard');
+      return <Navigate to="/dashboard/super-admin" replace />;
+    default:
+      console.log('❌ DashboardRedirect - Unknown role, redirecting to login');
+      return <Navigate to="/login" replace />;
+  }
+};
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -41,7 +72,7 @@ const AppContent = () => {
   console.log('AppContent rendering');
   
   const location = useLocation();
-  const isAuthPage = ['/login', '/register', '/forgot-password'].some(path => 
+  const isAuthPage = ['/login', '/register', '/forgot-password', '/email-verification-required'].some(path => 
     location.pathname === path || location.pathname.startsWith(path + '/')
   );
   
@@ -65,8 +96,17 @@ const AppContent = () => {
           <Route path="/register/college" element={<CollegeRegistration />} />
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/email-verification-required" element={<EmailVerificationRequired />} />
           
           {/* Protected Routes */}
+          <Route 
+            path="/dashboard" 
+            element={
+              <ProtectedRoute>
+                <DashboardRedirect />
+              </ProtectedRoute>
+            } 
+          />
           <Route 
             path="/dashboard/expert" 
             element={

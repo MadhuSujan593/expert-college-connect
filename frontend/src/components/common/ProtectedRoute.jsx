@@ -33,6 +33,13 @@ const ProtectedRoute = ({ children, requiredRole = null, redirectTo = '/login' }
     return <Navigate to={redirectTo} replace />;
   }
 
+  // Check if email is verified
+  if (user && !user.isEmailVerified) {
+    console.log('❌ ProtectedRoute - Email not verified, redirecting to verification page');
+    console.log('❌ ProtectedRoute - User data:', user);
+    return <Navigate to="/email-verification-required" replace />;
+  }
+
   // Check role-based access if required
   if (requiredRole && user?.role !== requiredRole) {
     // Redirect to appropriate dashboard based on user's actual role

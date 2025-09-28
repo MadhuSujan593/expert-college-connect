@@ -75,7 +75,7 @@ const Toast = ({ toast, hideToast }) => {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: -20, scale: 0.9 }}
         transition={{ duration: 0.3, ease: "easeOut" }}
-        className="fixed top-4 right-4 sm:top-6 sm:right-6 z-50 max-w-sm"
+        className="fixed top-4 right-4 sm:top-6 sm:right-6 z-[70] max-w-sm"
       >
         <div 
           className={`
