@@ -29,7 +29,10 @@ import {
   Shield,
   Mail,
   Phone,
-  MessageCircle
+  MessageCircle,
+  Briefcase,
+  UserCheck,
+  Sparkles
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import apiService from '../../utils/api';
@@ -1129,55 +1132,105 @@ const CollegeDashboard = () => {
   );
 
   const SidebarItem = ({ id, label, icon: Icon, isActive, onClick }) => (
-    <button
+    <motion.button
       onClick={() => onClick(id)}
-      className={`group flex items-center space-x-3 w-full px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      className={`group flex items-center space-x-3 w-full px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 ${
         isActive
-          ? 'bg-blue-600 text-white'
+          ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-sm'
           : 'text-gray-300 hover:text-white hover:bg-gray-800'
       }`}
     >
-      <Icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'}`} />
-      <span>{label}</span>
-    </button>
+      <motion.div
+        animate={{ 
+          rotate: isActive ? 0 : 0,
+          scale: isActive ? 1.1 : 1
+        }}
+        transition={{ duration: 0.2 }}
+      >
+        <Icon className={`h-5 w-5 transition-colors duration-200 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'}`} />
+      </motion.div>
+      <motion.span
+        animate={{ 
+          x: isActive ? 2 : 0,
+          fontWeight: isActive ? 600 : 500
+        }}
+        transition={{ duration: 0.2 }}
+      >
+        {label}
+      </motion.span>
+    </motion.button>
   );
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Classic Theme Layout with Dark Sidebar */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
+      {/* Modern Light Theme Layout */}
       <div className="flex h-screen overflow-hidden">
-        {/* Dark Sidebar */}
-        <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
+        {/* Black Sidebar */}
+        <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-56 bg-black border-r border-gray-800 transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
           <div className="flex flex-col h-full">
-            {/* Dark Sidebar Header */}
-            <div className="flex items-center justify-between px-6 py-6 border-b border-gray-700">
+            {/* Black Sidebar Header */}
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="flex items-center justify-between px-4 py-4 border-b border-gray-800"
+            >
               <div className="flex items-center space-x-3">
                 {profile?.logoUrl ? (
-                  <img 
+                  <motion.img 
                     src={getFullLogoUrl(profile.logoUrl)} 
                     alt="Institution Logo" 
-                    className="w-10 h-10 rounded-lg object-cover"
+                    className="w-10 h-10 rounded-xl object-cover shadow-sm"
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ duration: 0.2 }}
                   />
                 ) : (
-                  <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                  <motion.div 
+                    className="w-10 h-10 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl flex items-center justify-center shadow-sm"
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ duration: 0.2 }}
+                  >
                     <Building2 className="w-5 h-5 text-white" />
-                  </div>
+                  </motion.div>
                 )}
                 <div>
-                  <h1 className="text-lg font-semibold text-white">{profile?.institutionName || 'College'}</h1>
-                  <p className="text-sm text-gray-400">Dashboard</p>
+                  <motion.h1 
+                    className="text-base font-semibold text-white"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    {profile?.institutionName || 'College'}
+                  </motion.h1>
+                  <motion.p 
+                    className="text-xs text-gray-300"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    Dashboard
+                  </motion.p>
                 </div>
                 </div>
-              <button
+              <motion.button
                 onClick={() => setSidebarOpen(false)}
-                className="lg:hidden w-8 h-8 bg-gray-800 hover:bg-gray-700 rounded-lg flex items-center justify-center text-gray-400 hover:text-white transition-colors"
+                className="lg:hidden w-8 h-8 bg-gray-800 hover:bg-gray-700 rounded-lg flex items-center justify-center text-gray-300 hover:text-white transition-colors"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
                 <X className="h-4 w-4" />
-              </button>
-            </div>
+              </motion.button>
+            </motion.div>
 
             {/* Navigation */}
-            <nav className="flex-1 px-4 py-4 space-y-1">
+            <nav className="flex-1 px-3 py-3 space-y-1">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+              >
               <SidebarItem
                 id="overview"
                 label="Overview"
@@ -1185,20 +1238,38 @@ const CollegeDashboard = () => {
                 isActive={activeTab === 'overview'}
                 onClick={handleTabChange}
               />
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: 0.15 }}
+              >
               <SidebarItem
                 id="profile"
                 label="Profile"
-                icon={Building2}
+                icon={User}
                 isActive={activeTab === 'profile'}
                 onClick={handleTabChange}
               />
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: 0.2 }}
+              >
               <SidebarItem
                 id="requirements"
                 label="Requirements"
-                icon={FileText}
+                icon={BarChart3}
                 isActive={activeTab === 'requirements'}
                 onClick={handleRequirementsAccess}
               />
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: 0.25 }}
+              >
               <SidebarItem
                 id="applications"
                 label="Applications"
@@ -1213,6 +1284,12 @@ const CollegeDashboard = () => {
                   }
                 }}
               />
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: 0.3 }}
+              >
               <SidebarItem
                 id="experts"
                 label="Expert Directory"
@@ -1227,6 +1304,12 @@ const CollegeDashboard = () => {
                   }
                 }}
               />
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: 0.35 }}
+              >
               <SidebarItem
                 id="rating-requests"
                 label="Rating Requests"
@@ -1234,27 +1317,41 @@ const CollegeDashboard = () => {
                 isActive={activeTab === 'rating-requests'}
                 onClick={() => setActiveTab('rating-requests')}
               />
+              </motion.div>
             </nav>
 
 
 
             {/* Logout Button */}
-            <div className="px-4 py-4 border-t border-gray-700 mt-auto">
-              <button
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.4 }}
+              className="px-4 py-4 border-t border-gray-800 mt-auto"
+            >
+              <motion.button
                 onClick={() => setShowLogoutConfirm(true)}
                 className="group flex items-center space-x-3 w-full px-4 py-3 rounded-lg font-medium transition-all duration-200 text-gray-300 hover:text-red-400 hover:bg-red-900/20"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <motion.div
+                  animate={{ rotate: 0 }}
+                  whileHover={{ rotate: 5 }}
+                  transition={{ duration: 0.2 }}
               >
                 <LogOut className="h-5 w-5 text-gray-400 group-hover:text-red-400" />
+                </motion.div>
                 <span>Sign Out</span>
-              </button>
-                </div>
+              </motion.button>
+                </motion.div>
                 </div>
             </div>
 
-        {/* Main Content - Classic Theme */}
-        <div className="flex-1 flex flex-col overflow-hidden bg-white rounded-l-3xl shadow-lg">
-          {/* Classic Header */}
-          <header className="bg-white border-b border-gray-200 px-8 py-6">
+        {/* Main Content - Modern Light Theme */}
+        <div className="flex-1 flex flex-col overflow-hidden bg-white/80 backdrop-blur-sm rounded-l-3xl shadow-lg">
+          {/* Modern Header */}
+          <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 px-8 py-6 shadow-sm">
               <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <button
@@ -1289,242 +1386,285 @@ const CollegeDashboard = () => {
           </header>
 
           {/* Scrollable Content */}
-          <main className="flex-1 overflow-y-auto bg-gray-50">
-            <div className="p-8 space-y-8">
+          <main className="flex-1 overflow-y-auto bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
+            <div className="p-6 space-y-6">
               {/* Overview Tab */}
+              <AnimatePresence mode="wait">
               {activeTab === 'overview' && (
+                  <motion.div
+                    key="overview"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3 }}
+                    className="space-y-5"
+                  >
+                  {/* University Student Dashboard Style - Feature Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-                  className="space-y-6"
+                      transition={{ delay: 0.1 }}
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      className="bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl p-4 text-white shadow-lg"
                 >
-                  {/* Classic Stats Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div className="p-6 rounded-2xl shadow-sm bg-gradient-to-br from-blue-500 to-purple-600 text-white">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-white/80 mb-1">Profile Completeness</p>
-                          <p className="text-3xl font-bold text-white">{stats.profileCompleteness}%</p>
+                          <p className="text-teal-100 text-sm font-medium">Profile Complete</p>
+                          <p className="text-2xl font-bold mt-1">{stats.profileCompleteness}%</p>
                         </div>
-                        <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
-                          <CheckCircle className="w-7 h-7 text-white" />
+                        <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                          <UserCheck className="w-6 h-6" />
                         </div>
                       </div>
-      </div>
+                    </motion.div>
 
-                    <div className="p-6 rounded-2xl shadow-sm bg-gradient-to-br from-green-400 to-blue-500 text-white">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg"
+                    >
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-white/80 mb-1">Total Requirements</p>
-                          <p className="text-3xl font-bold text-white">{stats.totalRequirements}</p>
+                          <p className="text-blue-100 text-sm font-medium">Total Requirements</p>
+                          <p className="text-2xl font-bold mt-1">{stats.totalRequirements}</p>
                         </div>
-                        <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
-                          <FileText className="w-7 h-7 text-white" />
+                        <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                          <BarChart3 className="w-6 h-6" />
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
 
-                    <div className="p-6 rounded-2xl shadow-sm bg-gradient-to-br from-purple-500 to-pink-500 text-white">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      className="bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl p-4 text-white shadow-lg"
+                    >
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-white/80 mb-1">Urgent Requirements</p>
-                          <p className="text-3xl font-bold text-white">{stats.urgentRequirements}</p>
+                          <p className="text-pink-100 text-sm font-medium">Urgent Requirements</p>
+                          <p className="text-2xl font-bold mt-1">{stats.urgentRequirements}</p>
                         </div>
-                        <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
-                          <AlertCircle className="w-7 h-7 text-white" />
+                        <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                          <Clock className="w-6 h-6" />
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
 
-                    <div className="p-6 rounded-2xl shadow-sm bg-white text-gray-900">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4 }}
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white shadow-lg"
+                    >
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-gray-600 mb-1">Upcoming Deadlines</p>
-                          <p className="text-3xl font-bold text-gray-900">{stats.upcomingDeadlines}</p>
+                          <p className="text-purple-100 text-sm font-medium">Upcoming Deadlines</p>
+                          <p className="text-2xl font-bold mt-1">{stats.upcomingDeadlines}</p>
                         </div>
-                        <div className="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center">
-                          <Calendar className="w-7 h-7 text-gray-600" />
+                        <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                          <Calendar className="w-6 h-6" />
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
                   </div>
 
-                  {/* Subscription Summary (Overview) */}
-                  <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
-                    <div className="flex items-center justify-between mb-2">
+
+                  {/* Subscription and Quick Actions Side by Side */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Subscription - Left Side */}
+                    <motion.div 
+                      className="bg-white rounded-xl shadow-sm p-6 border border-gray-100"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: 0.6 }}
+                      whileHover={{ scale: 1.01 }}
+                    >
+                      <div className="flex items-center justify-between mb-4">
                       <h3 className="text-xl font-semibold text-gray-900">Subscription</h3>
-                      <button onClick={openPlansModal} className="text-sm px-3 py-1.5 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50">Change Plan</button>
+                        <button onClick={openPlansModal} className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 text-sm font-medium shadow-sm hover:shadow-md">Change Plan</button>
                     </div>
                     {subsLoading ? (
                       <p className="text-gray-600">Loading subscription...</p>
                     ) : mySubscription ? (
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <div className="text-sm text-gray-600">Current Plan</div>
-                          <div className="font-semibold text-gray-900">{mySubscription.plan.name}</div>
-                          <div className="text-sm text-gray-600">₹{(mySubscription.plan.priceCents/100).toFixed(2)} / {mySubscription.plan.billingPeriod.toLowerCase()}</div>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                              <span className="text-sm font-semibold text-gray-900">Gold Plan</span>
+                              <span className="text-sm text-gray-500">•</span>
+                              <span className="text-sm text-gray-500">₹5,000/quarterly</span>
                         </div>
-                        <div>
-                          <div className="text-xs text-gray-600 mb-1">Requirements this period</div>
-                          <div className="w-full bg-gray-100 rounded-full h-2.5">
-                            <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: `${Math.min(100, Math.round(((mySubscription.usages?.[0]?.usedRequirements || 0) / (mySubscription.plan.maxRequirements || Infinity)) * 100))}%` }}></div>
+                            <span className="text-xs text-gray-500">
+                              Due {mySubscription.endsAt 
+                                ? new Date(mySubscription.endsAt).toLocaleDateString()
+                                : 'N/A'
+                              }
+                            </span>
                           </div>
-                          <div className="text-xs text-gray-600 mt-1">{(mySubscription.usages?.[0]?.usedRequirements || 0)} / {mySubscription.plan.maxRequirements ?? '∞'}</div>
+                          
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-600">Requirements</span>
+                              <span className="text-sm font-medium text-gray-900">{(mySubscription.usages?.[0]?.usedRequirements || 0)}/{mySubscription.plan.maxRequirements ?? '∞'}</span>
                         </div>
-                        <div>
-                          <div className="text-xs text-gray-600 mb-1">Expert contacts this period</div>
-                          <div className="w-full bg-gray-100 rounded-full h-2.5">
-                            <div className="bg-purple-600 h-2.5 rounded-full" style={{ width: `${Math.min(100, Math.round(((mySubscription.usages?.[0]?.usedExpertContacts || 0) / (mySubscription.plan.maxExpertContacts || Infinity)) * 100))}%` }}></div>
+                            <div className="w-full bg-gray-200 rounded-full h-1.5">
+                              <div className="bg-blue-600 h-1.5 rounded-full" style={{ width: `${Math.min(100, Math.round(((mySubscription.usages?.[0]?.usedRequirements || 0) / (mySubscription.plan.maxRequirements || Infinity)) * 100))}%` }}></div>
                           </div>
-                          <div className="text-xs text-gray-600 mt-1">{(mySubscription.usages?.[0]?.usedExpertContacts || 0)} / {mySubscription.plan.maxExpertContacts ?? '∞'}</div>
+                            
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-600">Expert Contacts</span>
+                              <span className="text-sm font-medium text-gray-900">{(mySubscription.usages?.[0]?.usedExpertContacts || 0)}/{mySubscription.plan.maxExpertContacts ?? '∞'}</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-1.5">
+                              <div className="bg-purple-600 h-1.5 rounded-full" style={{ width: `${Math.min(100, Math.round(((mySubscription.usages?.[0]?.usedExpertContacts || 0) / (mySubscription.plan.maxExpertContacts || Infinity)) * 100))}%` }}></div>
+                            </div>
                         </div>
                       </div>
                     ) : (
                       <div className="flex items-center justify-between">
                         <p className="text-gray-700">No active subscription. Choose a plan to unlock requirements and expert contacts.</p>
-                        <button onClick={openPlansModal} className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">View Plans</button>
+                          <button onClick={openPlansModal} className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 shadow-sm hover:shadow-md">View Plans</button>
                       </div>
                     )}
-                  </div>
+                    </motion.div>
 
-                  {/* Clean Quick Actions */}
-                  <div className="bg-white rounded-2xl shadow-sm p-6">
-                    <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-xl font-semibold text-gray-900">Quick Actions</h3>
-                      <div className="w-8 h-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full"></div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <button
+                    {/* Quick Actions - Right Side */}
+                    <motion.div 
+                      className="bg-white rounded-xl shadow-sm p-6 border border-gray-100"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: 0.7 }}
+                      whileHover={{ scale: 1.01 }}
+                    >
+                      <h3 className="text-xl font-semibold text-gray-900 mb-3">Quick Actions</h3>
+                      <div className="space-y-2">
+                        <motion.button
                         onClick={handleRequirementsAccess}
-                        className="group flex items-center space-x-4 p-4 bg-white hover:bg-blue-50 rounded-xl border border-gray-100 hover:border-blue-200 transition-all duration-200 hover:shadow-md"
-                      >
-                        <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center group-hover:bg-blue-700 transition-colors">
+                          className="group w-full flex items-center space-x-3 p-3 bg-white hover:bg-blue-50 rounded-lg border border-gray-100 hover:border-blue-200 transition-all duration-200 hover:shadow-sm"
+                          whileHover={{ scale: 1.01 }}
+                          whileTap={{ scale: 0.99 }}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3, delay: 0.8 }}
+                        >
+                          <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-lg flex items-center justify-center group-hover:from-blue-700 group-hover:to-cyan-700 transition-all duration-200">
                           <Plus className="h-5 w-5 text-white" />
     </div>
                         <div className="text-left">
-                          <p className="font-semibold text-gray-900">Post Requirement</p>
-                          <p className="text-sm text-gray-600">Add new academic requirement</p>
+                            <p className="font-medium text-gray-900">Post Requirement</p>
+                            <p className="text-xs text-gray-500">Add new academic requirement</p>
           </div>
-                      </button>
+                        </motion.button>
                       
-                      <button
+                        <motion.button
                         onClick={() => handleTabChange('experts')}
-                        className="group flex items-center space-x-4 p-4 bg-white hover:bg-emerald-50 rounded-xl border border-gray-100 hover:border-emerald-200 transition-all duration-200 hover:shadow-md"
-                      >
-                        <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center group-hover:bg-emerald-700 transition-colors">
-                          <Search className="h-5 w-5 text-white" />
+                          className="group w-full flex items-center space-x-3 p-3 bg-white hover:bg-green-50 rounded-lg border border-gray-100 hover:border-green-200 transition-all duration-200 hover:shadow-sm"
+                          whileHover={{ scale: 1.01 }}
+                          whileTap={{ scale: 0.99 }}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3, delay: 0.9 }}
+                        >
+                          <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center group-hover:bg-green-700 transition-colors">
+                            <Users className="h-5 w-5 text-white" />
           </div>
                         <div className="text-left">
-                          <p className="font-semibold text-gray-900">Find Experts</p>
-                          <p className="text-sm text-gray-600">Search for qualified experts</p>
+                            <p className="font-medium text-gray-900">Find Experts</p>
+                            <p className="text-xs text-gray-500">Search for qualified experts</p>
         </div>
-                      </button>
+                        </motion.button>
                       
-                      <button
+                        <motion.button
                         onClick={() => handleTabChange('profile')}
-                        className="group flex items-center space-x-4 p-4 bg-white hover:bg-violet-50 rounded-xl border border-gray-100 hover:border-violet-200 transition-all duration-200 hover:shadow-md"
-                      >
-                        <div className="w-10 h-10 bg-violet-600 rounded-lg flex items-center justify-center group-hover:bg-violet-700 transition-colors">
+                          className="group w-full flex items-center space-x-3 p-3 bg-white hover:bg-purple-50 rounded-lg border border-gray-100 hover:border-purple-200 transition-all duration-200 hover:shadow-sm"
+                          whileHover={{ scale: 1.01 }}
+                          whileTap={{ scale: 0.99 }}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3, delay: 1.0 }}
+                        >
+                          <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center group-hover:bg-purple-700 transition-colors">
                           <Edit3 className="h-5 w-5 text-white" />
             </div>
                         <div className="text-left">
-                          <p className="font-semibold text-gray-900">Update Profile</p>
-                          <p className="text-sm text-gray-600">Keep information current</p>
+                            <p className="font-medium text-gray-900">Update Profile</p>
+                            <p className="text-xs text-gray-500">Keep information current</p>
           </div>
-                      </button>
+                        </motion.button>
       </div>
+                    </motion.div>
     </div>
 
-                                    {/* Modern Recent Requirements */}
-                  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                    {/* Modern Header with Gradient */}
-                    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 px-4 py-4 border-b border-gray-100">
+                  {/* Recent Requirements - Full Width Below */}
+                  <motion.div 
+                    className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: 0.8 }}
+                    whileHover={{ scale: 1.01 }}
+                  >
+                    <div className="bg-gray-50 px-6 py-4 border-b border-gray-100">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                            <FileText className="w-5 h-5 text-white" />
+                          <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                            <TrendingUp className="w-5 h-5 text-gray-600" />
                           </div>
                           <div>
-                            <h3 className="text-lg font-bold text-gray-900">Recent Requirements</h3>
-                            <p className="text-xs text-gray-600">Your latest academic postings</p>
+                            <h3 className="text-lg font-semibold text-gray-900">Recent Requirements</h3>
+                            <p className="text-sm text-gray-600">Your latest academic postings</p>
                           </div>
                         </div>
                         {recentRequirements.length > 0 && (
                           <button
                             onClick={() => handleTabChange('requirements')}
-                            className="group flex items-center gap-1.5 px-4 py-2 bg-white text-indigo-600 font-semibold rounded-lg border border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-200 shadow-sm hover:shadow-md text-sm"
+                            className="px-3 py-1 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
                           >
-                            <span>View All</span>
-                            <svg className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
+                            View All
                           </button>
                         )}
                       </div>
                     </div>
                       
-                    <div className="p-4">
+                    <div className="p-6">
                       {recentRequirements.length === 0 ? (
-                        <div className="text-center py-12">
-                          <div className="relative mb-6">
-                            <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
-                              <FileText className="w-8 h-8 text-gray-400" />
+                          <div className="text-center py-8">
+                            <div className="w-16 h-16 bg-gray-50 rounded-lg flex items-center justify-center mx-auto mb-4">
+                              <BarChart3 className="w-8 h-8 text-gray-400" />
                             </div>
-                            <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-indigo-400 to-purple-500 rounded-full flex items-center justify-center">
-                              <Plus className="w-2.5 h-2.5 text-white" />
-                            </div>
-                          </div>
-                          <h4 className="text-lg font-bold text-gray-900 mb-2">Ready to get started?</h4>
-                          <p className="text-gray-600 mb-6 max-w-sm mx-auto text-sm leading-relaxed">Post your first academic requirement and connect with qualified experts.</p>
-                          {canAccessRequirements() ? (
-                            <button
-                              onClick={handleRequirementsAccess}
-                              className="group inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-                            >
-                              <Plus className="w-4 h-4" />
-                              <span>Post Your First Requirement</span>
-                            </button>
-                          ) : (
-                            <button
-                              onClick={openPlansModal}
-                              className="group inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-                            >
-                              <Plus className="w-4 h-4" />
-                              <span>Get a Plan to Post Requirements</span>
-                            </button>
-                          )}
+                            <p className="text-gray-500 mb-2">No requirements posted yet</p>
+                            <p className="text-sm text-gray-400">Start by posting your first academic requirement</p>
                         </div>
                       ) : (
                         <div className="space-y-3">
-                          {/* Show only latest 2 requirements */}
-                          {recentRequirements.slice(0, 2).map((requirement, index) => (
-                            <RequirementCard
-                              key={requirement.id}
-                              requirement={requirement}
-                              index={index}
-                              showActions={false}
-                              compact={true}
-                              onClick={() => handleTabChange('requirements')}
-                            />
+                          {recentRequirements.slice(0, 3).map((req) => (
+                            <div key={req.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                              <div>
+                                <p className="font-medium text-gray-900">{req.title}</p>
+                                <p className="text-sm text-gray-600">{new Date(req.endDate).toLocaleDateString()}</p>
+                              </div>
+                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                req.status === 'ACTIVE' 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : 'bg-gray-100 text-gray-800'
+                              }`}>
+                                {req.status}
+                              </span>
+                            </div>
                           ))}
-                          
-                          {/* Show more indicator if there are more requirements */}
-                          {recentRequirements.length > 2 && (
-                            <div className="pt-3 border-t border-gray-100">
-                              <button
-                                onClick={() => handleTabChange('requirements')}
-                                className="w-full py-2 text-center text-indigo-600 font-medium hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors text-sm"
-                              >
-                                View {recentRequirements.length - 2} more requirements
-                              </button>
                             </div>
                           )}
-                        </div>
-                      )}
-                    </div>
                   </div>
+                  </motion.div>
+
                 </motion.div>
               )}
+              </AnimatePresence>
 
                              {/* Profile Tab */}
                {activeTab === 'profile' && (
@@ -1563,6 +1703,7 @@ const CollegeDashboard = () => {
                    handleProfileInputChange={handleProfileInputChange}
                    currentEmailVerified={currentEmailVerified}
                    currentPhoneVerified={currentPhoneVerified}
+                   stats={stats}
                  />
                )}
 
@@ -1633,7 +1774,7 @@ const CollegeDashboard = () => {
 
               {/* Experts Tab */}
               {activeTab === 'experts' && (
-                canAccessRequirements() ? (
+                canAccessExperts() ? (
                   <>
                     {console.log('Rendering ExpertsTab, user:', user)}
                     {console.log('User object structure:', JSON.stringify(user, null, 2))}
@@ -1656,10 +1797,13 @@ const CollegeDashboard = () => {
                         {!user?.isPhoneVerified && (
                           <button
                             onClick={handleVerifyPhoneFromRequirements}
-                            className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700"
+                            className="w-full px-3 py-2 bg-green-600 text-white text-sm rounded-xl hover:bg-green-700"
                           >
                             Verify Phone
                           </button>
+                        )}
+                        {user?.isEmailVerified && user?.isPhoneVerified && (
+                          <p className="text-sm text-green-600 text-center">✅ All verifications complete!</p>
                         )}
                       </div>
                     </div>
@@ -2089,7 +2233,8 @@ const ProfileTab = ({
   setShowPhoneVerification,
   handleProfileInputChange,
   currentEmailVerified,
-  currentPhoneVerified
+  currentPhoneVerified,
+  stats
 }) => {
   console.log('🔄 ProfileTab rendered with props:', {
     editingProfile,
@@ -2222,9 +2367,14 @@ const ProfileTab = ({
   return (
     <div className="space-y-8">
       {/* Basic Information */}
-      <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-gray-100">
+      <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 border border-gray-100">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">Institution Information</h3>
+          <h3 className="text-xl font-bold text-gray-900 flex items-center">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
+              <Building2 className="w-5 h-5 text-white" />
+            </div>
+            Institution Information
+          </h3>
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -2237,10 +2387,10 @@ const ProfileTab = ({
                 setEditingProfile(true);
               }
             }}
-            className={`flex items-center justify-center space-x-2 px-4 py-2 rounded-xl font-medium transition-all duration-200 w-auto min-w-fit ${
+            className={`flex items-center justify-center space-x-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200 w-auto min-w-fit shadow-lg ${
               editingProfile
-                ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-                : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/25'
+                ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-700 hover:to-cyan-700 shadow-blue-600/25'
             }`}
           >
             {editingProfile ? <X className="h-4 w-4" /> : <Edit3 className="h-4 w-4" />}
@@ -2248,40 +2398,75 @@ const ProfileTab = ({
           </motion.button>
         </div>
         
-        {/* Verification Warning */}
-        {editingProfile && (
-          (emailChanged || phoneChanged) || 
-          (!user?.isEmailVerified && !emailChanged) || 
-          (!user?.isPhoneVerified && !phoneChanged)
-        ) && (
-          <div className="mb-6 p-3 sm:p-4 bg-amber-50 border border-amber-200 rounded-lg">
-            <div className="flex items-start space-x-2 sm:space-x-3">
-              <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-medium text-amber-800">Verification Required</h4>
-                <p className="text-sm text-amber-700 mt-1">
-                  {emailChanged && phoneChanged 
-                    ? 'You have changed both email and phone number. Please verify both before saving changes.'
-                    : emailChanged 
-                    ? 'You have changed your email address. Please verify it before saving changes.'
-                    : phoneChanged
-                    ? 'You have changed your phone number. Please verify it before saving changes.'
-                    : !user?.isEmailVerified && !user?.isPhoneVerified
-                    ? 'Please verify your email address and phone number before saving changes.'
-                    : !user?.isEmailVerified
-                    ? 'Please verify your email address before saving changes.'
-                    : 'Please verify your phone number before saving changes.'
-                  }
-                </p>
-                <div className="mt-2 space-y-1">
-                  {phoneChanged && !isValidPhone(profileForm.phone) && (
-                    <p className="text-xs text-red-600">⚠️ Please enter a valid phone number to proceed with verification</p>
-                  )}
+        {/* Compact Profile Completion Note */}
+        <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-lg shadow-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-lg flex items-center justify-center">
+                <TrendingUp className="h-4 w-4 text-white" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-gray-900">Complete Your Profile</h4>
+                <div className="flex items-center space-x-2 mt-1">
+                  <div className="w-20 bg-gray-200 rounded-full h-1.5">
+                    <div 
+                      className="bg-gradient-to-r from-blue-600 to-cyan-600 h-1.5 rounded-full transition-all duration-500 ease-out"
+                      style={{ width: `${stats.profileCompleteness || 0}%` }}
+                    ></div>
+                  </div>
+                  <span className="text-xs font-semibold text-gray-700">
+                    {stats.profileCompleteness || 0}%
+                  </span>
                 </div>
               </div>
             </div>
+            {stats.profileCompleteness < 100 && (() => {
+              // Count missing fields
+              const missingFields = [];
+              if (!profile?.logoUrl) missingFields.push("Upload institution logo");
+              if (!profile?.institutionName || profile?.institutionName === 'Not specified') missingFields.push("Add institution name");
+              if (!profile?.contactPersonName || profile?.contactPersonName === 'Not specified') missingFields.push("Add contact person name");
+              if (!profile?.institutionType || profile?.institutionType === 'Not specified') missingFields.push("Select institution type");
+              if (!profile?.description || profile?.description === 'Not specified') missingFields.push("Add institution description");
+              if (!profile?.accreditation || profile?.accreditation === 'Not specified') missingFields.push("Add accreditation details");
+              if (!profile?.website || profile?.website === 'Not specified') missingFields.push("Add website URL");
+              if (!profile?.address || profile?.address === 'Not specified') missingFields.push("Add institution address");
+              if (!profile?.city || profile?.city === 'Not specified') missingFields.push("Add city");
+              if (!profile?.state || profile?.state === 'Not specified') missingFields.push("Add state");
+              if (!profile?.country || profile?.country === 'Not specified') missingFields.push("Add country");
+              if (!profile?.postalCode || profile?.postalCode === 'Not specified') missingFields.push("Add postal code");
+
+              // Only show list if 3-4 fields are missing
+              if (missingFields.length >= 3 && missingFields.length <= 4) {
+                return (
+                  <div className="text-right">
+                    <p className="text-xs text-blue-600 font-medium">
+                      Complete these {missingFields.length} details:
+                    </p>
+                    <div className="mt-1 space-y-0.5">
+                      {missingFields.slice(0, 3).map((field, index) => (
+                        <p key={index} className="text-xs text-gray-600">
+                          • {field}
+                        </p>
+                      ))}
+                      {missingFields.length > 3 && (
+                        <p className="text-xs text-gray-500">
+                          +{missingFields.length - 3} more
+                        </p>
+                  )}
+                </div>
+              </div>
+                );
+              } else {
+                return (
+                  <p className="text-xs text-blue-600 font-medium">
+                    Complete {missingFields.length} more detail{missingFields.length > 1 ? 's' : ''} to reach 100%
+                  </p>
+                );
+              }
+            })()}
+            </div>
           </div>
-        )}
 
         {/* Logo Upload Section */}
         <div className="mb-6 sm:mb-8">
@@ -2362,14 +2547,14 @@ const ProfileTab = ({
                 name="institutionName"
                 value={profileForm.institutionName || ''}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300"
               />
             ) : (
               <input
                 type="text"
                 value={profile?.institutionName || 'Not specified'}
                 disabled={true}
-                className="w-full px-3 py-2 bg-gray-50 text-gray-900 rounded-lg border border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
+                className="w-full px-4 py-3 bg-gray-50 text-gray-900 rounded-xl border-2 border-gray-100 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
               />
             )}
           </div>
@@ -2382,14 +2567,14 @@ const ProfileTab = ({
                 name="contactPersonName"
                 value={profileForm.contactPersonName || ''}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300"
               />
             ) : (
               <input
                 type="text"
                 value={profile?.contactPersonName || 'Not specified'}
                 disabled={true}
-                className="w-full px-3 py-2 bg-gray-50 text-gray-900 rounded-lg border border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
+                className="w-full px-4 py-3 bg-gray-50 text-gray-900 rounded-xl border-2 border-gray-100 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
               />
             )}
           </div>
@@ -2405,7 +2590,7 @@ const ProfileTab = ({
                         name="email"
                         value={profileForm.email || ''}
                         onChange={handleProfileInputChange}
-                        className="flex-1 px-3 py-2 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="flex-1 px-4 py-3 pr-12 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300"
                         placeholder="Enter email address"
                       />
                       {(emailChanged || !user?.isEmailVerified) && (
@@ -2413,7 +2598,7 @@ const ProfileTab = ({
                           type="button"
                           onClick={onSendEmailOtp}
                           disabled={isEmailSending || !isValidEmail(profileForm.email)}
-                          className="w-full md:w-auto px-3 md:px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap"
+                          className="w-full md:w-auto px-4 md:px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white text-sm font-semibold rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap shadow-lg hover:shadow-xl"
                         >
                           {isEmailSending ? 'Sending...' : 'Verify Email'}
                         </button>
@@ -2466,7 +2651,7 @@ const ProfileTab = ({
                 name="institutionType"
                 value={profileForm.institutionType || ''}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300"
               >
                 <option value="">Select Type</option>
                 <option value="UNIVERSITY">University</option>
@@ -2480,7 +2665,7 @@ const ProfileTab = ({
                 type="text"
                 value={profile?.institutionType ? profile.institutionType.toLowerCase() : 'Not specified'}
                 disabled={true}
-                className="w-full px-3 py-2 bg-gray-50 text-gray-900 rounded-lg border border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
+                className="w-full px-4 py-3 bg-gray-50 text-gray-900 rounded-xl border-2 border-gray-100 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
               />
             )}
           </div>
@@ -2495,14 +2680,14 @@ const ProfileTab = ({
                 onChange={handleInputChange}
                 rows={3}
                 placeholder="Brief description of your institution..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300 resize-none"
               />
             ) : (
               <textarea
                 value={profile?.description || 'Not specified'}
                 disabled={true}
                 rows={3}
-                className="w-full px-3 py-2 bg-gray-50 text-gray-900 rounded-lg border border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 transition-colors resize-none"
+                className="w-full px-4 py-3 bg-gray-50 text-gray-900 rounded-xl border-2 border-gray-100 disabled:bg-gray-50 disabled:text-gray-500 transition-colors resize-none"
               />
             )}
           </div>
@@ -2515,14 +2700,14 @@ const ProfileTab = ({
                 name="accreditation"
                 value={profileForm.accreditation || ''}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300"
               />
             ) : (
               <input
                 type="text"
                 value={profile?.accreditation || 'Not specified'}
                 disabled={true}
-                className="w-full px-3 py-2 bg-gray-50 text-gray-900 rounded-lg border border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
+                className="w-full px-4 py-3 bg-gray-50 text-gray-900 rounded-xl border-2 border-gray-100 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
               />
             )}
           </div>
@@ -2535,14 +2720,14 @@ const ProfileTab = ({
                 name="website"
                 value={profileForm.website || ''}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300"
               />
             ) : (
               <input
                 type="text"
                 value={profile?.website || 'Not specified'}
                 disabled={true}
-                className="w-full px-3 py-2 bg-gray-50 text-gray-900 rounded-lg border border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
+                className="w-full px-4 py-3 bg-gray-50 text-gray-900 rounded-xl border-2 border-gray-100 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
               />
             )}
           </div>
@@ -2558,7 +2743,7 @@ const ProfileTab = ({
                       name="phone"
                       value={profileForm.phone || ''}
                       onChange={handleProfileInputChange}
-                      className="flex-1 px-3 py-2 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="flex-1 px-4 py-3 pr-12 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300"
                       placeholder="Enter phone number"
                     />
                     {(phoneChanged || !user?.isPhoneVerified) && (
@@ -2566,7 +2751,7 @@ const ProfileTab = ({
                         type="button"
                         onClick={onSendPhoneOtp}
                         disabled={isPhoneSending || !isValidPhone(profileForm.phone)}
-                        className="w-full md:w-auto px-3 md:px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap"
+                        className="w-full md:w-auto px-4 md:px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white text-sm font-semibold rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap shadow-lg hover:shadow-xl"
                       >
                         {isPhoneSending ? 'Sending...' : 'Verify Phone'}
                       </button>
@@ -2619,14 +2804,14 @@ const ProfileTab = ({
                 value={profileForm.address || ''}
                 onChange={handleInputChange}
                 rows={2}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300 resize-none"
               />
             ) : (
               <textarea
                 value={profile?.address || 'Not specified'}
                 disabled={true}
                 rows={2}
-                className="w-full px-3 py-2 bg-gray-50 text-gray-900 rounded-lg border border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 transition-colors resize-none"
+                className="w-full px-4 py-3 bg-gray-50 text-gray-900 rounded-xl border-2 border-gray-100 disabled:bg-gray-50 disabled:text-gray-500 transition-colors resize-none"
               />
             )}
           </div>
@@ -2639,14 +2824,14 @@ const ProfileTab = ({
                 name="city"
                 value={profileForm.city || ''}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300"
               />
             ) : (
               <input
                 type="text"
                 value={profile?.city || 'Not specified'}
                 disabled={true}
-                className="w-full px-3 py-2 bg-gray-50 text-gray-900 rounded-lg border border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
+                className="w-full px-4 py-3 bg-gray-50 text-gray-900 rounded-xl border-2 border-gray-100 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
               />
             )}
           </div>
@@ -2659,14 +2844,14 @@ const ProfileTab = ({
                 name="state"
                 value={profileForm.state || ''}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300"
               />
             ) : (
               <input
                 type="text"
                 value={profile?.state || 'Not specified'}
                 disabled={true}
-                className="w-full px-3 py-2 bg-gray-50 text-gray-900 rounded-lg border border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
+                className="w-full px-4 py-3 bg-gray-50 text-gray-900 rounded-xl border-2 border-gray-100 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
               />
             )}
           </div>
@@ -2679,14 +2864,14 @@ const ProfileTab = ({
                 name="country"
                 value={profileForm.country || ''}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300"
               />
             ) : (
               <input
                 type="text"
                 value={profile?.country || 'Not specified'}
                 disabled={true}
-                className="w-full px-3 py-2 bg-gray-50 text-gray-900 rounded-lg border border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
+                className="w-full px-4 py-3 bg-gray-50 text-gray-900 rounded-xl border-2 border-gray-100 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
               />
             )}
           </div>
@@ -2699,14 +2884,14 @@ const ProfileTab = ({
                 name="postalCode"
                 value={profileForm.postalCode || ''}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300"
               />
             ) : (
               <input
                 type="text"
                 value={profile?.postalCode || 'Not specified'}
                 disabled={true}
-                className="w-full px-3 py-2 bg-gray-50 text-gray-900 rounded-lg border border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
+                className="w-full px-4 py-3 bg-gray-50 text-gray-900 rounded-xl border-2 border-gray-100 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
               />
             )}
           </div>
@@ -2730,7 +2915,7 @@ const ProfileTab = ({
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={handleSave}
-              className="px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium shadow-lg shadow-blue-600/25 w-full sm:w-auto"
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl w-full sm:w-auto"
             >
               Save Changes
             </motion.button>
@@ -2787,6 +2972,7 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
   };
 
   const handleInputChange = (e) => {
+    console.log('Input change triggered:', e.target.name, e.target.value);
     const { name, value, type, checked } = e.target;
     
     // Handle category selection
@@ -2806,10 +2992,14 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
         }));
       }
     } else {
-      setRequirementForm(prev => ({
-        ...prev,
-        [name]: type === 'checkbox' ? checked : value
-      }));
+      setRequirementForm(prev => {
+        const newForm = {
+          ...prev,
+          [name]: type === 'checkbox' ? checked : value
+        };
+        console.log('Updated form:', newForm);
+        return newForm;
+      });
     }
   };
 
@@ -3063,46 +3253,43 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="relative backdrop-blur-xl bg-white/80 border border-white/30 rounded-xl shadow-lg p-4 mb-4"
+            className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-6 relative z-10"
           >
-            {/* Form Background Pattern */}
-            <div className="absolute inset-0 opacity-[0.02] rounded-xl">
-              <div className="absolute inset-0" style={{
-                backgroundImage: `
-                  linear-gradient(45deg, #3B82F6 1px, transparent 1px),
-                  linear-gradient(-45deg, #6366F1 1px, transparent 1px)
-                `,
-                backgroundSize: '40px 40px'
-              }}></div>
+            <div className="mb-8">
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Create a requirement</h3>
+              <p className="text-gray-600">Add a new academic requirement to connect with experts</p>
+              <div className="mt-2 text-xs text-gray-500">
+                Debug: Form state - {JSON.stringify(requirementForm)}
+              </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="relative z-10 space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-slate-700 uppercase tracking-wide">
-                    Requirement Title *
-                  </label>
+            <form onSubmit={handleSubmit} className="space-y-8">
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-gray-900">
+                  Title *
+                </label>
                 <input
                   type="text"
                   name="title"
-                  value={requirementForm.title}
+                  value={requirementForm.title || ''}
                   onChange={handleInputChange}
                   required
-                    className="w-full px-3 py-2 bg-white/50 backdrop-blur-sm border border-slate-200/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 placeholder:text-slate-400"
-                    placeholder="e.g., Advanced Data Science Workshop"
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 placeholder:text-gray-400 text-gray-900"
+                  placeholder="Enter the title of your requirement"
+                  autoComplete="off"
                 />
               </div>
-                
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-slate-700 uppercase tracking-wide">
-                    Category *
-                  </label>
+
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-gray-900">
+                  Category *
+                </label>
                                  <select
                    name="category"
                    value={requirementForm.category}
                    onChange={handleInputChange}
                    required
-                    className="w-full px-3 py-2 bg-white/50 backdrop-blur-sm border border-slate-200/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300"
+                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900"
                  >
                    <option value="">Select Category</option>
                    <optgroup label="Technology & Innovation">
@@ -3143,12 +3330,11 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
                    </optgroup>
                  </select>
               </div>
-            </div>
 
             {/* Custom Category Input */}
             {showCustomCategoryInput && (
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-slate-700 uppercase tracking-wide">
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-gray-900">
                   Custom Category *
                 </label>
                 <input
@@ -3157,29 +3343,30 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
                   onChange={handleCustomCategoryChange}
                   placeholder="Enter your custom category..."
                   required
-                  className="w-full px-3 py-2 bg-white/50 backdrop-blur-sm border border-slate-200/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 placeholder:text-slate-400"
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 placeholder:text-gray-400 text-gray-900"
                 />
               </div>
             )}
 
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-slate-700 uppercase tracking-wide">
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-gray-900">
                   Description *
                 </label>
             <textarea
                 name="description"
-                value={requirementForm.description}
+                value={requirementForm.description || ''}
                 onChange={handleInputChange}
                 required
-                  rows={2}
-                  className="w-full px-3 py-2 bg-white/50 backdrop-blur-sm border border-slate-200/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 placeholder:text-slate-400 resize-none"
-                  placeholder="Provide a comprehensive description of your requirement..."
+                  rows={4}
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 placeholder:text-gray-400 resize-none text-gray-900"
+                  placeholder="Describe the requirement in detail..."
+                  autoComplete="off"
               />
             </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-slate-700 uppercase tracking-wide">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-gray-900">
                     Budget (₹)
                   </label>
                   <div className="relative">
@@ -3189,14 +3376,14 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
                    name="budget"
                    value={requirementForm.budget}
               onChange={handleInputChange}
-                      className="w-full pl-8 pr-3 py-2 bg-white/50 backdrop-blur-sm border border-slate-200/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 placeholder:text-slate-400"
+                      className="w-full pl-8 pr-3 py-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 placeholder:text-gray-400"
                    placeholder="0"
                  />
                </div>
                 </div>
                 
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-slate-700 uppercase tracking-wide">
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-gray-900">
                     Deadline
                   </label>
                 <input
@@ -3204,56 +3391,57 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
                   name="deadline"
                   value={requirementForm.deadline}
                   onChange={handleInputChange}
-                    className="w-full px-3 py-2 bg-white/50 backdrop-blur-sm border border-slate-200/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300"
+                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                 />
               </div>
                 
-                <div className="flex items-center space-x-3 pt-6">
-                  <div className="relative">
+              </div>
+
+              <div className="flex items-center space-x-3">
                 <input
                   type="checkbox"
                   name="isUrgent"
                   checked={requirementForm.isUrgent}
                   onChange={handleInputChange}
-                      className="w-4 h-4 text-blue-600 focus:ring-blue-500/50 border-slate-300 rounded transition-all duration-200"
+                  className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
-                  </div>
-                  <label className="text-sm font-semibold text-slate-700">Mark as Urgent</label>
+                <label className="text-sm font-medium text-gray-900">Mark as Urgent</label>
               </div>
-        </div>
 
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-slate-700 uppercase tracking-wide">
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-gray-900">
                   Required Skills
                 </label>
-            <textarea
-                name="requiredSkills"
-                value={requirementForm.requiredSkills}
-              onChange={handleInputChange}
-                rows={2}
-                  className="w-full px-3 py-2 bg-white/50 backdrop-blur-sm border border-slate-200/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 placeholder:text-slate-400 resize-none"
+                <textarea
+                  name="requiredSkills"
+                  value={requirementForm.requiredSkills || ''}
+                  onChange={handleInputChange}
+                  rows={3}
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 placeholder:text-gray-400 resize-none text-gray-900"
                   placeholder="Specify any particular skills needed for the project..."
-            />
-        </div>
+                  autoComplete="off"
+                />
+              </div>
 
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-slate-700 uppercase tracking-wide">
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-gray-900">
                   Experience
                 </label>
-            <textarea
-                name="experience"
-                value={requirementForm.experience}
-              onChange={handleInputChange}
-                rows={2}
-                  className="w-full px-3 py-2 bg-white/50 backdrop-blur-sm border border-slate-200/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 placeholder:text-slate-400 resize-none"
+                <textarea
+                  name="experience"
+                  value={requirementForm.experience || ''}
+                  onChange={handleInputChange}
+                  rows={3}
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 placeholder:text-gray-400 resize-none text-gray-900"
                   placeholder="Specify required experience level or qualifications..."
-            />
-        </div>
+                  autoComplete="off"
+                />
+              </div>
 
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
             <button
                 type="submit"
-                  className="relative group px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold shadow-lg hover:bg-blue-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+                  className="relative group px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-semibold shadow-lg hover:from-blue-700 hover:to-cyan-700 hover:shadow-xl transition-all duration-200"
                 >
                   <span className="flex items-center justify-center gap-2 text-sm">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -3266,7 +3454,7 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
             <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                  className="px-6 py-2 bg-slate-100 text-slate-700 rounded-lg font-semibold hover:bg-slate-200 transition-all duration-300 border border-slate-200"
+                  className="px-6 py-2 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-200 border border-gray-200"
             >
               Cancel
             </button>
@@ -3459,7 +3647,7 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
             <div className="flex items-center gap-3">
               <h2 className="text-lg sm:text-xl font-bold text-slate-900">All Requirements</h2>
-              <div className="px-2 sm:px-3 py-1 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-full">
+              <div className="px-2 sm:px-3 py-1 bg-blue-50 rounded-full">
                 <span className="text-xs sm:text-sm font-semibold text-blue-800">{totalRequirements} requirements</span>
               </div>
                   </div>
@@ -3467,10 +3655,10 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
             <button 
               onClick={() => setShowForm(!showForm)}
               disabled={!canAccessRequirements()}
-              className={`relative group px-4 py-2 rounded-lg font-semibold transition-all duration-300 transform ${
+              className={`relative group px-4 py-2 rounded-xl font-semibold transition-all duration-200 ${
                 canAccessRequirements()
-                  ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl hover:-translate-y-0.5'
-                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                  ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-700 hover:to-cyan-700 shadow-lg hover:shadow-xl'
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}
             >
               {showForm ? (
@@ -3501,19 +3689,14 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
             </div>
           ) : requirements.length === 0 ? (
             <div className="text-center py-8 sm:py-12">
-              <div className="relative">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4 shadow-lg">
-                  <svg className="w-7 h-7 sm:w-8 sm:h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
+              <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <BarChart3 className="w-8 h-8 text-gray-400" />
                 </div>
-                <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 rounded-2xl blur-lg"></div>
-              </div>
-              <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-2">No requirements yet</h3>
-              <p className="text-slate-600 mb-4 sm:mb-6 max-w-sm mx-auto text-xs sm:text-sm">Start building your academic requirements portfolio to connect with top experts</p>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">No requirements yet</h3>
+              <p className="text-gray-600 mb-6 max-w-sm mx-auto text-sm">Start building your academic requirements portfolio to connect with top experts</p>
               <button 
                 onClick={() => setShowForm(true)}
-                className="px-5 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm"
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 shadow-lg hover:shadow-xl text-sm"
               >
                 Create Your First Requirement
               </button>
