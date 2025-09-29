@@ -69,6 +69,7 @@ const SuperAdminDashboard = () => {
     { id: 'plans', label: 'Plans', icon: BadgeDollarSign },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'settings', label: 'Settings', icon: Settings },
+    
   ];
 
   useEffect(() => {
