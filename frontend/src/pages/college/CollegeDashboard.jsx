@@ -1633,11 +1633,11 @@ const CollegeDashboard = () => {
                     transition={{ duration: 0.4, delay: 0.8 }}
                     whileHover={{ scale: 1.01 }}
                   >
-                    <div className="bg-gray-50 px-6 py-4 border-b border-gray-100">
+                    <div className="px-6 py-5 border-b border-gray-200 bg-gray-50/50">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                            <TrendingUp className="w-5 h-5 text-gray-600" />
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 bg-white rounded-xl shadow-sm border border-gray-200 flex items-center justify-center">
+                            <TrendingUp className="w-5 h-5 text-blue-600" />
                           </div>
                           <div>
                             <h3 className="text-lg font-semibold text-gray-900">Recent Requirements</h3>
@@ -1647,9 +1647,10 @@ const CollegeDashboard = () => {
                         {recentRequirements.length > 0 && (
                           <button
                             onClick={() => handleTabChange('requirements')}
-                            className="px-4 py-2 text-sm font-semibold text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors shadow-sm hover:shadow-md"
+                            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-all duration-200"
                           >
-                            View All
+                            <span>View all</span>
+                            <ChevronRight className="w-4 h-4" />
                           </button>
                         )}
                       </div>
@@ -1667,18 +1668,40 @@ const CollegeDashboard = () => {
                       ) : (
                         <div className="space-y-3">
                           {recentRequirements.slice(0, 3).map((req) => (
-                            <div key={req.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                              <div>
-                                <p className="font-medium text-gray-900">{req.title}</p>
-                                <p className="text-sm text-gray-600">{new Date(req.endDate).toLocaleDateString()}</p>
+                            <div key={req.id} className="group p-4 bg-white border border-gray-200 rounded-lg hover:shadow-sm hover:border-gray-300 transition-all duration-200">
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-gray-900 truncate group-hover:text-blue-600 transition-colors">{req.title}</p>
+                                  <div className="flex items-center gap-4 mt-2">
+                                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                                      <Calendar className="w-3 h-3" />
+                                      <span>Posted: {req.createdAt ? new Date(req.createdAt).toLocaleDateString('en-US', {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: 'numeric'
+                                      }) : 'N/A'}</span>
+                                    </div>
+                                    {req.department && (
+                                      <div className="flex items-center gap-1 text-xs text-gray-500">
+                                        <Briefcase className="w-3 h-3" />
+                                        <span>{req.department}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-3 ml-4">
+                                  <span className={`px-3 py-1 text-xs font-medium rounded-full border ${
+                                    req.status === 'ACTIVE' 
+                                      ? 'bg-green-50 text-green-700 border-green-200' 
+                                      : 'bg-gray-50 text-gray-700 border-gray-200'
+                                  }`}>
+                                    {req.status}
+                                  </span>
+                                  <div className="w-6 h-6 rounded-full bg-gray-100 group-hover:bg-blue-100 flex items-center justify-center transition-colors">
+                                    <ChevronRight className="w-3 h-3 text-gray-400 group-hover:text-blue-600" />
+                                  </div>
+                                </div>
                               </div>
-                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                req.status === 'ACTIVE' 
-                                  ? 'bg-green-100 text-green-800' 
-                                  : 'bg-gray-100 text-gray-800'
-                              }`}>
-                                {req.status}
-                              </span>
                             </div>
                           ))}
                             </div>
