@@ -342,6 +342,8 @@ model requirement {
   deadline         DateTime?
   isUrgent         Boolean                @default(false)
   isActive         Boolean                @default(true)
+  requiredSkills   String?                @db.Text
+  experience       String?                @db.Text
   createdAt        DateTime               @default(now())
   updatedAt        DateTime
   collegeprofile   collegeprofile         @relation(fields: [collegeProfileId], references: [id], onDelete: Cascade, map: "Requirement_collegeProfileId_fkey")

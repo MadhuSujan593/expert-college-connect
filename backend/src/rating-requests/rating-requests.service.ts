@@ -95,6 +95,7 @@ export class RatingRequestsService {
         expertprofile: {
           select: {
             id: true,
+            profilePicture: true,
             user: {
               select: {
                 fullName: true,
@@ -121,7 +122,7 @@ export class RatingRequestsService {
     return ratingRequest;
   }
 
-  async findAll(expertProfileId?: string, collegeProfileId?: string) {
+  async findAll(expertProfileId?: string, collegeProfileId?: string, page: number = 1, limit: number = 10) {
     const where: any = {};
 
     if (expertProfileId) {
@@ -132,12 +133,24 @@ export class RatingRequestsService {
       where.collegeProfileId = collegeProfileId;
     }
 
+    // Calculate pagination
+    const skip = (page - 1) * limit;
+    
+    // Get total count for pagination metadata
+    const total = await this.prisma.ratingrequest.count({ where });
+    const totalPages = Math.ceil(total / limit);
+    const hasNextPage = page < totalPages;
+    const hasPrevPage = page > 1;
+
     const ratingRequests = await this.prisma.ratingrequest.findMany({
       where,
+      skip,
+      take: limit,
       include: {
         expertprofile: {
           select: {
             id: true,
+            profilePicture: true,
             user: {
               select: {
                 fullName: true,
@@ -173,7 +186,13 @@ export class RatingRequestsService {
       orderBy: { requestedAt: 'desc' }
     });
 
-    return ratingRequests;
+    return {
+      data: ratingRequests,
+      total,
+      totalPages,
+      hasNextPage,
+      hasPrevPage
+    };
   }
 
   async findOne(id: string) {
@@ -183,6 +202,7 @@ export class RatingRequestsService {
         expertprofile: {
           select: {
             id: true,
+            profilePicture: true,
             user: {
               select: {
                 fullName: true,
@@ -247,6 +267,7 @@ export class RatingRequestsService {
         expertprofile: {
           select: {
             id: true,
+            profilePicture: true,
             user: {
               select: {
                 fullName: true,

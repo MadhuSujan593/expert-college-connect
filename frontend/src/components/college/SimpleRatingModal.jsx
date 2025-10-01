@@ -125,46 +125,46 @@ const SimpleRatingModal = ({
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
-          className="bg-white rounded-lg shadow-xl w-full max-w-sm sm:max-w-md max-h-[90vh] overflow-y-auto"
+          className="bg-white rounded-xl shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto"
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b">
-            <h2 className="text-lg font-semibold">Rate Expert</h2>
+          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-900">Rate Expert</h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-gray-400 hover:text-gray-600 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* Content */}
-          <form onSubmit={handleSubmit} className="p-3 sm:p-4 space-y-3 sm:space-y-4">
+          <form onSubmit={handleSubmit} className="p-6 space-y-6">
             <div>
-              <p className="text-sm text-gray-600 mb-2">
+              <p className="text-sm text-gray-600">
                 Rate {expert?.fullName || 'this expert'} for "{requirement?.title}"
               </p>
             </div>
 
             {/* Required Questions */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-medium text-gray-700">Required Ratings *</h3>
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900">Required Ratings *</h3>
               
               {/* Communication */}
               <div>
-                <label className="block text-sm text-gray-600 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Communication
                 </label>
-                <div className="flex space-x-1">
+                <div className="flex space-x-2">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
                       key={star}
                       type="button"
                       onClick={() => handleQuestionRating('communication', star)}
-                      className="p-1 hover:bg-gray-100 rounded transition-colors"
+                      className="p-2 hover:bg-gray-100 rounded-md transition-colors"
                     >
                       <Star
-                        className={`w-4 h-4 sm:w-5 sm:h-5 ${
+                        className={`w-6 h-6 ${
                           star <= questions.communication
                             ? 'text-yellow-400 fill-current'
                             : 'text-gray-300'
@@ -177,19 +177,19 @@ const SimpleRatingModal = ({
 
               {/* Expertise */}
               <div>
-                <label className="block text-sm text-gray-600 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Technical Expertise
                 </label>
-                <div className="flex space-x-1">
+                <div className="flex space-x-2">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
                       key={star}
                       type="button"
                       onClick={() => handleQuestionRating('expertise', star)}
-                      className="p-1 hover:bg-gray-100 rounded transition-colors"
+                      className="p-2 hover:bg-gray-100 rounded-md transition-colors"
                     >
                       <Star
-                        className={`w-4 h-4 sm:w-5 sm:h-5 ${
+                        className={`w-6 h-6 ${
                           star <= questions.expertise
                             ? 'text-yellow-400 fill-current'
                             : 'text-gray-300'
@@ -202,19 +202,19 @@ const SimpleRatingModal = ({
 
               {/* Timeliness */}
               <div>
-                <label className="block text-sm text-gray-600 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Timeliness
                 </label>
-                <div className="flex space-x-1">
+                <div className="flex space-x-2">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
                       key={star}
                       type="button"
                       onClick={() => handleQuestionRating('timeliness', star)}
-                      className="p-1 hover:bg-gray-100 rounded transition-colors"
+                      className="p-2 hover:bg-gray-100 rounded-md transition-colors"
                     >
                       <Star
-                        className={`w-4 h-4 sm:w-5 sm:h-5 ${
+                        className={`w-6 h-6 ${
                           star <= questions.timeliness
                             ? 'text-yellow-400 fill-current'
                             : 'text-gray-300'
@@ -227,19 +227,19 @@ const SimpleRatingModal = ({
 
               {/* Professionalism */}
               <div>
-                <label className="block text-sm text-gray-600 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Professionalism
                 </label>
-                <div className="flex space-x-1">
+                <div className="flex space-x-2">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
                       key={star}
                       type="button"
                       onClick={() => handleQuestionRating('professionalism', star)}
-                      className="p-1 hover:bg-gray-100 rounded transition-colors"
+                      className="p-2 hover:bg-gray-100 rounded-md transition-colors"
                     >
                       <Star
-                        className={`w-4 h-4 sm:w-5 sm:h-5 ${
+                        className={`w-6 h-6 ${
                           star <= questions.professionalism
                             ? 'text-yellow-400 fill-current'
                             : 'text-gray-300'
@@ -253,19 +253,19 @@ const SimpleRatingModal = ({
 
             {/* Overall Rating */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-lg font-semibold text-gray-900 mb-3">
                 Overall Rating *
               </label>
-              <div className="flex space-x-1">
+              <div className="flex space-x-2">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     key={star}
                     type="button"
                     onClick={() => setRating(star)}
-                    className="p-1 hover:bg-gray-100 rounded transition-colors"
+                    className="p-2 hover:bg-gray-100 rounded-md transition-colors"
                   >
                     <Star
-                      className={`w-5 h-5 sm:w-6 sm:h-6 ${
+                      className={`w-8 h-8 ${
                         star <= rating
                           ? 'text-yellow-400 fill-current'
                           : 'text-gray-300'
@@ -274,7 +274,7 @@ const SimpleRatingModal = ({
                   </button>
                 ))}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-sm text-gray-600 mt-2">
                 {rating === 0 ? 'Not rated' : 
                  rating === 1 ? 'Poor' :
                  rating === 2 ? 'Fair' :
@@ -285,15 +285,15 @@ const SimpleRatingModal = ({
 
             {/* Review */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-lg font-semibold text-gray-900 mb-3">
                 Review (Optional)
               </label>
               <textarea
                 value={review}
                 onChange={(e) => setReview(e.target.value)}
                 placeholder="Share your experience working with this expert..."
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 transition-colors"
-                rows={3}
+                className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm resize-none"
+                rows={4}
               />
             </div>
 
@@ -302,14 +302,14 @@ const SimpleRatingModal = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200"
+                className="px-6 py-3 bg-white text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors border border-gray-300 shadow-sm hover:shadow-md"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={submitting || !isFormValid()}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-medium rounded-md transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
                 {submitting ? (
                   <>

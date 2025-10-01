@@ -30,11 +30,12 @@ import { useAuth } from '../../contexts/AuthContext';
 const ApplicationManagement = ({ requirementId }) => {
   const { user } = useAuth();
   const [selectedRequirement, setSelectedRequirement] = useState(null);
+  const [showAllApplications, setShowAllApplications] = useState(true);
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
     shortlisted: 0,
-    accepted: 0
+    rejected: 0
   });
 
   const [showStatusModal, setShowStatusModal] = useState(false);
@@ -51,24 +52,40 @@ const ApplicationManagement = ({ requirementId }) => {
 
   // Handle requirement selection
   const handleRequirementSelect = (requirement) => {
-    setSelectedRequirement(requirement);
+    if (requirement === null) {
+      // Show all applications
+      setSelectedRequirement(null);
+      setShowAllApplications(true);
+    } else {
+      // Show specific requirement applications
+      setSelectedRequirement(requirement);
+      setShowAllApplications(false);
+    }
     // Reset any existing application selection
     setSelectedApplication(null);
   };
 
-  // Fetch statistics for the selected requirement
+  // Fetch statistics for applications
   const fetchStats = async () => {
-    if (!selectedRequirement?.id) return;
-
     try {
-      const response = await apiService.get(`/applications/requirement/${selectedRequirement.id}`);
+      let response;
+      if (showAllApplications) {
+        // Fetch all applications for the college
+        response = await apiService.get('/applications/college');
+      } else if (selectedRequirement?.id) {
+        // Fetch applications for specific requirement
+        response = await apiService.get(`/applications/requirement/${selectedRequirement.id}`);
+      } else {
+        return;
+      }
+
       if (response.success && response.data) {
         const applications = response.data.applications || [];
         const stats = {
           total: applications.length,
           pending: applications.filter(app => app.status === 'PENDING').length,
           shortlisted: applications.filter(app => app.status === 'SHORTLISTED').length,
-          accepted: applications.filter(app => app.status === 'ACCEPTED').length
+          rejected: applications.filter(app => app.status === 'REJECTED').length
         };
         setStats(stats);
       }
@@ -78,10 +95,13 @@ const ApplicationManagement = ({ requirementId }) => {
   };
 
   useEffect(() => {
-    if (selectedRequirement) {
-      fetchStats();
-    }
-  }, [selectedRequirement]);
+    fetchStats();
+  }, [selectedRequirement, showAllApplications]);
+
+  // Fetch stats on component mount
+  useEffect(() => {
+    fetchStats();
+  }, []);
 
   // Handle status update
   const handleStatusUpdate = async () => {
@@ -145,56 +165,72 @@ const ApplicationManagement = ({ requirementId }) => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Main Content - Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Right Column - Requirement Selector (Shows first on mobile) */}
-        <div className="lg:col-span-1 order-1 lg:order-2">
-          <RequirementSelector 
-            onRequirementSelect={handleRequirementSelect}
-            selectedRequirementId={selectedRequirement?.id}
-          />
-        </div>
-
-        {/* Left Column - Stats and Table (Shows second on mobile) */}
-        <div className="lg:col-span-2 space-y-6 order-2 lg:order-1 w-full">
-          {/* Welcome Message - Show when no requirement is selected */}
-          {!selectedRequirement && (
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="card-glass p-12 text-center"
-            >
-              <div className="max-w-md mx-auto">
-                <div className="w-20 h-20 bg-gradient-to-br from-primary-100 to-primary-200 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-soft">
-                  <BarChart3 className="w-10 h-10 text-primary-600" />
-                </div>
-                <h3 className="text-2xl font-bold text-neutral-900 mb-3">Welcome to Application Management</h3>
-                <p className="text-neutral-600 text-lg leading-relaxed">
-                  Select a requirement from the dropdown to view and manage applications for that specific position.
-                </p>
+    <div className="min-h-screen bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="space-y-6">
+          {/* Filter Section */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span className="text-sm font-semibold text-gray-900">{stats.total}</span>
+                <span className="text-sm text-gray-600">Total Applications</span>
               </div>
-            </motion.div>
-          )}
-
-
-          {/* Applications Table - Only show when requirement is selected */}
-          {selectedRequirement && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <ApplicationTable
-                requirementId={selectedRequirement.id}
-                onViewProfile={handleTableViewProfile}
-                onUpdateStatus={handleTableUpdateStatus}
-                refreshKey={refreshKey}
-                adminName={user?.fullName || 'Admin'}
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                <span className="text-sm font-semibold text-gray-900">{stats.pending}</span>
+                <span className="text-sm text-gray-600">Pending</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-sm font-semibold text-gray-900">{stats.shortlisted}</span>
+                <span className="text-sm text-gray-600">Shortlisted</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                <span className="text-sm font-semibold text-gray-900">{stats.rejected}</span>
+                <span className="text-sm text-gray-600">Rejected</span>
+              </div>
+            </div>
+            <div className="max-w-md">
+              <RequirementSelector 
+                onRequirementSelect={handleRequirementSelect}
+                selectedRequirementId={selectedRequirement?.id}
               />
-            </motion.div>
-          )}
+            </div>
+          </div>
+
+          {/* Applications Table - Always show */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="mb-4">
+              {showAllApplications ? (
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">All Applications</h2>
+                  <p className="text-gray-600 text-sm mt-1">
+                    Showing all applications across all requirements
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Applications for "{selectedRequirement.title}"</h2>
+                  <p className="text-gray-600 text-sm mt-1">
+                    {stats.total} total applications • {stats.pending} pending review
+                  </p>
+                </div>
+              )}
+            </div>
+            <ApplicationTable
+              requirementId={showAllApplications ? null : selectedRequirement?.id}
+              onViewProfile={handleTableViewProfile}
+              onUpdateStatus={handleTableUpdateStatus}
+              refreshKey={refreshKey}
+              adminName={user?.fullName || 'Admin'}
+            />
+          </motion.div>
         </div>
       </div>
 
@@ -222,13 +258,13 @@ const ApplicationManagement = ({ requirementId }) => {
               </div>
             </div>
 
-            <div className="p-6 space-y-6">
+            <div className="p-6 space-y-5">
               <div>
-                <label className="block text-sm font-semibold text-neutral-700 mb-3">Status</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                 <select
                   value={statusForm.status}
                   onChange={(e) => setStatusForm(prev => ({ ...prev, status: e.target.value }))}
-                  className="input w-full"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
                 >
                   <option value="PENDING">Pending</option>
                   <option value="SHORTLISTED">Shortlist</option>
@@ -237,27 +273,27 @@ const ApplicationManagement = ({ requirementId }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-neutral-700 mb-3">Review Notes (Optional)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Review Notes (Optional)</label>
                 <textarea
                   rows={4}
                   value={statusForm.reviewNotes}
                   onChange={(e) => setStatusForm(prev => ({ ...prev, reviewNotes: e.target.value }))}
                   placeholder="Add feedback or notes for the expert..."
-                  className="input w-full resize-none"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm resize-none"
                 />
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex items-center gap-3 pt-4">
                 <button
                   onClick={handleStatusUpdate}
                   disabled={submitting}
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white py-3 px-6 rounded-md font-semibold transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitting ? 'Updating...' : 'Update Status'}
                 </button>
                 <button
                   onClick={() => setShowStatusModal(false)}
-                  className="px-6 py-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-semibold rounded-xl transition-all duration-200 border border-neutral-200"
+                  className="px-6 py-3 bg-white text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors border border-gray-300 shadow-sm hover:shadow-md"
                 >
                   Cancel
                 </button>

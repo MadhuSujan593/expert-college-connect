@@ -29,11 +29,9 @@ export class RequirementsService {
       ? new Date(createRequirementDto.deadline).toISOString()
       : null;
 
-    const { requiredSkills, experience, ...requirementData } = createRequirementDto;
-    
     const requirement = await this.prisma.requirement.create({
       data: {
-        ...requirementData,
+        ...createRequirementDto,
         deadline: formattedDeadline,
         collegeProfileId: collegeProfile.id,
         updatedAt: new Date()
@@ -100,6 +98,8 @@ export class RequirementsService {
           deadline: true,
           isUrgent: true,
           isActive: true,
+          requiredSkills: true,
+          experience: true,
           createdAt: true,
           updatedAt: true,
           collegeProfileId: true,
@@ -225,9 +225,8 @@ export class RequirementsService {
       : undefined;
 
     // Prepare update data with formatted deadline
-    const { requiredSkills, experience, ...requirementData } = updateRequirementDto;
     const updateData = {
-      ...requirementData,
+      ...updateRequirementDto,
       deadline: formattedDeadline,
       updatedAt: new Date()
     };

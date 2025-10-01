@@ -67,6 +67,10 @@ const CollegeDashboard = () => {
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [expertRatings, setExpertRatings] = useState([]);
   const [ratingRequests, setRatingRequests] = useState([]);
+  // Pagination state for rating requests
+  const [ratingRequestsPage, setRatingRequestsPage] = useState(1);
+  const [ratingRequestsHasMore, setRatingRequestsHasMore] = useState(true);
+  const [ratingRequestsLoadingMore, setRatingRequestsLoadingMore] = useState(false);
   const [stats, setStats] = useState({
     profileCompleteness: 0,
     totalRequirements: 0,
@@ -329,14 +333,29 @@ const CollegeDashboard = () => {
     }
   };
 
-  const fetchRatingRequests = async () => {
+  const fetchRatingRequests = async (pageNum = 1, append = false) => {
     try {
-      const response = await apiService.get('/rating-requests');
+      if (append) {
+        setRatingRequestsLoadingMore(true);
+      }
+      
+      const response = await apiService.get(`/rating-requests?page=${pageNum}&limit=10`);
       if (response.success) {
-        setRatingRequests(response.data);
+        if (append) {
+          setRatingRequests(prev => [...prev, ...response.data]);
+        } else {
+          setRatingRequests(response.data);
+        }
+        // Use the pagination metadata from backend
+        setRatingRequestsHasMore(response.pagination?.hasNextPage || false);
+        setRatingRequestsPage(pageNum);
       }
     } catch (error) {
       console.error('Failed to fetch rating requests:', error);
+    } finally {
+      if (append) {
+        setRatingRequestsLoadingMore(false);
+      }
     }
   };
 
@@ -357,6 +376,11 @@ const CollegeDashboard = () => {
     const isVerified = user?.isEmailVerified || user?.isPhoneVerified;
     const hasPlan = !!mySubscription?.plan;
     return isVerified && hasPlan;
+  };
+
+  // Check if user can access application management (only requires email verification)
+  const canAccessApplicationManagement = () => {
+    return user?.isEmailVerified;
   };
 
   // Check if user can access expert directory (requires verification)
@@ -911,24 +935,33 @@ const CollegeDashboard = () => {
     }
   }, [hasMore, loadingMore, page]);
 
+  // Load more rating requests for infinite scroll
+  const loadMoreRatingRequests = useCallback(() => {
+    if (ratingRequestsHasMore && !ratingRequestsLoadingMore) {
+      fetchRatingRequests(ratingRequestsPage + 1, true);
+    }
+  }, [ratingRequestsHasMore, ratingRequestsLoadingMore, ratingRequestsPage]);
+
   // Auto-load more when scrolling to bottom
   useEffect(() => {
     const handleScroll = () => {
-      if (activeTab === 'requirements') {
-        const scrollTop = window.scrollY;
-        const windowHeight = window.innerHeight;
-        const documentHeight = document.documentElement.scrollHeight;
-        
-        // Load more when user is near bottom (within 100px)
-        if (scrollTop + windowHeight >= documentHeight - 100) {
+      const scrollTop = window.scrollY;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      
+      // Load more when user is near bottom (within 100px)
+      if (scrollTop + windowHeight >= documentHeight - 100) {
+        if (activeTab === 'requirements') {
           loadMoreRequirements();
+        } else if (activeTab === 'rating-requests') {
+          loadMoreRatingRequests();
         }
       }
     };
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [activeTab, loadMoreRequirements]);
+  }, [activeTab, loadMoreRequirements, loadMoreRatingRequests]);
 
   // Fetch dashboard data
   const fetchDashboardData = async () => {
@@ -1276,7 +1309,7 @@ const CollegeDashboard = () => {
                 icon={CheckCircle}
                 isActive={activeTab === 'applications'}
                 onClick={(tabId) => {
-                  if (tabId === 'applications' && !canAccessRequirements()) {
+                  if (tabId === 'applications' && !canAccessApplicationManagement()) {
                     setVerificationFeatureName("Application Management");
                     setShowVerificationRequirement(true);
                   } else {
@@ -1361,24 +1394,15 @@ const CollegeDashboard = () => {
                   <Menu className="h-5 w-5" />
                 </button>
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">
+                  <h1 className="text-xl font-bold text-gray-900">
                     {activeTab === 'overview' && 'Monitor your institution'}
                     {activeTab === 'profile' && 'Institution Profile'}
-                    {activeTab === 'requirements' && 'Requirements Management'}
+                    {activeTab === 'requirements' && 'Manage Requirements'}
                     {activeTab === 'applications' && 'Application Management'}
                     {activeTab === 'experts' && 'Expert Directory'}
                     {activeTab === 'ratings' && 'Ratings & Trust'}
                     {activeTab === 'rating-requests' && 'Rating Requests'}
                   </h1>
-                  <p className="text-gray-600 mt-1">
-                    {activeTab === 'overview' && 'Control and analyze your academic data in the easiest way'}
-                    {activeTab === 'profile' && 'Manage your institution profile'}
-                    {activeTab === 'requirements' && 'Create and manage requirements'}
-                    {activeTab === 'applications' && 'Review and manage applications'}
-                    {activeTab === 'experts' && 'Browse and connect with experts'}
-                    {activeTab === 'ratings' && 'View ratings and trust scores'}
-                    {activeTab === 'rating-requests' && 'Review and respond to rating requests'}
-                  </p>
                 </div>
                 </div>
 
@@ -1623,7 +1647,7 @@ const CollegeDashboard = () => {
                         {recentRequirements.length > 0 && (
                           <button
                             onClick={() => handleTabChange('requirements')}
-                            className="px-3 py-1 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                            className="px-4 py-2 text-sm font-semibold text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors shadow-sm hover:shadow-md"
                           >
                             View All
                           </button>
@@ -1634,11 +1658,11 @@ const CollegeDashboard = () => {
                     <div className="p-6">
                       {recentRequirements.length === 0 ? (
                           <div className="text-center py-8">
-                            <div className="w-16 h-16 bg-gray-50 rounded-lg flex items-center justify-center mx-auto mb-4">
-                              <BarChart3 className="w-8 h-8 text-gray-400" />
+                            <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                              <BarChart3 className="w-6 h-6 text-gray-400" />
                             </div>
                             <p className="text-gray-500 mb-2">No requirements posted yet</p>
-                            <p className="text-sm text-gray-400">Start by posting your first academic requirement</p>
+                            <p className="text-sm text-gray-500">Start by posting your first academic requirement</p>
                         </div>
                       ) : (
                         <div className="space-y-3">
@@ -1737,7 +1761,7 @@ const CollegeDashboard = () => {
 
               {/* Applications Tab */}
               {activeTab === 'applications' && (
-                canAccessRequirements() ? (
+                canAccessApplicationManagement() ? (
                   <>
                     <ApplicationManagement 
                       requirementId={null}
@@ -1745,7 +1769,7 @@ const CollegeDashboard = () => {
                     />
                   </>
                 ) : (
-                  <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+                  <div className="mb-8">
                     <div className="text-center py-8">
                       <CheckCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                       <p className="text-gray-500 mb-3">Verification required to access Application Management</p>
@@ -1753,7 +1777,7 @@ const CollegeDashboard = () => {
                         {!user?.isEmailVerified && (
                           <button
                             onClick={handleVerifyEmailFromRequirements}
-                            className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700"
+                            className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
                           >
                             Verify Email
                           </button>
@@ -1761,7 +1785,7 @@ const CollegeDashboard = () => {
                         {!user?.isPhoneVerified && (
                           <button
                             onClick={handleVerifyPhoneFromRequirements}
-                            className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700"
+                            className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
                           >
                             Verify Phone
                           </button>
@@ -1781,7 +1805,7 @@ const CollegeDashboard = () => {
                     <ExpertsTab user={user} key={`experts-${user?.id || 'no-user'}`} />
                   </>
                 ) : (
-                  <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+                  <div className="mb-8">
                     <div className="text-center py-8">
                       <Users className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                       <p className="text-gray-500 mb-3">Verification required to access Expert Directory</p>
@@ -1789,7 +1813,7 @@ const CollegeDashboard = () => {
                         {!user?.isEmailVerified && (
                           <button
                             onClick={handleVerifyEmailFromRequirements}
-                            className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700"
+                            className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
                           >
                             Verify Email
                           </button>
@@ -1797,7 +1821,7 @@ const CollegeDashboard = () => {
                         {!user?.isPhoneVerified && (
                           <button
                             onClick={handleVerifyPhoneFromRequirements}
-                            className="w-full px-3 py-2 bg-green-600 text-white text-sm rounded-xl hover:bg-green-700"
+                            className="px-4 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors"
                           >
                             Verify Phone
                           </button>
@@ -1816,7 +1840,7 @@ const CollegeDashboard = () => {
                 canAccessExperts() ? (
                 <RatingsTab user={user} key={`ratings-${user?.id || 'no-user'}`} />
                 ) : (
-                  <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+                  <div className="mb-8">
                     <div className="text-center py-8">
                       <Star className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                       <p className="text-gray-500 mb-3">Verification required to access Ratings & Trust</p>
@@ -1824,7 +1848,7 @@ const CollegeDashboard = () => {
                         {!user?.isEmailVerified && (
                           <button
                             onClick={handleVerifyEmailFromRequirements}
-                            className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700"
+                            className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
                           >
                             Verify Email
                           </button>
@@ -1832,7 +1856,7 @@ const CollegeDashboard = () => {
                         {!user?.isPhoneVerified && (
                           <button
                             onClick={handleVerifyPhoneFromRequirements}
-                            className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700"
+                            className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
                           >
                             Verify Phone
                           </button>
@@ -1852,7 +1876,10 @@ const CollegeDashboard = () => {
                 >
                   <RatingRequestsList 
                     ratingRequests={ratingRequests} 
-                    onUpdate={fetchRatingRequests}
+                    onUpdate={() => fetchRatingRequests(1, false)}
+                    hasMore={ratingRequestsHasMore}
+                    loadingMore={ratingRequestsLoadingMore}
+                    onLoadMore={loadMoreRatingRequests}
                   />
                 </motion.div>
               )}
@@ -2030,40 +2057,24 @@ const CollegeDashboard = () => {
         </div>
       )}
 
-      {/* View Requirement Modal */}
+      {/* View Requirement Page */}
       {showViewModal && viewingRequirement && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="relative w-full max-w-2xl bg-white rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto"
-          >
-            <div className="flex items-center justify-between p-4 border-b border-slate-200">
-              <h3 className="text-lg font-bold text-slate-900">View Requirement</h3>
-              <button
-                onClick={() => {
-                  setShowViewModal(false);
-                  setViewingRequirement(null);
-                }}
-                className="p-2 text-slate-400 hover:text-slate-600 transition-colors rounded-lg hover:bg-slate-100"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="p-4 space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Title</label>
-                  <p className="text-slate-900 font-medium">{viewingRequirement.title}</p>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Category</label>
-                  <p className="text-slate-900">{viewingRequirement.category?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
-                </div>
+        <div className="mb-8">
+          <div className="mb-4">
+            <h1 className="text-xl font-bold text-gray-900">View Requirement</h1>
+          </div>
+          <div className="space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <p className="text-gray-900 font-medium">{viewingRequirement.title}</p>
               </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                <p className="text-gray-900">{viewingRequirement.category?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
+              </div>
+            </div>
 
               {/* Subscription Summary */}
               <div className="bg-white rounded-2xl shadow-sm p-6">
@@ -2106,71 +2117,70 @@ const CollegeDashboard = () => {
                 )}
               </div>
               
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <p className="text-gray-900 leading-relaxed">{viewingRequirement.description}</p>
+            </div>
+              
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>
-                <p className="text-slate-900 leading-relaxed">{viewingRequirement.description}</p>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Budget (₹)</label>
+                <p className="text-gray-900">{viewingRequirement.budget ? `₹${parseInt(viewingRequirement.budget).toLocaleString()}` : 'Not specified'}</p>
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Budget (₹)</label>
-                  <p className="text-slate-900">{viewingRequirement.budget ? `₹${parseInt(viewingRequirement.budget).toLocaleString()}` : 'Not specified'}</p>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Deadline</label>
-                  <p className="text-slate-900">
-                    {viewingRequirement.deadline 
-                      ? new Date(viewingRequirement.deadline).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric'
-                        })
-                      : 'No deadline'
-                    }
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex items-center">
-                <label className="block text-sm font-medium text-slate-700 mr-2">Urgent:</label>
-                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                  viewingRequirement.isUrgent 
-                    ? 'bg-red-100 text-red-800' 
-                    : 'bg-gray-100 text-gray-800'
-                }`}>
-                  {viewingRequirement.isUrgent ? 'Yes' : 'No'}
-                </span>
-              </div>
-
-              {viewingRequirement.requiredSkills && (
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Required Skills</label>
-                  <p className="text-slate-900 leading-relaxed">{viewingRequirement.requiredSkills}</p>
-                </div>
-              )}
-
-              {viewingRequirement.experience && (
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Experience</label>
-                  <p className="text-slate-900 leading-relaxed">{viewingRequirement.experience}</p>
-                </div>
-              )}
-              
-              <div className="flex gap-3 pt-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowViewModal(false);
-                    setViewingRequirement(null);
-                  }}
-                  className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200 transition-colors"
-                >
-                  Close
-                </button>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Deadline</label>
+                <p className="text-gray-900">
+                  {viewingRequirement.deadline 
+                    ? new Date(viewingRequirement.deadline).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                      })
+                    : 'No deadline'
+                  }
+                </p>
               </div>
             </div>
-          </motion.div>
+              
+            <div className="flex items-center gap-3">
+              <label className="text-sm font-medium text-gray-700">Urgent:</label>
+              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                viewingRequirement.isUrgent 
+                  ? 'bg-red-100 text-red-800' 
+                  : 'bg-gray-100 text-gray-800'
+              }`}>
+                {viewingRequirement.isUrgent ? 'Yes' : 'No'}
+              </span>
+            </div>
+
+            {viewingRequirement.requiredSkills && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Required Skills</label>
+                <p className="text-gray-900 leading-relaxed">{viewingRequirement.requiredSkills}</p>
+              </div>
+            )}
+
+            {viewingRequirement.experience && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Experience</label>
+                <p className="text-gray-900 leading-relaxed">{viewingRequirement.experience}</p>
+              </div>
+            )}
+              
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowViewModal(false);
+                  setViewingRequirement(null);
+                }}
+                className="px-6 py-3 bg-white text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors border border-gray-300 shadow-sm hover:shadow-md"
+              >
+                Back to Requirements
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -2367,54 +2377,24 @@ const ProfileTab = ({
   return (
     <div className="space-y-8">
       {/* Basic Information */}
-      <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 border border-gray-100">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <h3 className="text-xl font-bold text-gray-900 flex items-center">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
-              <Building2 className="w-5 h-5 text-white" />
-            </div>
-            Institution Information
-          </h3>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => {
-              if (editingProfile) {
-                console.log('🔄 Cancel button clicked, setting editingProfile to false...');
-                onCancel();
-              } else {
-                console.log('🔄 Edit button clicked, setting editingProfile to true...');
-                setEditingProfile(true);
-              }
-            }}
-            className={`flex items-center justify-center space-x-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200 w-auto min-w-fit shadow-lg ${
-              editingProfile
-                ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                : 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-700 hover:to-cyan-700 shadow-blue-600/25'
-            }`}
-          >
-            {editingProfile ? <X className="h-4 w-4" /> : <Edit3 className="h-4 w-4" />}
-            <span className="whitespace-nowrap">{editingProfile ? 'Cancel' : 'Edit Profile'}</span>
-          </motion.button>
-        </div>
-        
-        {/* Compact Profile Completion Note */}
-        <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-lg shadow-sm">
+      <div className="mb-8">
+        {/* Profile Completion Note */}
+        <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-md">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-lg flex items-center justify-center">
-                <TrendingUp className="h-4 w-4 text-white" />
+              <div className="w-6 h-6 bg-blue-600 rounded flex items-center justify-center">
+                <TrendingUp className="h-3 w-3 text-white" />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-gray-900">Complete Your Profile</h4>
+                <h4 className="text-sm font-medium text-gray-900">Complete Your Profile</h4>
                 <div className="flex items-center space-x-2 mt-1">
-                  <div className="w-20 bg-gray-200 rounded-full h-1.5">
+                  <div className="w-16 bg-gray-200 rounded-full h-1">
                     <div 
-                      className="bg-gradient-to-r from-blue-600 to-cyan-600 h-1.5 rounded-full transition-all duration-500 ease-out"
+                      className="bg-blue-600 h-1 rounded-full transition-all duration-300"
                       style={{ width: `${stats.profileCompleteness || 0}%` }}
                     ></div>
                   </div>
-                  <span className="text-xs font-semibold text-gray-700">
+                  <span className="text-xs text-gray-600">
                     {stats.profileCompleteness || 0}%
                   </span>
                 </div>
@@ -2436,37 +2416,58 @@ const ProfileTab = ({
               if (!profile?.country || profile?.country === 'Not specified') missingFields.push("Add country");
               if (!profile?.postalCode || profile?.postalCode === 'Not specified') missingFields.push("Add postal code");
 
-              // Only show list if 3-4 fields are missing
-              if (missingFields.length >= 3 && missingFields.length <= 4) {
+              // Show specific fields when 2-3 are missing, otherwise show count
+              if (missingFields.length >= 2 && missingFields.length <= 3) {
                 return (
                   <div className="text-right">
-                    <p className="text-xs text-blue-600 font-medium">
-                      Complete these {missingFields.length} details:
+                    <p className="text-xs text-gray-500 mb-1">
+                      Missing:
                     </p>
-                    <div className="mt-1 space-y-0.5">
+                    <div className="space-y-0.5">
                       {missingFields.slice(0, 3).map((field, index) => (
                         <p key={index} className="text-xs text-gray-600">
                           • {field}
                         </p>
                       ))}
-                      {missingFields.length > 3 && (
-                        <p className="text-xs text-gray-500">
-                          +{missingFields.length - 3} more
-                        </p>
-                  )}
-                </div>
-              </div>
+                    </div>
+                  </div>
                 );
               } else {
                 return (
-                  <p className="text-xs text-blue-600 font-medium">
-                    Complete {missingFields.length} more detail{missingFields.length > 1 ? 's' : ''} to reach 100%
+                  <p className="text-xs text-gray-500">
+                    {missingFields.length} field{missingFields.length > 1 ? 's' : ''} remaining
                   </p>
                 );
               }
             })()}
             </div>
           </div>
+        </div>
+
+        <div className="flex items-center justify-between mb-6">
+          <div></div>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => {
+              if (editingProfile) {
+                console.log('🔄 Cancel button clicked, setting editingProfile to false...');
+                onCancel();
+              } else {
+                console.log('🔄 Edit button clicked, setting editingProfile to true...');
+                setEditingProfile(true);
+              }
+            }}
+            className={`flex items-center justify-center space-x-2 px-4 py-2 rounded-xl font-semibold transition-all duration-200 w-auto min-w-fit shadow-lg ${
+              editingProfile
+                ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-700 hover:to-cyan-700 shadow-blue-600/25'
+            }`}
+          >
+            {editingProfile ? <X className="h-4 w-4" /> : <Edit3 className="h-4 w-4" />}
+            <span className="whitespace-nowrap">{editingProfile ? 'Cancel' : 'Edit Profile'}</span>
+          </motion.button>
+        </div>
 
         {/* Logo Upload Section */}
         <div className="mb-6 sm:mb-8">
@@ -2538,49 +2539,50 @@ const ProfileTab = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <div className="space-y-5">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Institution Name</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Institution Name</label>
             {editingProfile ? (
               <input
                 type="text"
                 name="institutionName"
                 value={profileForm.institutionName || ''}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
               />
             ) : (
               <input
                 type="text"
                 value={profile?.institutionName || 'Not specified'}
                 disabled={true}
-                className="w-full px-4 py-3 bg-gray-50 text-gray-900 rounded-xl border-2 border-gray-100 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
+                className="w-full px-4 py-2.5 bg-gray-50 text-gray-900 rounded-md border border-gray-300 disabled:bg-gray-50 disabled:text-gray-500 transition-colors text-sm"
               />
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Contact Person</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Contact Person</label>
             {editingProfile ? (
               <input
                 type="text"
                 name="contactPersonName"
                 value={profileForm.contactPersonName || ''}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
               />
             ) : (
               <input
                 type="text"
                 value={profile?.contactPersonName || 'Not specified'}
                 disabled={true}
-                className="w-full px-4 py-3 bg-gray-50 text-gray-900 rounded-xl border-2 border-gray-100 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
+                className="w-full px-4 py-2.5 bg-gray-50 text-gray-900 rounded-md border border-gray-300 disabled:bg-gray-50 disabled:text-gray-500 transition-colors text-sm"
               />
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
                           <div className="relative">
                 {editingProfile ? (
                   <div className="space-y-2">
@@ -2590,7 +2592,7 @@ const ProfileTab = ({
                         name="email"
                         value={profileForm.email || ''}
                         onChange={handleProfileInputChange}
-                        className="flex-1 px-4 py-3 pr-12 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300"
+                        className="flex-1 px-4 py-2.5 pr-12 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
                         placeholder="Enter email address"
                       />
                       {(emailChanged || !user?.isEmailVerified) && (
@@ -2645,13 +2647,13 @@ const ProfileTab = ({
 
           {/* Institution Type field - Next to Email */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Institution Type</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Institution Type</label>
             {editingProfile ? (
               <select
                 name="institutionType"
                 value={profileForm.institutionType || ''}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
               >
                 <option value="">Select Type</option>
                 <option value="UNIVERSITY">University</option>
@@ -2665,14 +2667,14 @@ const ProfileTab = ({
                 type="text"
                 value={profile?.institutionType ? profile.institutionType.toLowerCase() : 'Not specified'}
                 disabled={true}
-                className="w-full px-4 py-3 bg-gray-50 text-gray-900 rounded-xl border-2 border-gray-100 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
+                className="w-full px-4 py-2.5 bg-gray-50 text-gray-900 rounded-md border border-gray-300 disabled:bg-gray-50 disabled:text-gray-500 transition-colors text-sm"
               />
             )}
           </div>
 
           {/* Description field - Full width, after Institution Name */}
           <div className="lg:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
             {editingProfile ? (
               <textarea
                 name="description"
@@ -2680,60 +2682,60 @@ const ProfileTab = ({
                 onChange={handleInputChange}
                 rows={3}
                 placeholder="Brief description of your institution..."
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300 resize-none"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm resize-none"
               />
             ) : (
               <textarea
                 value={profile?.description || 'Not specified'}
                 disabled={true}
                 rows={3}
-                className="w-full px-4 py-3 bg-gray-50 text-gray-900 rounded-xl border-2 border-gray-100 disabled:bg-gray-50 disabled:text-gray-500 transition-colors resize-none"
+                className="w-full px-4 py-2.5 bg-gray-50 text-gray-900 rounded-md border border-gray-300 disabled:bg-gray-50 disabled:text-gray-500 transition-colors text-sm resize-none"
               />
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Accreditation</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Accreditation</label>
             {editingProfile ? (
               <input
                 type="text"
                 name="accreditation"
                 value={profileForm.accreditation || ''}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
               />
             ) : (
               <input
                 type="text"
                 value={profile?.accreditation || 'Not specified'}
                 disabled={true}
-                className="w-full px-4 py-3 bg-gray-50 text-gray-900 rounded-xl border-2 border-gray-100 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
+                className="w-full px-4 py-2.5 bg-gray-50 text-gray-900 rounded-md border border-gray-300 disabled:bg-gray-50 disabled:text-gray-500 transition-colors text-sm"
               />
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Website</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
             {editingProfile ? (
               <input
                 type="url"
                 name="website"
                 value={profileForm.website || ''}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
               />
             ) : (
               <input
                 type="text"
                 value={profile?.website || 'Not specified'}
                 disabled={true}
-                className="w-full px-4 py-3 bg-gray-50 text-gray-900 rounded-xl border-2 border-gray-100 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
+                className="w-full px-4 py-2.5 bg-gray-50 text-gray-900 rounded-md border border-gray-300 disabled:bg-gray-50 disabled:text-gray-500 transition-colors text-sm"
               />
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
             <div className="relative">
               {editingProfile ? (
                 <div className="space-y-2">
@@ -2743,7 +2745,7 @@ const ProfileTab = ({
                       name="phone"
                       value={profileForm.phone || ''}
                       onChange={handleProfileInputChange}
-                        className="flex-1 px-4 py-3 pr-12 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300"
+                        className="flex-1 px-4 py-2.5 pr-12 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
                       placeholder="Enter phone number"
                     />
                     {(phoneChanged || !user?.isPhoneVerified) && (
@@ -2797,128 +2799,128 @@ const ProfileTab = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
             {editingProfile ? (
               <textarea
                 name="address"
                 value={profileForm.address || ''}
                 onChange={handleInputChange}
                 rows={2}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300 resize-none"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm resize-none"
               />
             ) : (
               <textarea
                 value={profile?.address || 'Not specified'}
                 disabled={true}
                 rows={2}
-                className="w-full px-4 py-3 bg-gray-50 text-gray-900 rounded-xl border-2 border-gray-100 disabled:bg-gray-50 disabled:text-gray-500 transition-colors resize-none"
+                className="w-full px-4 py-2.5 bg-gray-50 text-gray-900 rounded-md border border-gray-300 disabled:bg-gray-50 disabled:text-gray-500 transition-colors text-sm resize-none"
               />
             )}
           </div>
 
           <div>
-            <label className="block text-gray-700 mb-2">City</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
             {editingProfile ? (
               <input
                 type="text"
                 name="city"
                 value={profileForm.city || ''}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
               />
             ) : (
               <input
                 type="text"
                 value={profile?.city || 'Not specified'}
                 disabled={true}
-                className="w-full px-4 py-3 bg-gray-50 text-gray-900 rounded-xl border-2 border-gray-100 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
+                className="w-full px-4 py-2.5 bg-gray-50 text-gray-900 rounded-md border border-gray-300 disabled:bg-gray-50 disabled:text-gray-500 transition-colors text-sm"
               />
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
             {editingProfile ? (
               <input
                 type="text"
                 name="state"
                 value={profileForm.state || ''}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
               />
             ) : (
               <input
                 type="text"
                 value={profile?.state || 'Not specified'}
                 disabled={true}
-                className="w-full px-4 py-3 bg-gray-50 text-gray-900 rounded-xl border-2 border-gray-100 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
+                className="w-full px-4 py-2.5 bg-gray-50 text-gray-900 rounded-md border border-gray-300 disabled:bg-gray-50 disabled:text-gray-500 transition-colors text-sm"
               />
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
             {editingProfile ? (
               <input
                 type="text"
                 name="country"
                 value={profileForm.country || ''}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
               />
             ) : (
               <input
                 type="text"
                 value={profile?.country || 'Not specified'}
                 disabled={true}
-                className="w-full px-4 py-3 bg-gray-50 text-gray-900 rounded-xl border-2 border-gray-100 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
+                className="w-full px-4 py-2.5 bg-gray-50 text-gray-900 rounded-md border border-gray-300 disabled:bg-gray-50 disabled:text-gray-500 transition-colors text-sm"
               />
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Postal Code</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Postal Code</label>
             {editingProfile ? (
               <input
                 type="text"
                 name="postalCode"
                 value={profileForm.postalCode || ''}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-300"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
               />
             ) : (
               <input
                 type="text"
                 value={profile?.postalCode || 'Not specified'}
                 disabled={true}
-                className="w-full px-4 py-3 bg-gray-50 text-gray-900 rounded-xl border-2 border-gray-100 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
+                className="w-full px-4 py-2.5 bg-gray-50 text-gray-900 rounded-md border border-gray-300 disabled:bg-gray-50 disabled:text-gray-500 transition-colors text-sm"
               />
             )}
           </div>
         </div>
 
         {editingProfile && (
-          <div className="mt-6 flex flex-col sm:flex-row justify-end gap-3">
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => {
-                setEditingProfile(false);
-                setLogoFile(null);
-                setLogoPreview(profile?.logoUrl || null);
-              }}
-              className="px-6 py-2 text-slate-700 bg-slate-200 rounded-xl hover:bg-slate-300 transition-colors font-medium w-full sm:w-auto"
-            >
-              Cancel
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={handleSave}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl w-full sm:w-auto"
-            >
-              Save Changes
-            </motion.button>
+          <div className="mt-6">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingProfile(false);
+                  setLogoFile(null);
+                  setLogoPreview(profile?.logoUrl || null);
+                }}
+                className="px-6 py-3 bg-white text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors border border-gray-300 shadow-sm hover:shadow-md"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white py-3 px-6 rounded-md font-semibold transition-all duration-300 shadow-lg hover:shadow-xl"
+              >
+                Save Changes
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -2943,6 +2945,10 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
     requiredSkills: '',
     experience: ''
   });
+  
+  // View requirement state
+  const [viewingRequirement, setViewingRequirement] = useState(null);
+  const [showViewModal, setShowViewModal] = useState(false);
   const [customCategory, setCustomCategory] = useState('');
   const [showCustomCategoryInput, setShowCustomCategoryInput] = useState(false);
   const [editingRequirement, setEditingRequirement] = useState(null);
@@ -3026,6 +3032,11 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
     });
   };
 
+  const handleView = (requirement) => {
+    setViewingRequirement(requirement);
+    setShowViewModal(true);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -3101,6 +3112,7 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
   };
 
   const handleEdit = (requirement) => {
+    console.log('Edit requirement data:', requirement);
     setEditingRequirement(requirement);
     
     // Check if the category is a custom one (not in predefined list)
@@ -3115,7 +3127,7 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
     
     const isCustomCategory = !predefinedCategories.includes(requirement.category);
     
-    setRequirementForm({
+    const formData = {
       title: requirement.title,
       category: isCustomCategory ? 'OTHERS' : requirement.category,
       description: requirement.description,
@@ -3124,7 +3136,9 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
       isUrgent: requirement.isUrgent,
       requiredSkills: requirement.requiredSkills || '',
       experience: requirement.experience || ''
-    });
+    };
+    console.log('Form data being set:', formData);
+    setRequirementForm(formData);
     
     // Set custom category state if it's a custom category
     if (isCustomCategory) {
@@ -3231,41 +3245,48 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
-      {/* Premium Header Section */}
-      <div className="relative overflow-hidden">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-[0.03]">
-          <div className="absolute inset-0" style={{
-            backgroundImage: `
-              radial-gradient(circle at 20% 80%, #3B82F6 1px, transparent 1px),
-              radial-gradient(circle at 80% 20%, #6366F1 1px, transparent 1px),
-              radial-gradient(circle at 40% 40%, #8B5CF6 1px, transparent 1px)
-            `,
-            backgroundSize: '60px 60px'
-          }}></div>
-        </div>
-        
-
-        {/* Premium Form */}
-        {showForm && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-6 relative z-10"
-          >
-            <div className="mb-8">
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Create a requirement</h3>
-              <p className="text-gray-600">Add a new academic requirement to connect with experts</p>
-              <div className="mt-2 text-xs text-gray-500">
-                Debug: Form state - {JSON.stringify(requirementForm)}
+    <div className="min-h-screen bg-white">
+      {/* Google-style Layout */}
+      <div className="max-w-4xl mx-auto px-8 py-6">
+        {!showForm && !showEditForm && (
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-medium text-gray-900 mb-1">All Requirements ({totalRequirements})</h2>
               </div>
+              <button 
+                onClick={() => setShowForm(true)}
+                className="px-4 py-2 text-sm font-semibold transition-all duration-300 shadow-lg hover:shadow-xl bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-700 hover:to-cyan-700 rounded-md"
+              >
+                Create requirement
+              </button>
             </div>
+          </div>
+        )}
 
-            <form onSubmit={handleSubmit} className="space-y-8">
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-gray-900">
+        {showEditForm && (
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-medium text-gray-900 mb-1">All Requirements ({totalRequirements})</h2>
+              </div>
+              <button 
+                onClick={handleCancelEdit}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors shadow-sm hover:shadow-md"
+                title="Cancel Edit"
+              >
+                <X className="w-4 h-4" />
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+        
+        {showForm && (
+          <div className="mb-8">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Title *
                 </label>
                 <input
@@ -3274,23 +3295,23 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
                   value={requirementForm.title || ''}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 placeholder:text-gray-400 text-gray-900"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
                   placeholder="Enter the title of your requirement"
                   autoComplete="off"
                 />
               </div>
 
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-gray-900">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Category *
                 </label>
-                                 <select
-                   name="category"
-                   value={requirementForm.category}
-                   onChange={handleInputChange}
-                   required
-                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900"
-                 >
+                <select
+                  name="category"
+                  value={requirementForm.category}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
+                >
                    <option value="">Select Category</option>
                    <optgroup label="Technology & Innovation">
                      <option value="DATA_SCIENCE_AI">Data Science & AI</option>
@@ -3333,8 +3354,8 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
 
             {/* Custom Category Input */}
             {showCustomCategoryInput && (
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-gray-900">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Custom Category *
                 </label>
                 <input
@@ -3343,73 +3364,75 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
                   onChange={handleCustomCategoryChange}
                   placeholder="Enter your custom category..."
                   required
-                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 placeholder:text-gray-400 text-gray-900"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
                 />
               </div>
             )}
 
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-gray-900">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Description *
                 </label>
-            <textarea
-                name="description"
-                value={requirementForm.description || ''}
-                onChange={handleInputChange}
-                required
+                <textarea
+                  name="description"
+                  value={requirementForm.description || ''}
+                  onChange={handleInputChange}
+                  required
                   rows={4}
-                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 placeholder:text-gray-400 resize-none text-gray-900"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm resize-none"
                   placeholder="Describe the requirement in detail..."
                   autoComplete="off"
-              />
-            </div>
+                />
+              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-3">
-                  <label className="block text-sm font-medium text-gray-900">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Budget (₹)
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500 font-medium text-sm">₹</span>
-                 <input
-                   type="number"
-                   name="budget"
-                   value={requirementForm.budget}
-              onChange={handleInputChange}
-                      className="w-full pl-8 pr-3 py-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 placeholder:text-gray-400"
-                   placeholder="0"
-                 />
-               </div>
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+                    <input
+                      type="number"
+                      name="budget"
+                      value={requirementForm.budget}
+                      onChange={handleInputChange}
+                      className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
+                      placeholder="0"
+                    />
+                  </div>
                 </div>
                 
-                <div className="space-y-3">
-                  <label className="block text-sm font-medium text-gray-900">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Deadline
                   </label>
-                <input
-                  type="date"
-                  name="deadline"
-                  value={requirementForm.deadline}
-                  onChange={handleInputChange}
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                />
-              </div>
+                  <input
+                    type="date"
+                    name="deadline"
+                    value={requirementForm.deadline}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
+                  />
+                </div>
                 
               </div>
 
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center">
                 <input
                   type="checkbox"
                   name="isUrgent"
                   checked={requirementForm.isUrgent}
                   onChange={handleInputChange}
-                  className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-gray-600 focus:ring-gray-500 border-gray-300 rounded"
                 />
-                <label className="text-sm font-medium text-gray-900">Mark as Urgent</label>
+                <label className="ml-2 text-sm text-gray-700">
+                  Mark as Urgent
+                </label>
               </div>
 
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-gray-900">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Required Skills
                 </label>
                 <textarea
@@ -3417,14 +3440,14 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
                   value={requirementForm.requiredSkills || ''}
                   onChange={handleInputChange}
                   rows={3}
-                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 placeholder:text-gray-400 resize-none text-gray-900"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm resize-none"
                   placeholder="Specify any particular skills needed for the project..."
                   autoComplete="off"
                 />
               </div>
 
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-gray-900">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Experience
                 </label>
                 <textarea
@@ -3432,79 +3455,65 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
                   value={requirementForm.experience || ''}
                   onChange={handleInputChange}
                   rows={3}
-                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 placeholder:text-gray-400 resize-none text-gray-900"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm resize-none"
                   placeholder="Specify required experience level or qualifications..."
                   autoComplete="off"
                 />
               </div>
 
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
-            <button
-                type="submit"
-                  className="relative group px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-semibold shadow-lg hover:from-blue-700 hover:to-cyan-700 hover:shadow-xl transition-all duration-200"
-                >
-                  <span className="flex items-center justify-center gap-2 text-sm">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    Create Requirement
-                  </span>
-            </button>
-                
-            <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                  className="px-6 py-2 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-200 border border-gray-200"
-            >
-              Cancel
-            </button>
-          </div>
-          </form>
-          </motion.div>
-        )}
-
-        {/* Requirements Edit Modal */}
-        {showEditForm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-lg bg-white rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto"
-            >
-              <div className="flex items-center justify-between p-4 border-b border-slate-200">
-                <h3 className="text-lg font-bold text-slate-900">Edit Requirement</h3>
+              <div className="flex items-center gap-3">
                 <button
-                  onClick={handleCancelEdit}
-                  className="p-2 text-slate-400 hover:text-slate-600 transition-colors rounded-lg hover:bg-slate-100"
+                  type="submit"
+                  className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white py-3 px-6 rounded-md font-semibold transition-all duration-300 shadow-lg hover:shadow-xl"
                 >
-                  <X className="w-5 h-5" />
+                  Create Requirement
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="px-6 py-3 bg-white text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors border border-gray-300 shadow-sm hover:shadow-md"
+                >
+                  Back to Requirements
                 </button>
               </div>
+            </form>
+          </div>
+        )}
+
+        {/* Requirements Edit Form */}
+        {showEditForm && (
+          <div className="mb-8">
+            <div className="mb-4">
+              <h1 className="text-xl font-bold text-gray-900">Edit Requirement</h1>
+            </div>
               
-              <form onSubmit={handleUpdate} className="p-4 space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Title</label>
-                    <input
-                      type="text"
-                      name="title"
-                      value={requirementForm.title}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Category</label>
-                    <select
-                      name="category"
-                      value={requirementForm.category}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    >
+            <form onSubmit={handleUpdate} className="space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Title *
+                </label>
+                <input
+                  type="text"
+                  name="title"
+                  value={requirementForm.title || ''}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
+                  placeholder="Enter the title of your requirement"
+                  autoComplete="off"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Category *
+                </label>
+                <select
+                  name="category"
+                  value={requirementForm.category || ''}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
+                >
                       <option value="">Select Category</option>
                       <option value="DATA_SCIENCE_AI">Data Science & AI</option>
                       <option value="CYBERSECURITY">Cybersecurity</option>
@@ -3529,188 +3538,169 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
                       <option value="HEALTHCARE">Healthcare</option>
                       <option value="ENGINEERING">Engineering</option>
                       <option value="SUSTAINABILITY">Sustainability</option>
-                      <option value="OTHERS">Others (Custom)</option>
+                      <option value="OTHERS">Others</option>
                     </select>
-                  </div>
-                </div>
+              </div>
 
-                {/* Custom Category Input for Edit Form */}
-                {showCustomCategoryInput && (
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Custom Category</label>
-                    <input
-                      type="text"
-                      value={customCategory}
-                      onChange={handleCustomCategoryChange}
-                      placeholder="Enter your custom category..."
-                      required
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                )}
-                
+              {/* Custom Category Input for Edit Form */}
+              {showCustomCategoryInput && (
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>
-                  <textarea
-                    name="description"
-                    value={requirementForm.description}
-                    onChange={handleInputChange}
-                    rows={2}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Custom Category *
+                  </label>
+                  <input
+                    type="text"
+                    value={customCategory}
+                    onChange={handleCustomCategoryChange}
+                    placeholder="Enter your custom category..."
                     required
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
                   />
                 </div>
+              )}
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Budget (₹)</label>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  name="description"
+                  value={requirementForm.description || ''}
+                  onChange={handleInputChange}
+                  rows={4}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm resize-none"
+                  placeholder="Describe your requirement in detail..."
+                  autoComplete="off"
+                />
+              </div>
+                
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Budget (₹)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">₹</span>
                     <input
                       type="number"
                       name="budget"
-                      value={requirementForm.budget}
+                      value={requirementForm.budget || ''}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Enter budget amount"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Deadline</label>
-                    <input
-                      type="date"
-                      name="deadline"
-                      value={requirementForm.deadline}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full pl-8 pr-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
+                      placeholder="0"
+                      min="0"
+                      autoComplete="off"
                     />
                   </div>
                 </div>
-                
-                <div className="flex items-center">
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Deadline
+                  </label>
                   <input
-                    type="checkbox"
-                    name="isUrgent"
-                    checked={requirementForm.isUrgent}
+                    type="date"
+                    name="deadline"
+                    value={requirementForm.deadline || ''}
                     onChange={handleInputChange}
-                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
-                  />
-                  <label className="ml-2 text-sm text-slate-700">Mark as Urgent</label>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Required Skills</label>
-                  <textarea
-                    name="requiredSkills"
-                    value={requirementForm.requiredSkills}
-                    onChange={handleInputChange}
-                    rows={2}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Specify any particular skills needed for the project..."
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
+                    autoComplete="off"
                   />
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Experience</label>
-                  <textarea
-                    name="experience"
-                    value={requirementForm.experience}
-                    onChange={handleInputChange}
-                    rows={2}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Specify required experience level or qualifications..."
-                  />
-                </div>
+              </div>
                 
-                <div className="flex gap-3 pt-3">
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
-                  >
-                    Update Requirement
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleCancelEdit}
-                    className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </motion.div>
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  name="isUrgent"
+                  checked={requirementForm.isUrgent || false}
+                  onChange={handleInputChange}
+                  className="h-4 w-4 text-gray-600 focus:ring-gray-500 border-gray-300 rounded"
+                />
+                <label className="text-sm text-gray-700">Mark as Urgent</label>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Required Skills
+                </label>
+                <textarea
+                  name="requiredSkills"
+                  value={requirementForm.requiredSkills || ''}
+                  onChange={handleInputChange}
+                  rows={3}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm resize-none"
+                  placeholder="List the skills and expertise required..."
+                  autoComplete="off"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Experience
+                </label>
+                <textarea
+                  name="experience"
+                  value={requirementForm.experience || ''}
+                  onChange={handleInputChange}
+                  rows={3}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm resize-none"
+                  placeholder="Specify required experience level or qualifications..."
+                  autoComplete="off"
+                />
+              </div>
+                
+              <div className="flex items-center gap-3">
+                <button
+                  type="submit"
+                  className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white py-3 px-6 rounded-md font-semibold transition-all duration-300 shadow-lg hover:shadow-xl"
+                >
+                  Update Requirement
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="px-6 py-3 bg-white text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors border border-gray-300 shadow-sm hover:shadow-md"
+                >
+                  Back to Requirements
+                </button>
+              </div>
+            </form>
           </div>
         )}
 
-        {/* Compact Requirements List - Only this section is made smaller */}
-        <div className="space-y-4">
-          {/* List Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
-            <div className="flex items-center gap-3">
-              <h2 className="text-lg sm:text-xl font-bold text-slate-900">All Requirements</h2>
-              <div className="px-2 sm:px-3 py-1 bg-blue-50 rounded-full">
-                <span className="text-xs sm:text-sm font-semibold text-blue-800">{totalRequirements} requirements</span>
-              </div>
-                  </div>
-            
-            <button 
-              onClick={() => setShowForm(!showForm)}
-              disabled={!canAccessRequirements()}
-              className={`relative group px-4 py-2 rounded-xl font-semibold transition-all duration-200 ${
-                canAccessRequirements()
-                  ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-700 hover:to-cyan-700 shadow-lg hover:shadow-xl'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              }`}
-            >
-              {showForm ? (
-                <span className="flex items-center gap-2 text-sm">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                  Cancel
-                </span>
-              ) : (
-                <span className="flex items-center gap-2 text-sm">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                  Create Requirement
-                </span>
-              )}
-            </button>
-                </div>
+        {/* Requirements List */}
+        <div className="space-y-6">
 
           {loading && requirements.length === 0 ? (
-            <div className="text-center py-8 sm:py-12">
-              <div className="relative">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3 sm:mb-4"></div>
-                <div className="absolute inset-0 w-10 h-10 sm:w-12 sm:h-12 border-4 border-transparent border-t-indigo-600 rounded-full animate-spin mx-auto" style={{ animationDelay: '0.1s' }}></div>
-              </div>
-              <p className="text-slate-600 font-medium text-sm">Loading your requirements...</p>
+            <div className="text-center py-12">
+              <div className="w-8 h-8 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-gray-500 text-sm">Loading requirements...</p>
             </div>
           ) : requirements.length === 0 ? (
-            <div className="text-center py-8 sm:py-12">
-              <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <BarChart3 className="w-8 h-8 text-gray-400" />
-                </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">No requirements yet</h3>
-              <p className="text-gray-600 mb-6 max-w-sm mx-auto text-sm">Start building your academic requirements portfolio to connect with top experts</p>
+            <div className="text-center py-16">
+              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <FileText className="w-6 h-6 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No requirements yet</h3>
+              <p className="text-gray-500 mb-6 text-sm">Create your first requirement to connect with experts</p>
               <button 
                 onClick={() => setShowForm(true)}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 shadow-lg hover:shadow-xl text-sm"
+                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white text-sm font-semibold hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 shadow-lg hover:shadow-xl rounded-md"
               >
-                Create Your First Requirement
+                Create requirement
               </button>
             </div>
           ) : (
-            <div className="grid gap-3 sm:gap-4">
+            <div className="space-y-4">
               {loading ? (
                 <div className="text-center py-8">
-                  <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading requirements...</p>
+                  <div className="w-8 h-8 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-gray-500 text-sm">Loading...</p>
                 </div>
               ) : requirements.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-600">No requirements found.</p>
+                  <p className="text-gray-500 text-sm">No requirements found.</p>
                 </div>
               ) : (
                 requirements.map((requirement, index) => (
@@ -3720,7 +3710,7 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
                     index={index}
                     showActions={true}
                     compact={false}
-                    onView={() => onView(requirement)}
+                    onView={() => handleView(requirement)}
                     onEdit={() => handleEdit(requirement)}
                     onDelete={() => onDelete(requirement.id)}
                   />
@@ -3755,6 +3745,102 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
           )}
         </div>
 
+        {/* View Requirement Page */}
+        {showViewModal && viewingRequirement && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="mb-4 flex justify-between items-center">
+                <h1 className="text-xl font-bold text-gray-900">View Requirement</h1>
+                <button
+                  onClick={() => {
+                    setShowViewModal(false);
+                    setViewingRequirement(null);
+                  }}
+                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+            <div className="space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                  <p className="text-gray-900 font-medium">{viewingRequirement.title}</p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                  <p className="text-gray-900">{viewingRequirement.category?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <p className="text-gray-900 leading-relaxed">{viewingRequirement.description}</p>
+              </div>
+                
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Budget (₹)</label>
+                  <p className="text-gray-900">{viewingRequirement.budget ? `₹${parseInt(viewingRequirement.budget).toLocaleString()}` : 'Not specified'}</p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Deadline</label>
+                  <p className="text-gray-900">
+                    {viewingRequirement.deadline 
+                      ? new Date(viewingRequirement.deadline).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })
+                      : 'No deadline'
+                    }
+                  </p>
+                </div>
+              </div>
+                
+              <div className="flex items-center gap-3">
+                <label className="text-sm font-medium text-gray-700">Urgent:</label>
+                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                  viewingRequirement.isUrgent 
+                    ? 'bg-red-100 text-red-800' 
+                    : 'bg-gray-100 text-gray-800'
+                }`}>
+                  {viewingRequirement.isUrgent ? 'Yes' : 'No'}
+                </span>
+              </div>
+
+              {viewingRequirement.requiredSkills && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Required Skills</label>
+                  <p className="text-gray-900 leading-relaxed">{viewingRequirement.requiredSkills}</p>
+                </div>
+              )}
+
+              {viewingRequirement.experience && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Experience</label>
+                  <p className="text-gray-900 leading-relaxed">{viewingRequirement.experience}</p>
+                </div>
+              )}
+                
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowViewModal(false);
+                    setViewingRequirement(null);
+                  }}
+                  className="px-6 py-3 bg-white text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors border border-gray-300 shadow-sm hover:shadow-md"
+                >
+                  Back to Requirements
+                </button>
+              </div>
+            </div>
+            </div>
+          </div>
+        )}
         
       </div>
     </div>
@@ -4039,71 +4125,63 @@ const ExpertsTab = ({ user }) => {
 
 
       {/* Search and Filters */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-3">
-        <div className="flex flex-col sm:flex-row gap-3">
-          {/* Search Input */}
-          <div className="flex-1">
-            <div className="relative">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search experts by name, expertise, skills, or company..."
-                className={`w-full pl-9 pr-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500 transition-all duration-200 ${
-                  searchQuery ? 'border-blue-300 bg-blue-50' : 'border-gray-200'
-                }`}
-              />
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            </div>
-          </div>
-
-
-
-          {/* Category Filter */}
-          <div className="sm:w-40">
-            <select
-              value={selectedCategory}
-              onChange={(e) => handleCategoryChange(e.target.value)}
-              className={`w-full px-3 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 transition-all duration-200 ${
-                selectedCategory !== 'All Categories' ? 'border-blue-300 bg-blue-50' : 'border-gray-200'
-              }`}
-            >
-              {categories.map(category => (
-                <option key={category} value={category}>{category}</option>
-              ))}
-            </select>
+      <div className="flex flex-col sm:flex-row gap-4">
+        {/* Search Input */}
+        <div className="flex-1">
+          <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-600" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search experts by name, expertise, skills, or company..."
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
+            />
           </div>
         </div>
-        
-        {/* Active Filters Indicator */}
-        {(searchQuery || selectedCategory !== 'All Categories') && (
-          <div className="mt-3 pt-3 border-t border-gray-100">
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Filter className="w-4 h-4" />
-              <span className="font-medium">Active filters:</span>
-              {searchQuery && (
-                <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                  Search: {searchQuery}
-                </span>
-              )}
-              {selectedCategory !== 'All Categories' && (
-                <span className="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
-                  Category: {selectedCategory}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
+
+        {/* Category Filter */}
+        <div className="sm:w-48">
+          <select
+            value={selectedCategory}
+            onChange={(e) => handleCategoryChange(e.target.value)}
+            className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
+          >
+            {categories.map(category => (
+              <option key={category} value={category}>{category}</option>
+            ))}
+          </select>
+        </div>
       </div>
+        
+      {/* Active Filters Indicator */}
+      {(searchQuery || selectedCategory !== 'All Categories') && (
+        <div className="mt-3 pt-3 border-t border-gray-100">
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <Filter className="w-4 h-4" />
+            <span className="font-medium">Active filters:</span>
+            {searchQuery && (
+              <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                Search: {searchQuery}
+              </span>
+            )}
+            {selectedCategory !== 'All Categories' && (
+              <span className="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
+                Category: {selectedCategory}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
 
 
       {/* Results Section */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-3">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         {/* Results Header */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-xl font-semibold text-gray-900">
               {loading ? 'Loading experts...' : (
                 (searchQuery || selectedCategory !== 'All Categories') 
                   ? `${experts.length} Expert${experts.length !== 1 ? 's' : ''} Found`
@@ -4111,13 +4189,13 @@ const ExpertsTab = ({ user }) => {
               )}
             </h3>
             {searchQuery && (
-              <p className="text-xs text-gray-600 mt-0.5">
+              <p className="text-sm text-gray-600 mt-1">
                 Results for "{searchQuery}"
               </p>
             )}
           </div>
           {experts.length > 0 && (
-            <div className="text-xs text-gray-500">
+            <div className="text-sm text-gray-500">
               Showing {experts.length} of {totalExperts} experts
               {(searchQuery || selectedCategory !== 'All Categories') && totalExperts > experts.length && (
                 <span className="ml-2 text-blue-600">
@@ -4179,21 +4257,38 @@ const ExpertsTab = ({ user }) => {
 
         {/* Experts Grid */}
         {!loading && !error && experts.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
             {experts.map(expert => (
               <motion.div
                 key={expert.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
-                className="group bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:border-blue-200 transition-all duration-200"
+                className="group bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-300 transition-all duration-200"
               >
                 {/* Expert Header - Compact */}
                 <div className="p-3 pb-2">
                   <div className="flex items-center space-x-2 mb-2">
-                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-xs">
-                      {expert.user?.fullName?.charAt(0) || 'E'}
-                    </div>
+                    {expert.profilePicture ? (
+                      <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-200">
+                        <img
+                          src={expert.profilePicture}
+                          alt={`${expert.user?.fullName}'s profile`}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                        <div className="w-full h-full bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full flex items-center justify-center text-white font-semibold text-xs" style={{display: 'none'}}>
+                          {expert.user?.fullName?.charAt(0) || 'E'}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full flex items-center justify-center text-white font-semibold text-xs">
+                        {expert.user?.fullName?.charAt(0) || 'E'}
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
                       <h4 className="font-semibold text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors">
                         {expert.user?.fullName || 'Expert Name'}
@@ -4290,13 +4385,13 @@ const ExpertsTab = ({ user }) => {
                   <div className="flex space-x-2">
                     <button
                       onClick={() => handleContactExpert(expert)}
-                      className="flex-1 px-3 py-2 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                      className="flex-1 px-3 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-xs font-medium rounded-md transition-all duration-300 shadow-lg hover:shadow-xl"
                     >
                       Contact
                     </button>
                     <button
                       onClick={() => handleViewProfile(expert)}
-                      className="px-3 py-2 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-200 transition-colors"
+                      className="px-3 py-2 bg-white text-gray-700 text-xs font-medium rounded-md hover:bg-gray-50 transition-colors border border-gray-300 shadow-sm hover:shadow-md"
                     >
                       View Profile
                     </button>
@@ -4315,7 +4410,7 @@ const ExpertsTab = ({ user }) => {
               <button
                 onClick={loadMoreExperts}
                 disabled={isLoadingMore}
-                className="px-8 py-3 bg-white text-blue-600 border border-blue-200 rounded-xl hover:bg-blue-50 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-8 py-3 bg-white text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors font-medium shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoadingMore ? 'Loading...' : 'Load More Experts'}
               </button>
@@ -4364,14 +4459,14 @@ const ExpertsTab = ({ user }) => {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
+              className="bg-white rounded-xl shadow-lg max-w-lg w-full max-h-[90vh] overflow-y-auto"
             >
               {/* Header */}
-              <div className="p-6 border-b border-gray-100">
+              <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-3">
                     {selectedExpert.profilePicture ? (
-                      <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-200">
+                      <div className="w-12 h-12 rounded-full overflow-hidden border border-gray-200">
                         <img
                           src={selectedExpert.profilePicture}
                           alt={`${selectedExpert.user?.fullName}'s profile`}
@@ -4379,102 +4474,65 @@ const ExpertsTab = ({ user }) => {
                         />
                       </div>
                     ) : (
-                      <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-2xl">
+                      <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full flex items-center justify-center text-white font-semibold text-lg">
                         {selectedExpert.user?.fullName?.charAt(0) || 'E'}
                       </div>
                     )}
                     <div>
-                      <h2 className="text-xl font-bold text-gray-900">
+                      <h2 className="text-lg font-semibold text-gray-900">
                         {selectedExpert.user?.fullName}
                       </h2>
-                      <p className="text-gray-600">{selectedExpert.jobTitle}</p>
+                      <p className="text-sm text-gray-600">{selectedExpert.jobTitle}</p>
+                      {selectedExpert.company && (
+                        <p className="text-xs text-gray-500">{selectedExpert.company}</p>
+                      )}
                     </div>
                   </div>
                   <button
                     onClick={closeContactModal}
                     className="text-gray-400 hover:text-gray-600 transition-colors"
                   >
-                    <X className="w-6 h-6" />
+                    <X className="w-5 h-5" />
                   </button>
                 </div>
-                <p className="text-gray-600 text-sm">
-                  Get in touch with {selectedExpert.user?.fullName} for collaboration opportunities.
-                </p>
               </div>
 
-              {/* Contact Details */}
-              <div className="p-6 space-y-4">
-                {/* Email */}
-                <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                  <Mail className="w-5 h-5 text-blue-600" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Email</p>
-                    <p className="text-sm text-gray-600">{selectedExpert.user?.email}</p>
+              {/* Contact Information */}
+              <div className="p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
+                <div className="space-y-3">
+                  {/* Email */}
+                  <div className="flex items-center space-x-3">
+                    <Mail className="w-4 h-4 text-blue-600" />
+                    <span className="text-sm text-gray-900">{selectedExpert.user?.email}</span>
                   </div>
-                </div>
 
-                {/* Phone */}
-                {selectedExpert.user?.phone && (
-                  <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                    <Phone className="w-5 h-5 text-blue-600" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">Phone</p>
-                      <p className="text-sm text-gray-600">{selectedExpert.user?.phone}</p>
+                  {/* Phone */}
+                  {selectedExpert.user?.phone && (
+                    <div className="flex items-center space-x-3">
+                      <Phone className="w-4 h-4 text-blue-600" />
+                      <span className="text-sm text-gray-900">{selectedExpert.user?.phone}</span>
                     </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Email Composition Form */}
-              <div className="px-6 pb-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Send Message</h3>
-                <div className="space-y-4">
-                  {/* Subject */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
-                    <input
-                      type="text"
-                      placeholder="Collaboration Opportunity"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      defaultValue="Collaboration Opportunity"
-                    />
-                  </div>
-                  
-                  {/* Message */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
-                    <textarea
-                      rows={4}
-                      placeholder="Hi, I'm interested in collaborating with you..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                      defaultValue={`Hi ${selectedExpert.user?.fullName},
-
-I'm interested in collaborating with you for a project. Could you please let me know your availability and discuss the details?
-
-Best regards,`}
-                    />
-                  </div>
+                  )}
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="p-6 border-t border-gray-100 flex space-x-3">
+              <div className="p-6 border-t border-gray-200 flex space-x-3">
                 <button
                   onClick={closeContactModal}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-6 py-2 bg-white text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors border border-gray-300 shadow-sm hover:shadow-md"
                 >
                   Close
                 </button>
                 <button
                   onClick={() => {
-                    const subject = document.querySelector('input[placeholder="Collaboration Opportunity"]').value;
-                    const message = document.querySelector('textarea').value;
-                    const mailtoLink = `mailto:${selectedExpert.user?.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
+                    const mailtoLink = `mailto:${selectedExpert.user?.email}?subject=Collaboration Opportunity&body=Hi ${selectedExpert.user?.fullName},%0A%0AI'm interested in collaborating with you for a project. Could you please let me know your availability and discuss the details?%0A%0ABest regards,`;
                     window.open(mailtoLink, '_blank');
                   }}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-medium rounded-md transition-all duration-300 shadow-lg hover:shadow-xl"
                 >
-                  Send Email
+                  Contact Expert
                 </button>
               </div>
             </motion.div>
@@ -4506,12 +4564,12 @@ Best regards,`}
                           e.target.nextSibling.style.display = 'flex';
                         }}
                       />
-                      <div className="w-full h-full bg-gray-100 rounded-full flex items-center justify-center text-gray-600 font-semibold text-xl" style={{display: 'none'}}>
+                      <div className="w-full h-full bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full flex items-center justify-center text-white font-semibold text-xl" style={{display: 'none'}}>
                         {selectedExpert.user?.fullName?.charAt(0) || 'E'}
                       </div>
                     </div>
                   ) : (
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 font-semibold text-xl">
+                    <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full flex items-center justify-center text-white font-semibold text-xl">
                       {selectedExpert.user?.fullName?.charAt(0) || 'E'}
                     </div>
                   )}
@@ -4768,7 +4826,7 @@ Best regards,`}
                       closeProfileModal();
                       handleContactExpert(selectedExpert);
                     }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                    className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-md transition-all duration-300 shadow-lg hover:shadow-xl"
                   >
                     Contact Expert
                   </button>
@@ -4810,23 +4868,24 @@ const RatingsTab = ({ user }) => {
   ]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Trust Badges */}
-  <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Trust Badges & Recognition</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 className="text-xl font-semibold text-gray-900 mb-6">Trust Badges & Recognition</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {trustBadges.map((badge, index) => {
             const Icon = badge.icon;
             const colorClasses = {
-              blue: 'bg-blue-100 text-blue-800 border-blue-200',
-              green: 'bg-green-100 text-green-800 border-green-200',
-              purple: 'bg-purple-100 text-purple-800 border-purple-200'
+              blue: 'bg-blue-50 text-blue-700 border-blue-200',
+              green: 'bg-green-50 text-green-700 border-green-200',
+              purple: 'bg-purple-50 text-purple-700 border-purple-200'
             };
             
             return (
-              <div key={index} className={`p-4 rounded-lg border ${colorClasses[badge.color]} text-center`}>
-                <Icon className={`w-8 h-8 mx-auto mb-2 text-${badge.color}-600`} />
-                <h4 className="font-medium">{badge.name}</h4>
+              <div key={index} className={`p-6 rounded-xl border ${colorClasses[badge.color]} text-center hover:shadow-md transition-all duration-200`}>
+                <Icon className={`w-10 h-10 mx-auto mb-3 text-${badge.color}-600`} />
+                <h4 className="font-semibold text-gray-900">{badge.name}</h4>
+                <p className="text-sm text-gray-600 mt-1">Verified and trusted</p>
               </div>
             );
           })}
@@ -4834,34 +4893,46 @@ const RatingsTab = ({ user }) => {
       </div>
 
       {/* Received Ratings */}
-      <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Ratings Received from Experts</h3>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-semibold text-gray-900">Ratings Received from Experts</h3>
+          <div className="text-sm text-gray-500">
+            {receivedRatings.length} rating{receivedRatings.length !== 1 ? 's' : ''} received
+          </div>
+        </div>
+        
         <div className="space-y-4">
           {receivedRatings.map(rating => (
-            <div key={rating.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <div className="flex items-start justify-between mb-2">
+            <div key={rating.id} className="p-6 bg-gray-50 rounded-xl border border-gray-200 hover:shadow-sm transition-all duration-200">
+              <div className="flex items-start justify-between mb-3">
                 <div>
-                  <h4 className="font-medium text-gray-900">{rating.expertName}</h4>
+                  <h4 className="font-semibold text-gray-900">{rating.expertName}</h4>
                   <p className="text-sm text-gray-600">{rating.category}</p>
                 </div>
                 <div className="flex items-center">
                   {[...Array(5)].map((_, i) => (
                     <Star 
                       key={i} 
-                      className={`w-4 h-4 ${i < Math.floor(rating.rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
+                      className={`w-5 h-5 ${i < Math.floor(rating.rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
                     />
                   ))}
-                  <span className="ml-2 text-sm font-medium text-gray-900">{rating.rating}</span>
+                  <span className="ml-2 text-sm font-semibold text-gray-900">{rating.rating}</span>
                 </div>
               </div>
-              <p className="text-gray-700 mb-2">{rating.comment}</p>
-              <p className="text-xs text-gray-500">{new Date(rating.date).toLocaleDateString()}</p>
+              <p className="text-gray-700 mb-3 leading-relaxed">{rating.comment}</p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-gray-500">{new Date(rating.date).toLocaleDateString()}</p>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-xs text-gray-500">Verified</span>
+                </div>
+              </div>
             </div>
           ))}
         </div>
+      </div>
     </div>
-  </div>
-);
+  );
 };
 
 export default CollegeDashboard;

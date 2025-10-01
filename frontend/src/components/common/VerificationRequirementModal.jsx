@@ -53,7 +53,10 @@ const VerificationRequirementModal = ({
           {/* Content */}
           <div className="p-4">
             <p className="text-gray-600 mb-4">
-              You need to verify your email or phone number to access {featureName}.
+              {featureName === "Application Management" 
+                ? "You need to verify your email to access Application Management."
+                : `You need to verify your email or phone number to access ${featureName}.`
+              }
             </p>
             
             <div className="space-y-2">
@@ -65,7 +68,7 @@ const VerificationRequirementModal = ({
                   Verify Email
                 </button>
               )}
-              {!user?.isPhoneVerified && (
+              {!user?.isPhoneVerified && featureName !== "Application Management" && (
                 <button
                   onClick={onVerifyPhone}
                   className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700"

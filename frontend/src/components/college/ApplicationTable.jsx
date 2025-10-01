@@ -63,8 +63,6 @@ const ApplicationTable = ({
 
   // Fetch applications with pagination and filters
   const fetchApplications = useCallback(async () => {
-    if (!requirementId) return;
-
     try {
       setLoading(true);
       // Build query params, filtering out empty values
@@ -81,7 +79,14 @@ const ApplicationTable = ({
         queryParams.append('status', filters.status);
       }
 
-      const response = await apiService.get(`/applications/requirement/${requirementId}?${queryParams.toString()}`);
+      let response;
+      if (requirementId) {
+        // Fetch applications for specific requirement
+        response = await apiService.get(`/applications/requirement/${requirementId}?${queryParams.toString()}`);
+      } else {
+        // Fetch all applications for the college
+        response = await apiService.get(`/applications/college?${queryParams.toString()}`);
+      }
       
       console.log('🔍 ApplicationTable - API Response:', response);
       console.log('🔍 Query Params:', queryParams.toString());
@@ -209,81 +214,25 @@ const ApplicationTable = ({
   );
 
   return (
-    <div className="card w-full">
-      {/* Header with Bulk Actions */}
-      <div className="p-6 border-b border-neutral-200">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-primary-100 to-primary-200 rounded-xl flex items-center justify-center">
-                <User className="w-5 h-5 text-primary-600" />
-              </div>
-              <div>
-                <div className="flex items-center gap-4">
-                  <h3 className="text-xl font-bold text-neutral-900">
-                    Applications
-                  </h3>
-                  <div className="flex items-center gap-3 text-sm">
-                    <span className="px-2 py-1 bg-green-100 text-green-700 rounded-md font-medium">
-                      {applicationStats.shortlisted} Shortlisted
-                    </span>
-                    <span className="px-2 py-1 bg-red-100 text-red-700 rounded-md font-medium">
-                      {applicationStats.rejected} Rejected
-                    </span>
-                  </div>
-                </div>
-                <p className="text-sm text-neutral-500">
-                  {totalApplications} total applications
-                </p>
-              </div>
-            </div>
-            {selectedApplications.size > 0 && (
-              <span className="px-4 py-2 bg-primary-100 text-primary-800 text-sm font-semibold rounded-xl border border-primary-200">
-                {selectedApplications.size} selected
-              </span>
-            )}
-          </div>
-          
-          {selectedApplications.size > 0 && (
-            <div className="flex items-center gap-3">
-              <select
-                onChange={(e) => handleBulkStatusUpdate(e.target.value)}
-                className="input text-sm"
-              >
-                <option value="">Bulk Update Status</option>
-                <option value="SHORTLISTED">Shortlist</option>
-                <option value="REJECTED">Rejected</option>
-                <option value="PENDING">Pending</option>
-              </select>
-              <button
-                onClick={() => setSelectedApplications(new Set())}
-                className="btn-ghost btn-sm"
-              >
-                Clear Selection
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="p-6 border-b border-neutral-200 bg-gradient-to-r from-neutral-50 to-neutral-100">
+    <div className="bg-white rounded-b-xl">
+      {/* Filters Section */}
+      <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
         <div className="flex items-center gap-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-4 h-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="text"
               placeholder="Search by expert name or email..."
               value={filters.search}
               onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-              className="input w-full pl-10"
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
             />
           </div>
           
           <select
             value={filters.status}
             onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-            className="input text-sm"
+            className="px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
           >
             <option value="">All Statuses</option>
             <option value="PENDING">Pending</option>
@@ -294,60 +243,98 @@ const ApplicationTable = ({
         </div>
       </div>
 
+      {/* Bulk Actions Bar */}
+      {selectedApplications.size > 0 && (
+        <div className="px-6 py-3 bg-blue-50 border-b border-blue-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <span className="text-sm font-medium text-blue-800">
+                {selectedApplications.size} application{selectedApplications.size !== 1 ? 's' : ''} selected
+              </span>
+            </div>
+            <div className="flex items-center space-x-3">
+              <select
+                onChange={(e) => handleBulkStatusUpdate(e.target.value)}
+                className="px-3 py-1.5 border border-blue-300 rounded-md text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white"
+              >
+                <option value="">Bulk Update Status</option>
+                <option value="SHORTLISTED">Shortlist</option>
+                <option value="REJECTED">Rejected</option>
+                <option value="PENDING">Pending</option>
+              </select>
+              <button
+                onClick={() => setSelectedApplications(new Set())}
+                className="px-3 py-1.5 text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
+              >
+                Clear Selection
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Table */}
-      <div className="overflow-x-auto w-full">
-        <table className="table-modern w-full">
-          <thead>
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
             <tr>
-              <th className="px-3 py-2 text-left w-12">
+              <th className="px-6 py-3 text-left w-12">
                 <input
                   type="checkbox"
                   checked={selectedApplications.size === applications.length && applications.length > 0}
                   onChange={handleSelectAll}
-                  className="rounded border-neutral-300 text-primary-600 focus:ring-primary-500 w-4 h-4"
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
                 />
               </th>
-              <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider w-1/3">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <div className="flex items-center gap-1.5">
                   Expert
                   {sortBy === 'expert.fullName' && (
-                    sortOrder === 'asc' ? <ChevronUp className="w-3 h-3 text-primary-600" /> : <ChevronDown className="w-3 h-3 text-primary-600" />
+                    sortOrder === 'asc' ? <ChevronUp className="w-3 h-3 text-blue-600" /> : <ChevronDown className="w-3 h-3 text-blue-600" />
                   )}
                 </div>
               </th>
-              <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider w-32">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <div className="flex items-center gap-1.5">
                   Status
                   {sortBy === 'status' && (
-                    sortOrder === 'asc' ? <ChevronUp className="w-3 h-3 text-primary-600" /> : <ChevronDown className="w-3 h-3 text-primary-600" />
+                    sortOrder === 'asc' ? <ChevronUp className="w-3 h-3 text-blue-600" /> : <ChevronDown className="w-3 h-3 text-blue-600" />
                   )}
                 </div>
               </th>
-              <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider w-1/3">
-                 Actions
-               </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Applied Date
+              </th>
+              {!requirementId && (
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Requirement
+                </th>
+              )}
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="bg-white divide-y divide-gray-200">
             {loading ? (
               <tr>
-                <td colSpan="4" className="px-3 py-8 text-center">
+                <td colSpan={requirementId ? "5" : "6"} className="px-6 py-12 text-center">
                   <div className="flex flex-col items-center justify-center gap-3">
-                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary-200 border-t-primary-600"></div>
-                    <p className="text-neutral-500 font-medium text-sm">Loading applications...</p>
+                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-blue-600"></div>
+                    <p className="text-gray-500 font-medium text-sm">Loading applications...</p>
                   </div>
                 </td>
               </tr>
             ) : applications.length === 0 ? (
               <tr>
-                <td colSpan="4" className="px-3 py-8 text-center">
+                <td colSpan={requirementId ? "5" : "6"} className="px-6 py-12 text-center">
                   <div className="flex flex-col items-center justify-center gap-3">
-                    <div className="w-12 h-12 bg-neutral-100 rounded-xl flex items-center justify-center">
-                      <User className="w-6 h-6 text-neutral-400" />
+                    <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
+                      <User className="w-6 h-6 text-gray-400" />
                     </div>
                     <div>
-                      <p className="text-neutral-600 font-semibold text-base">No applications found</p>
-                      <p className="text-neutral-500 text-sm">Try adjusting your search or filter criteria</p>
+                      <p className="text-gray-600 font-semibold text-base">No applications found</p>
+                      <p className="text-gray-500 text-sm">Try adjusting your search or filter criteria</p>
                     </div>
                   </div>
                 </td>
@@ -357,65 +344,78 @@ const ApplicationTable = ({
                 const statusInfo = getStatusInfo(application.status);
                 const StatusIcon = statusInfo.icon;
 
-                                 return (
-                   <tr 
-                     key={application.id} 
-                     className="hover:bg-gradient-to-r hover:from-primary-50 hover:to-accent-50 transition-all duration-200 border-l-4 border-l-transparent hover:border-l-primary-500 group"
-                   >
-                    <td className="px-3 py-2 w-12">
+                return (
+                  <tr 
+                    key={application.id} 
+                    className="hover:bg-gray-50 transition-colors duration-200"
+                  >
+                    <td className="px-6 py-4 w-12">
                       <input
                         type="checkbox"
                         checked={selectedApplications.has(application.id)}
                         onChange={() => handleSelectApplication(application.id)}
-                        className="rounded border-neutral-300 text-primary-600 focus:ring-primary-500 w-4 h-4"
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
                       />
                     </td>
-                    <td className="px-3 py-2 w-1/3">
+                    <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-gradient-to-br from-primary-100 to-primary-200 rounded-lg flex items-center justify-center shadow-sm">
-                          <User className="w-4 h-4 text-primary-600" />
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center shadow-sm">
+                          <User className="w-5 h-5 text-blue-600" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-semibold text-neutral-900 truncate">
+                          <div className="text-sm font-semibold text-gray-900 truncate">
                             {application.expert.fullName}
                           </div>
-                          <div className="text-xs text-neutral-600 truncate">
+                          <div className="text-xs text-gray-600 truncate">
                             {application.expert.email}
                           </div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-3 py-2 w-32">
-                      <div className="flex items-center gap-2">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-semibold border ${statusInfo.bgColor} ${statusInfo.color}`}>
-                          <StatusIcon className="w-3 h-3 mr-1.5" />
-                          {statusInfo.label}
-                        </span>
-                      </div>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${statusInfo.bgColor} ${statusInfo.color}`}>
+                        <StatusIcon className="w-3 h-3 mr-1.5" />
+                        {statusInfo.label}
+                      </span>
                     </td>
-                    <td className="px-3 py-2 w-1/3">
-                      <div className="flex items-center gap-2 flex-wrap">
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {formatDate(application.createdAt)}
+                    </td>
+                    {!requirementId && (
+                      <td className="px-6 py-4">
+                        <div className="text-sm font-medium text-gray-900">
+                          {application.requirement?.title || 'N/A'}
+                        </div>
+                        {application.requirement?.department && (
+                          <div className="text-xs text-gray-500">
+                            {application.requirement.department}
+                          </div>
+                        )}
+                      </td>
+                    )}
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             onViewProfile(application.expert);
                           }}
-                          className="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 transition-all duration-200 border border-primary-200"
+                          className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-white rounded-md hover:bg-gray-50 transition-colors border border-gray-300 shadow-sm hover:shadow-md"
                           title="View Expert Profile"
                         >
-                          <User className="w-3 h-3 mr-1.5" />
-                          View Profile
+                          <Eye className="w-3 h-3 mr-1.5" />
+                          View
                         </button>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             onUpdateStatus(application);
                           }}
-                          className="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 transition-all duration-200 border border-primary-200"
+                          className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-gray-800 rounded-md hover:bg-gray-900 transition-colors shadow-sm hover:shadow-md"
                           title="Update Status"
                         >
                           <CheckCircle className="w-3 h-3 mr-1.5" />
-                          Update Status
+                          Update
                         </button>
                         <button
                           onClick={(e) => {
@@ -436,7 +436,7 @@ const ApplicationTable = ({
                             const mailtoLink = `mailto:${application.expert.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
                             window.open(mailtoLink);
                           }}
-                          className="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-success-600 bg-success-50 rounded-lg hover:bg-success-100 transition-all duration-200 border border-success-200"
+                          className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-white rounded-md hover:bg-gray-50 transition-colors border border-gray-300 shadow-sm hover:shadow-md"
                           title="Contact Expert via Email"
                         >
                           <Mail className="w-3 h-3 mr-1.5" />
@@ -454,26 +454,26 @@ const ApplicationTable = ({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="p-6 border-t border-neutral-200 bg-gradient-to-r from-neutral-50 to-neutral-100">
+        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
           <div className="flex items-center justify-between">
-            <div className="text-sm text-neutral-600 font-medium">
+            <div className="text-sm text-gray-600 font-medium">
               Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, totalApplications)} of {totalApplications} results
             </div>
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
-                className="btn-outline btn-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Previous
               </button>
-              <span className="px-4 py-2 text-sm text-neutral-700 font-semibold bg-white rounded-xl border border-neutral-200">
+              <span className="px-4 py-2 text-sm text-gray-700 font-semibold bg-white rounded-lg border border-gray-300">
                 Page {currentPage} of {totalPages}
               </span>
               <button
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages}
-                className="btn-outline btn-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Next
               </button>

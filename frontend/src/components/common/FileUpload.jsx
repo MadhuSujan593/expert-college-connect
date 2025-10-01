@@ -166,17 +166,17 @@ const FileUpload = ({
           {console.log('🖼️ FileUpload Display Debug - Showing current file:', currentFile)}
           {/* Image Preview for Image Type */}
           {type === 'image' && (
-            <div className="relative w-full max-w-32 h-32">
+            <div className="relative w-full max-w-40 h-40">
               {console.log('🖼️ FileUpload Image Debug - Rendering image with src:', currentFile)}
-              <div className="relative overflow-hidden rounded-2xl border-2 border-slate-200 shadow-lg w-full h-full">
+              <div className="relative overflow-hidden rounded-lg border border-gray-200 shadow-lg w-full h-full group">
                 <img 
                   src={currentFile} 
                   alt="Profile Picture" 
-                  className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   onLoad={() => console.log('🖼️ FileUpload Image Debug - Image loaded successfully:', currentFile)}
                   onError={(e) => console.error('🖼️ FileUpload Image Debug - Image failed to load:', currentFile, e)}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </div>
               
                               {/* Remove Button Overlay - Only Visible When Editing */}
@@ -194,13 +194,13 @@ const FileUpload = ({
           
           {/* Document Preview for Document Type */}
           {type === 'document' && (
-            <div className="relative w-full max-w-48 h-32">
-              <div className="relative overflow-hidden rounded-2xl border-2 border-slate-200 shadow-lg bg-gradient-to-br from-slate-50 to-white w-full h-full">
-                <div className="flex flex-col items-center justify-center h-full space-y-2">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+            <div className="relative w-full max-w-56 h-40">
+              <div className="relative overflow-hidden rounded-lg border border-gray-200 shadow-lg bg-gradient-to-br from-gray-50 to-white w-full h-full group">
+                <div className="flex flex-col items-center justify-center h-full space-y-3">
+                  <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
                     <File className="w-6 h-6 text-white" />
                   </div>
-                  <h3 className="text-sm font-semibold text-slate-800 text-center">Resume Uploaded</h3>
+                  <h3 className="text-sm font-semibold text-gray-800 text-center">Resume Uploaded</h3>
                 </div>
                 
                 {/* Remove Button Overlay - Only Visible When Editing */}
@@ -230,14 +230,14 @@ const FileUpload = ({
       {/* File Upload Area */}
       {(!currentFile || selectedFile) && (
         <div
-          className={`relative border-2 border-dashed rounded-2xl p-4 transition-colors ${
-            type === 'document' ? 'w-48 h-32' : 'w-32 h-32'
+          className={`relative border-2 border-dashed rounded-lg p-8 transition-all duration-200 ${
+            type === 'document' ? 'w-full max-w-md h-40' : 'w-full max-w-sm h-40'
           } ${
             dragActive
-              ? 'border-blue-500 bg-blue-50'
+              ? 'border-blue-500 bg-blue-50 shadow-lg'
               : selectedFile
-              ? 'border-green-500 bg-green-50'
-              : 'border-gray-300 hover:border-gray-400'
+              ? 'border-green-500 bg-green-50 shadow-lg'
+              : 'border-gray-300 hover:border-blue-300 hover:bg-blue-50/50 hover:shadow-md'
           }`}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
@@ -253,12 +253,14 @@ const FileUpload = ({
           />
 
           {selectedFile ? (
-            <div className="text-center">
-              <div className="flex items-center justify-center mb-2">
+            <div className="text-center h-full flex flex-col items-center justify-center">
+              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center mb-4 shadow-lg">
                 {getFileIcon()}
               </div>
-              <p className="text-xs font-medium text-gray-900 truncate">{selectedFile.name}</p>
-              <p className="text-xs text-gray-500">{formatFileSize(selectedFile.size)}</p>
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-gray-900 truncate">{selectedFile.name}</p>
+                <p className="text-xs text-gray-500">{formatFileSize(selectedFile.size)}</p>
+              </div>
               
               {/* Only show manual upload buttons if onFileSelect is not provided (manual upload mode) */}
               {!onFileSelect && (
@@ -295,19 +297,24 @@ const FileUpload = ({
               )}
             </div>
           ) : (
-            <div className="text-center">
-              <Upload className="mx-auto h-8 w-8 text-gray-400" />
-              <div className="mt-2">
-                <p className="text-xs text-gray-600">
-                  <span className="font-medium text-blue-600 hover:text-blue-500 cursor-pointer">
+            <div className="text-center h-full flex flex-col items-center justify-center">
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-4 shadow-lg">
+                <Upload className="h-6 w-6 text-white" />
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-gray-900">
+                  <span className="text-blue-600 hover:text-blue-700 cursor-pointer transition-colors">
                     Click to upload
                   </span>
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500">
                   {type === 'image' 
                     ? `PNG, JPG, GIF up to ${maxSize}MB`
                     : `PDF, DOC, DOCX up to ${maxSize}MB`
                   }
+                </p>
+                <p className="text-xs text-gray-400">
+                  or drag and drop
                 </p>
               </div>
             </div>

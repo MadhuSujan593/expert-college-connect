@@ -52,7 +52,9 @@ export class RatingRequestsController {
   async findAll(
     @Request() req,
     @Query('expertProfileId') expertProfileId?: string,
-    @Query('collegeProfileId') collegeProfileId?: string
+    @Query('collegeProfileId') collegeProfileId?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string
   ) {
     // For experts, only show their own rating requests
     if (req.user.role === UserRole.EXPERT) {
@@ -80,11 +82,22 @@ export class RatingRequestsController {
       collegeProfileId = collegeProfile.id;
     }
 
-    const ratingRequests = await this.ratingRequestsService.findAll(expertProfileId, collegeProfileId);
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 10;
+    
+    const result = await this.ratingRequestsService.findAll(expertProfileId, collegeProfileId, pageNum, limitNum);
     
     return {
       success: true,
-      data: ratingRequests,
+      data: result.data,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total: result.total,
+        totalPages: result.totalPages,
+        hasNextPage: result.hasNextPage,
+        hasPrevPage: result.hasPrevPage
+      }
     };
   }
 

@@ -495,7 +495,7 @@ const CollegeRegistration = () => {
                 
                 <Link
                   to="/login"
-                  className="group bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-200 hover:border-blue-400 hover:from-blue-100 hover:to-cyan-100 rounded-lg p-3 transition-all duration-300 hover:shadow-lg"
+                  className="group bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 hover:border-blue-300 hover:from-blue-100 hover:to-cyan-100 rounded-lg p-3 transition-all duration-300 hover:shadow-lg"
                 >
                   <div className="flex flex-col items-center space-y-1">
                     <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">

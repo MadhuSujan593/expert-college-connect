@@ -4,10 +4,11 @@ import { Star, Clock, CheckCircle, XCircle, MessageSquare, User, Calendar } from
 import SimpleRatingModal from './SimpleRatingModal';
 import api from '../../utils/api';
 
-const RatingRequestsList = ({ ratingRequests, onUpdate }) => {
+const RatingRequestsList = ({ ratingRequests, onUpdate, hasMore, loadingMore, onLoadMore }) => {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [updating, setUpdating] = useState(null);
+  const [expandedMessages, setExpandedMessages] = useState(new Set());
 
   // Debug logging
   console.log('RatingRequestsList - ratingRequests:', ratingRequests);
@@ -71,6 +72,24 @@ const RatingRequestsList = ({ ratingRequests, onUpdate }) => {
     setShowRatingModal(true);
   };
 
+  const toggleMessageExpansion = (requestId) => {
+    setExpandedMessages(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(requestId)) {
+        newSet.delete(requestId);
+      } else {
+        newSet.add(requestId);
+      }
+      return newSet;
+    });
+  };
+
+  const truncateMessage = (message, maxLength = 80) => {
+    if (!message) return '';
+    if (message.length <= maxLength) return message;
+    return message.substring(0, maxLength) + '...';
+  };
+
   const handleRatingSubmitted = () => {
     setShowRatingModal(false);
     setSelectedRequest(null);
@@ -94,33 +113,59 @@ const RatingRequestsList = ({ ratingRequests, onUpdate }) => {
           key={request.id}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow"
+          className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-all duration-200"
         >
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <User className="w-5 h-5 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">
-                    {request.expertprofile?.user?.fullName}
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    {request.requirement?.title}
-                  </p>
-                </div>
-              </div>
-
-              {request.message && (
-                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-start gap-2">
-                    <MessageSquare className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-gray-700">{request.message}</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 flex-1">
+              {(request.expertprofile?.profilePicture || request.expertprofile?.user?.profileImage) ? (
+                <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200">
+                  <img
+                    src={request.expertprofile.profilePicture || request.expertprofile.user.profileImage}
+                    alt={`${request.expertprofile.user.fullName}'s profile`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                  <div className="w-full h-full bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full flex items-center justify-center text-white font-semibold text-sm" style={{display: 'none'}}>
+                    {request.expertprofile.user.fullName?.charAt(0) || 'E'}
                   </div>
                 </div>
+              ) : (
+                <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                  {request.expertprofile?.user?.fullName?.charAt(0) || 'E'}
+                </div>
               )}
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-gray-900 truncate">
+                  {request.expertprofile?.user?.fullName}
+                </h3>
+                <p className="text-sm text-gray-600 truncate">
+                  {request.requirement?.title}
+                </p>
+                {request.message && (
+                  <div className="mt-1">
+                    <p className="text-xs text-gray-500">
+                      {expandedMessages.has(request.id) 
+                        ? request.message 
+                        : truncateMessage(request.message)
+                      }
+                    </p>
+                    {request.message.length > 80 && (
+                      <button
+                        onClick={() => toggleMessageExpansion(request.id)}
+                        className="text-xs text-blue-600 hover:text-blue-800 font-medium mt-1"
+                      >
+                        {expandedMessages.has(request.id) ? 'Show less' : 'Read more'}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
 
+            <div className="flex items-center gap-4 ml-4">
               <div className="flex items-center gap-4 text-sm text-gray-600">
                 <div className="flex items-center gap-1">
                   <Calendar className="w-4 h-4" />
@@ -128,58 +173,84 @@ const RatingRequestsList = ({ ratingRequests, onUpdate }) => {
                 </div>
                 <div className={`flex items-center gap-1 px-2 py-1 rounded-full border ${getStatusColor(request.status)}`}>
                   {getStatusIcon(request.status)}
-                  {request.status.toLowerCase()}
+                  <span className="text-xs font-medium">{request.status.toLowerCase()}</span>
                 </div>
               </div>
-            </div>
 
-            <div className="flex items-center gap-2 ml-4">
-              {request.status === 'PENDING' && (
-                <>
+              <div className="flex items-center gap-2">
+                {request.status === 'PENDING' && (
+                  <>
+                    <button
+                      onClick={() => handleReject(request.id)}
+                      disabled={updating === request.id}
+                      className="px-3 py-1.5 bg-white text-red-600 border border-red-300 rounded-md hover:bg-red-50 text-xs font-medium transition-colors shadow-sm hover:shadow-md disabled:opacity-50"
+                    >
+                      {updating === request.id ? 'Rejecting...' : 'Reject'}
+                    </button>
+                    <button
+                      onClick={() => handleApprove(request.id)}
+                      disabled={updating === request.id}
+                      className="px-3 py-1.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-md text-xs font-medium transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50"
+                    >
+                      {updating === request.id ? 'Approving...' : 'Approve & Rate'}
+                    </button>
+                  </>
+                )}
+                
+                {request.status === 'APPROVED' && (!request.ratings || request.ratings.length === 0) && (
                   <button
-                    onClick={() => handleReject(request.id)}
-                    disabled={updating === request.id}
-                    className="px-3 py-1.5 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                    onClick={() => handleRateExpert(request)}
+                    className="px-3 py-1.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-md text-xs font-medium transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-1"
                   >
-                    {updating === request.id ? 'Rejecting...' : 'Reject'}
+                    <Star className="w-3 h-3" />
+                    Rate Expert
                   </button>
-                  <button
-                    onClick={() => handleApprove(request.id)}
-                    disabled={updating === request.id}
-                    className="px-3 py-1.5 text-green-600 bg-green-50 hover:bg-green-100 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-                  >
-                    {updating === request.id ? 'Approving...' : 'Approve & Rate'}
-                  </button>
-                </>
-              )}
-              
-              {request.status === 'APPROVED' && (!request.ratings || request.ratings.length === 0) && (
-                <button
-                  onClick={() => handleRateExpert(request)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors flex items-center gap-2"
-                >
-                  <Star className="w-4 h-4" />
-                  Rate Expert
-                </button>
-              )}
+                )}
 
-              {request.ratings && request.ratings.length > 0 && (
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1 text-yellow-600">
-                    <Star className="w-4 h-4 fill-current" />
-                    <span className="text-sm font-medium">
-                      {request.ratings[0].overallRating}/5
-                    </span>
+                {request.ratings && request.ratings.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 text-yellow-600">
+                      <Star className="w-4 h-4 fill-current" />
+                      <span className="text-xs font-semibold">
+                        {request.ratings[0].overallRating}/5
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                      <span className="text-xs text-green-600 font-medium">
+                        Rated
+                      </span>
+                    </div>
                   </div>
-                  <span className="text-xs text-green-600 font-medium">
-                    Rated
-                  </span>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </motion.div>
       ))}
+
+      {/* Load More Button */}
+      {hasMore && (
+        <div className="flex justify-center mt-6">
+          <button
+            onClick={onLoadMore}
+            disabled={loadingMore}
+            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-medium rounded-md transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {loadingMore ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                Loading more...
+              </>
+            ) : (
+              <>
+                <Star className="w-4 h-4" />
+                Load More Requests
+              </>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* Rating Modal */}
       {showRatingModal && selectedRequest && (
