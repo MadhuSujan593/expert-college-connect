@@ -587,7 +587,7 @@ export class CollegeProfileService {
     return this.prisma.requirement.findMany({
       where: {
         collegeProfileId: collegeProfile.id,
-        isActive: true,
+        // Remove isActive filter so college admins can see ALL their requirements
       },
       orderBy: { createdAt: 'desc' },
       take: limit,

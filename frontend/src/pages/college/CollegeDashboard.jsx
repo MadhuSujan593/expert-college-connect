@@ -250,6 +250,40 @@ const CollegeDashboard = () => {
     }
   };
 
+  const handleToggleActive = async (requirement) => {
+    try {
+      const newActiveStatus = !requirement.isActive;
+      console.log('🔄 Toggling requirement:', {
+        id: requirement.id,
+        title: requirement.title,
+        currentStatus: requirement.isActive,
+        newStatus: newActiveStatus
+      });
+      
+      const response = await apiService.patch(`/requirements/${requirement.id}`, {
+        isActive: newActiveStatus
+      });
+      
+      console.log('📡 API Response:', response);
+      
+      // If we get a response (no error thrown), consider it successful
+      if (response) {
+        console.log('✅ API call successful, refreshing requirements...');
+        
+        // Force a complete refresh of requirements to ensure state is updated
+        await refreshRequirements();
+        
+        // Also refresh recent requirements for dashboard
+        await fetchRequirements();
+        
+        showToast('success', `Requirement ${newActiveStatus ? 'enabled' : 'disabled'} successfully`);
+      }
+    } catch (error) {
+      console.error('❌ Error toggling requirement status:', error);
+      showToast('error', 'Failed to update requirement status');
+    }
+  };
+
   const confirmDelete = async () => {
     if (!requirementToDelete) return;
     
@@ -344,7 +378,7 @@ const CollegeDashboard = () => {
         if (append) {
           setRatingRequests(prev => [...prev, ...response.data]);
         } else {
-          setRatingRequests(response.data);
+        setRatingRequests(response.data);
         }
         // Use the pagination metadata from backend
         setRatingRequestsHasMore(response.pagination?.hasNextPage || false);
@@ -876,10 +910,13 @@ const CollegeDashboard = () => {
         }
       });
 
+      console.log('📡 Recent requirements response status:', recentResponse.status);
+
       if (recentResponse.ok) {
         const recentRequirements = await recentResponse.json();
         
-        console.log('📊 Recent requirements fetched:', recentRequirements.length);
+        console.log('📊 Recent requirements fetched:', recentRequirements);
+        console.log('📊 Recent requirements count:', recentRequirements.length);
         
         setRecentRequirements(recentRequirements);
         setStats(prev => ({
@@ -887,10 +924,10 @@ const CollegeDashboard = () => {
           totalRequirements: recentRequirements.length
         }));
       } else {
-        console.error('Failed to fetch recent requirements');
+        console.error('❌ Failed to fetch recent requirements:', recentResponse.status);
       }
     } catch (error) {
-      console.error('Error fetching requirements:', error);
+      console.error('❌ Error fetching requirements:', error);
     }
   };
 
@@ -945,12 +982,12 @@ const CollegeDashboard = () => {
   // Auto-load more when scrolling to bottom
   useEffect(() => {
     const handleScroll = () => {
-      const scrollTop = window.scrollY;
-      const windowHeight = window.innerHeight;
-      const documentHeight = document.documentElement.scrollHeight;
-      
-      // Load more when user is near bottom (within 100px)
-      if (scrollTop + windowHeight >= documentHeight - 100) {
+        const scrollTop = window.scrollY;
+        const windowHeight = window.innerHeight;
+        const documentHeight = document.documentElement.scrollHeight;
+        
+        // Load more when user is near bottom (within 100px)
+        if (scrollTop + windowHeight >= documentHeight - 100) {
         if (activeTab === 'requirements') {
           loadMoreRequirements();
         } else if (activeTab === 'rating-requests') {
@@ -1680,7 +1717,7 @@ const CollegeDashboard = () => {
                                         day: 'numeric',
                                         year: 'numeric'
                                       }) : 'N/A'}</span>
-                                    </div>
+                              </div>
                                     {req.department && (
                                       <div className="flex items-center gap-1 text-xs text-gray-500">
                                         <Briefcase className="w-3 h-3" />
@@ -1691,12 +1728,12 @@ const CollegeDashboard = () => {
                                 </div>
                                 <div className="flex items-center gap-3 ml-4">
                                   <span className={`px-3 py-1 text-xs font-medium rounded-full border ${
-                                    req.status === 'ACTIVE' 
+                                req.status === 'ACTIVE' 
                                       ? 'bg-green-50 text-green-700 border-green-200' 
                                       : 'bg-gray-50 text-gray-700 border-gray-200'
-                                  }`}>
-                                    {req.status}
-                                  </span>
+                              }`}>
+                                {req.status}
+                              </span>
                                   <div className="w-6 h-6 rounded-full bg-gray-100 group-hover:bg-blue-100 flex items-center justify-center transition-colors">
                                     <ChevronRight className="w-3 h-3 text-gray-400 group-hover:text-blue-600" />
                                   </div>
@@ -1768,6 +1805,7 @@ const CollegeDashboard = () => {
                     onView={handleView}
                     onDelete={handleDelete}
                     onRate={handleRateExpert}
+                    onToggleActive={handleToggleActive}
                     requirements={requirements}
                     setRequirements={setRequirements}
                     refreshRequirements={refreshRequirements}
@@ -2952,7 +2990,7 @@ const ProfileTab = ({
 };
 
 // Requirements Tab Component - Enhanced with form
-const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhone, onPostRequirement, showToast, setActiveTab, onView, onDelete, onRate, requirements, setRequirements, refreshRequirements, totalRequirements, loading, loadingMore, hasMore, loadMoreRequirements }) => {
+const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhone, onPostRequirement, showToast, setActiveTab, onView, onDelete, onRate, onToggleActive, requirements, setRequirements, refreshRequirements, totalRequirements, loading, loadingMore, hasMore, loadMoreRequirements }) => {
   // Check if user can access requirements creation
   const canAccessRequirements = () => {
     return user?.isEmailVerified || user?.isPhoneVerified;
@@ -3736,6 +3774,7 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
                     onView={() => handleView(requirement)}
                     onEdit={() => handleEdit(requirement)}
                     onDelete={() => onDelete(requirement.id)}
+                    onToggleActive={() => onToggleActive(requirement)}
                   />
                 ))
               )}
@@ -4149,53 +4188,53 @@ const ExpertsTab = ({ user }) => {
 
       {/* Search and Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
-        {/* Search Input */}
-        <div className="flex-1">
-          <div className="relative">
+          {/* Search Input */}
+          <div className="flex-1">
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-600" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search experts by name, expertise, skills, or company..."
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search experts by name, expertise, skills, or company..."
               className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
-            />
+              />
+            </div>
           </div>
-        </div>
 
-        {/* Category Filter */}
+          {/* Category Filter */}
         <div className="sm:w-48">
-          <select
-            value={selectedCategory}
-            onChange={(e) => handleCategoryChange(e.target.value)}
+            <select
+              value={selectedCategory}
+              onChange={(e) => handleCategoryChange(e.target.value)}
             className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
-          >
-            {categories.map(category => (
-              <option key={category} value={category}>{category}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-        
-      {/* Active Filters Indicator */}
-      {(searchQuery || selectedCategory !== 'All Categories') && (
-        <div className="mt-3 pt-3 border-t border-gray-100">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Filter className="w-4 h-4" />
-            <span className="font-medium">Active filters:</span>
-            {searchQuery && (
-              <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                Search: {searchQuery}
-              </span>
-            )}
-            {selectedCategory !== 'All Categories' && (
-              <span className="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
-                Category: {selectedCategory}
-              </span>
-            )}
+            >
+              {categories.map(category => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
           </div>
         </div>
-      )}
+        
+        {/* Active Filters Indicator */}
+        {(searchQuery || selectedCategory !== 'All Categories') && (
+          <div className="mt-3 pt-3 border-t border-gray-100">
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <Filter className="w-4 h-4" />
+              <span className="font-medium">Active filters:</span>
+              {searchQuery && (
+                <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                  Search: {searchQuery}
+                </span>
+              )}
+              {selectedCategory !== 'All Categories' && (
+                <span className="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
+                  Category: {selectedCategory}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
 
 
 
@@ -4304,8 +4343,8 @@ const ExpertsTab = ({ user }) => {
                           }}
                         />
                         <div className="w-full h-full bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full flex items-center justify-center text-white font-semibold text-xs" style={{display: 'none'}}>
-                          {expert.user?.fullName?.charAt(0) || 'E'}
-                        </div>
+                      {expert.user?.fullName?.charAt(0) || 'E'}
+                    </div>
                       </div>
                     ) : (
                       <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full flex items-center justify-center text-white font-semibold text-xs">
@@ -4524,19 +4563,19 @@ const ExpertsTab = ({ user }) => {
               <div className="p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
                 <div className="space-y-3">
-                  {/* Email */}
+                {/* Email */}
                   <div className="flex items-center space-x-3">
                     <Mail className="w-4 h-4 text-blue-600" />
                     <span className="text-sm text-gray-900">{selectedExpert.user?.email}</span>
-                  </div>
+                </div>
 
-                  {/* Phone */}
-                  {selectedExpert.user?.phone && (
+                {/* Phone */}
+                {selectedExpert.user?.phone && (
                     <div className="flex items-center space-x-3">
                       <Phone className="w-4 h-4 text-blue-600" />
                       <span className="text-sm text-gray-900">{selectedExpert.user?.phone}</span>
-                    </div>
-                  )}
+                  </div>
+                )}
                 </div>
               </div>
 
@@ -4944,7 +4983,7 @@ const RatingsTab = ({ user }) => {
               </div>
               <p className="text-gray-700 mb-3 leading-relaxed">{rating.comment}</p>
               <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-500">{new Date(rating.date).toLocaleDateString()}</p>
+              <p className="text-xs text-gray-500">{new Date(rating.date).toLocaleDateString()}</p>
                 <div className="flex items-center space-x-2">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                   <span className="text-xs text-gray-500">Verified</span>
@@ -4953,9 +4992,9 @@ const RatingsTab = ({ user }) => {
             </div>
           ))}
         </div>
-      </div>
     </div>
-  );
+  </div>
+);
 };
 
 export default CollegeDashboard;

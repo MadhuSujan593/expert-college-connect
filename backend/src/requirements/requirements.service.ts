@@ -62,15 +62,17 @@ export class RequirementsService {
     const skip = (page - 1) * limit;
 
     // Build where clause - simple and clean
-    const where: any = { 
-      isActive: true
-    };
+    const where: any = {};
     
     // Only filter by college profile if requested (for college users)
     if (filterByCollege) {
       where.collegeprofile = {
         userId: userId
       };
+      // College admins can see ALL their requirements (active + inactive)
+    } else {
+      // For experts, only show active requirements
+      where.isActive = true;
     }
     
     if (category && category !== 'All Categories') {
@@ -282,8 +284,8 @@ export class RequirementsService {
       where: { 
         collegeprofile: {
           userId
-        },
-        isActive: true
+        }
+        // Remove isActive filter so college admins can see ALL their requirements
       },
       include: {
         collegeprofile: {

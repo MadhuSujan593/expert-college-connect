@@ -148,9 +148,18 @@ const RequirementSelector = ({ onRequirementSelect, selectedRequirementId }) => 
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm text-gray-900 truncate">
-                          {requirement.title}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className={`font-medium text-sm truncate ${
+                            !requirement.isActive ? 'text-gray-500' : 'text-gray-900'
+                          }`}>
+                            {requirement.title}
+                          </p>
+                          {!requirement.isActive && (
+                            <span className="px-1.5 py-0.5 bg-gray-100 text-gray-500 text-xs font-medium rounded">
+                              Inactive
+                            </span>
+                          )}
+                        </div>
                         <div className="flex items-center space-x-4 mt-1">
                           <div className="flex items-center space-x-1 text-xs text-gray-500">
                             <Calendar className="w-3 h-3" />

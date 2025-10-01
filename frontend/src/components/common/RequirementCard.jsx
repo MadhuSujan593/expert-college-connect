@@ -12,7 +12,8 @@ const RequirementCard = ({
   onEdit = null,
   onDelete = null,
   onRate = null,
-  showRateButton = false
+  showRateButton = false,
+  onToggleActive = null
 }) => {
   const formatDate = (dateString) => {
     if (!dateString) return 'No deadline';
@@ -102,16 +103,25 @@ const RequirementCard = ({
       <div className="flex flex-col h-full">
         {/* Title Row */}
         <div className="flex items-start justify-between gap-3 mb-2">
-          <h3 className={`font-semibold text-gray-900 line-clamp-1 flex-1 min-w-0 ${
-            compact ? 'text-base' : 'text-lg'
-          }`}>
-            {requirement.title}
-          </h3>
-          {requirement.isUrgent && (
-            <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-md flex-shrink-0">
-              Urgent
-            </span>
-          )}
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <h3 className={`font-semibold text-gray-900 line-clamp-1 ${
+              compact ? 'text-base' : 'text-lg'
+            } ${!requirement.isActive ? 'opacity-60' : ''}`}>
+              {requirement.title}
+            </h3>
+            {!requirement.isActive && (
+              <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-md flex-shrink-0">
+                Inactive
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {requirement.isUrgent && (
+              <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-md">
+                Urgent
+              </span>
+            )}
+          </div>
         </div>
         
         
@@ -143,48 +153,76 @@ const RequirementCard = ({
               </div>
               
               {showActions && (
-                <div className="flex items-center gap-1.5">
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onView && onView();
-                    }}
-                    className="text-blue-600 hover:text-blue-800 hover:underline"
-                    title="View"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </button>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEdit && onEdit();
-                    }}
-                    className="text-blue-600 hover:text-blue-800 hover:underline"
-                    title="Edit"
-                  >
-                    <Edit3 className="w-4 h-4" />
-                  </button>
-                  {showRateButton && (
+                <div className="flex items-center gap-3">
+                  {/* Active/Inactive Toggle */}
+                  {onToggleActive && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500">
+                        {requirement.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleActive();
+                        }}
+                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${
+                          requirement.isActive ? 'bg-blue-600' : 'bg-gray-300'
+                        }`}
+                        title={`${requirement.isActive ? 'Disable' : 'Enable'} requirement`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            requirement.isActive ? 'translate-x-4' : 'translate-x-0.5'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  )}
+                  
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-1.5">
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        onRate && onRate();
+                        onView && onView();
                       }}
-                      className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                      className="text-blue-600 hover:text-blue-800 hover:underline"
+                      title="View"
                     >
-                      Rate
+                      <Eye className="w-4 h-4" />
                     </button>
-                  )}
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete && onDelete();
-                    }}
-                    className="text-red-600 hover:text-red-800 hover:underline"
-                    title="Delete"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit && onEdit();
+                      }}
+                      className="text-blue-600 hover:text-blue-800 hover:underline"
+                      title="Edit"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+                    {showRateButton && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRate && onRate();
+                        }}
+                        className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                      >
+                        Rate
+                      </button>
+                    )}
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete && onDelete();
+                      }}
+                      className="text-red-600 hover:text-red-800 hover:underline"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

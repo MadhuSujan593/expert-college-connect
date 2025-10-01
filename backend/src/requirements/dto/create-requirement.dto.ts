@@ -34,4 +34,8 @@ export class CreateRequirementDto {
   @IsOptional()
   @IsString()
   experience?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 }
