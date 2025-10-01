@@ -1737,21 +1737,17 @@ const ExpertDashboard = () => {
           {/* Scrollable Content */}
           <main className="flex-1 overflow-y-auto bg-gray-50">
             <div className="p-8 space-y-8">
-
-               
-
-              {/* Overview Tab */}
+              {/* All Tabs with Smooth Transitions */}
+              <AnimatePresence mode="wait">
 
               {activeTab === 'overview' && (
-
                 <motion.div
-
+                  key="overview"
                   initial={{ opacity: 0, y: 20 }}
-
                   animate={{ opacity: 1, y: 0 }}
-
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
                   className="space-y-6"
-
                 >
 
 
@@ -1916,15 +1912,13 @@ const ExpertDashboard = () => {
               {/* Profile Tab */}
 
               {activeTab === 'profile' && (
-
                 <motion.div
-
+                  key="profile"
                   initial={{ opacity: 0, y: 20 }}
-
                   animate={{ opacity: 1, y: 0 }}
-
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
                   className="space-y-6"
-
                 >
 
                   {/* Profile Header */}
@@ -1999,11 +1993,6 @@ const ExpertDashboard = () => {
 
                         <h3 className="font-semibold text-slate-900">Profile Picture</h3>
 
-                        {console.log('🖼️ FileUpload Render Debug - Profile object:', profile)}
-
-                        {console.log('🖼️ FileUpload Render Debug - Profile picture URL:', profile?.profilePicture)}
-
-                        {console.log('🖼️ FileUpload Render Debug - Profile picture type:', typeof profile?.profilePicture)}
 
                         <FileUpload
                           type="image"
@@ -3081,15 +3070,13 @@ const ExpertDashboard = () => {
               {/* Experience Tab */}
 
               {activeTab === 'experience' && (
-
                 <motion.div
-
+                  key="experience"
                   initial={{ opacity: 0, y: 20 }}
-
                   animate={{ opacity: 1, y: 0 }}
-
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
                   className="space-y-6"
-
                 >
 
                   {/* Experience Header */}
@@ -3827,13 +3814,12 @@ const ExpertDashboard = () => {
               {activeTab === 'colleges' && (
                 canAccessFeatures() ? (
                   <motion.div
-
+                    key="colleges"
                     initial={{ opacity: 0, y: 20 }}
-
                     animate={{ opacity: 1, y: 0 }}
-
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
                     className="space-y-6"
-
                   >
 
                     {/* Expert Opportunities Component */}
@@ -3875,13 +3861,12 @@ const ExpertDashboard = () => {
               {activeTab === 'applications' && (
                 canAccessFeatures() ? (
                   <motion.div
-
+                    key="applications"
                     initial={{ opacity: 0, y: 20 }}
-
                     animate={{ opacity: 1, y: 0 }}
-
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
                     className="space-y-6"
-
                   >
 
                     {/* Application Tracking Component */}
@@ -4170,7 +4155,7 @@ const ExpertDashboard = () => {
                   </div>
                 )
               )}
-
+              </AnimatePresence>
             </div>
 
           </main>

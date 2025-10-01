@@ -1449,14 +1449,14 @@ const CollegeDashboard = () => {
           {/* Scrollable Content */}
           <main className="flex-1 overflow-y-auto bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
             <div className="p-6 space-y-6">
-              {/* Overview Tab */}
+              {/* All Tabs with Smooth Transitions */}
               <AnimatePresence mode="wait">
               {activeTab === 'overview' && (
                   <motion.div
                     key="overview"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: 0.3 }}
                     className="space-y-5"
                   >
@@ -1748,10 +1748,15 @@ const CollegeDashboard = () => {
 
                 </motion.div>
               )}
-              </AnimatePresence>
 
-                             {/* Profile Tab */}
-               {activeTab === 'profile' && (
+              {activeTab === 'profile' && (
+                <motion.div
+                  key="profile"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
                  <ProfileTab 
                    profile={profile}
                    editingProfile={editingProfile}
@@ -1789,10 +1794,17 @@ const CollegeDashboard = () => {
                    currentPhoneVerified={currentPhoneVerified}
                    stats={stats}
                  />
-               )}
+                </motion.div>
+              )}
 
-              {/* Requirements Tab */}
               {activeTab === 'requirements' && (
+                <motion.div
+                  key="requirements"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
                 <>
                   <RequirementsTab 
                     recentRequirements={recentRequirements} 
@@ -1818,11 +1830,18 @@ const CollegeDashboard = () => {
 
 
                 </>
+                </motion.div>
               )}
 
-              {/* Applications Tab */}
               {activeTab === 'applications' && (
-                canAccessApplicationManagement() ? (
+                <motion.div
+                  key="applications"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                {canAccessApplicationManagement() ? (
                   <>
                     <ApplicationManagement 
                       requirementId={null}
@@ -1854,15 +1873,20 @@ const CollegeDashboard = () => {
                       </div>
                     </div>
                   </div>
-                )
+                )}
+                </motion.div>
               )}
 
-              {/* Experts Tab */}
               {activeTab === 'experts' && (
-                canAccessExperts() ? (
+                <motion.div
+                  key="experts"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                {canAccessExperts() ? (
                   <>
-                    {console.log('Rendering ExpertsTab, user:', user)}
-                    {console.log('User object structure:', JSON.stringify(user, null, 2))}
                     <ExpertsTab user={user} key={`experts-${user?.id || 'no-user'}`} />
                   </>
                 ) : (
@@ -1893,12 +1917,19 @@ const CollegeDashboard = () => {
                       </div>
                     </div>
                   </div>
-                )
+                )}
+                </motion.div>
               )}
 
-              {/* Ratings Tab */}
               {activeTab === 'ratings' && (
-                canAccessExperts() ? (
+                <motion.div
+                  key="ratings"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                {canAccessExperts() ? (
                 <RatingsTab user={user} key={`ratings-${user?.id || 'no-user'}`} />
                 ) : (
                   <div className="mb-8">
@@ -1925,14 +1956,17 @@ const CollegeDashboard = () => {
                       </div>
                     </div>
                   </div>
-                )
+                )}
+                </motion.div>
               )}
 
-              {/* Rating Requests Tab */}
               {activeTab === 'rating-requests' && (
                 <motion.div
+                  key="rating-requests"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
                   className="space-y-6"
                 >
                   <RatingRequestsList 
@@ -1944,7 +1978,8 @@ const CollegeDashboard = () => {
                   />
                 </motion.div>
               )}
-          </div>
+              </AnimatePresence>
+            </div>
           </main>
         </div>
       </div>
@@ -4066,7 +4101,14 @@ const ExpertsTab = ({ user }) => {
     console.log('Initial experts state:', experts);
     console.log('About to call fetchExperts...');
     fetchExperts();
-  }, [fetchExperts, user]);
+  }, [user]); // Remove fetchExperts from dependencies to prevent double loading
+
+  // Fetch experts when search query or filters change
+  useEffect(() => {
+    if (user) { // Only fetch if user is available
+      fetchExperts();
+    }
+  }, [searchQuery, selectedCategory, filters.page, filters.limit]);
 
   // Intersection Observer for infinite scroll
   useEffect(() => {
