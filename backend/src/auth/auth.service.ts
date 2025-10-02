@@ -754,8 +754,8 @@ export class AuthService {
       const payload = { sub: userId, type: 'access' };
       const refreshPayload = { sub: userId, type: 'refresh' };
 
-      const jwtExpiresIn = this.configService.get('JWT_EXPIRES_IN', '3m'); // TESTING: 3 minutes
-      const refreshExpiresIn = this.configService.get('JWT_REFRESH_EXPIRES_IN', '5m'); // TESTING: 5 minutes
+      const jwtExpiresIn = this.configService.get('JWT_EXPIRES_IN', '2h');
+      const refreshExpiresIn = this.configService.get('JWT_REFRESH_EXPIRES_IN', '7d');
       
       
       const [accessToken, refreshToken] = await Promise.all([
@@ -775,7 +775,7 @@ export class AuthService {
           id: uuidv4(),
           userId,
           token: refreshToken,
-          expiresAt: new Date(Date.now() + 5 * 60 * 1000), // TESTING: 5 minutes to match JWT_REFRESH_EXPIRES_IN
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days to match JWT_REFRESH_EXPIRES_IN
           updatedAt: new Date(),
         },
       });
@@ -794,8 +794,8 @@ export class AuthService {
     try {
       
       // Get session expiration from config or default to match refresh token expiration
-      const sessionExpiration = this.configService.get('JWT_REFRESH_EXPIRES_IN', '5m'); // TESTING: 5 minutes
-      let expiresInMs = 5 * 60 * 1000; // TESTING: 5 minutes to match refresh token expiration
+      const sessionExpiration = this.configService.get('JWT_REFRESH_EXPIRES_IN', '7d');
+      let expiresInMs = 7 * 24 * 60 * 60 * 1000; // 7 days to match refresh token expiration
       
       // Parse the expiration time
       if (sessionExpiration.includes('h')) {

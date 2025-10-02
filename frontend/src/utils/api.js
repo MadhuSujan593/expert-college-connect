@@ -103,15 +103,15 @@ class ApiService {
     }
   }
 
-  // Check if token will expire soon (within 1 minute for testing)
+  // Check if token will expire soon (within 5 minutes)
   isTokenExpiringSoon(token) {
     if (!token) return true;
     
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
       const currentTime = Date.now() / 1000;
-      const oneMinuteFromNow = currentTime + (1 * 60); // TESTING: 1 minute in seconds
-      const willExpireSoon = payload.exp < oneMinuteFromNow;
+      const fiveMinutesFromNow = currentTime + (5 * 60); // 5 minutes in seconds
+      const willExpireSoon = payload.exp < fiveMinutesFromNow;
       
       if (willExpireSoon) {
         const timeLeft = Math.round(payload.exp - currentTime);

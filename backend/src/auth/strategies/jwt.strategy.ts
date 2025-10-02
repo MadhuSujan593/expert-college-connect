@@ -77,13 +77,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         orderBy: { createdAt: 'desc' }, // Get the most recent session
       });
 
-        // If no active session found, check if user has any recent session (within last 5 minutes for testing)
+        // If no active session found, check if user has any recent session (within last 2 hours)
         if (!session) {
           const recentSession = await this.prisma.session.findFirst({
             where: {
               userId,
               isActive: true,
-              createdAt: { gte: new Date(Date.now() - 5 * 60 * 1000) }, // TESTING: Last 5 minutes
+              createdAt: { gte: new Date(Date.now() - 2 * 60 * 60 * 1000) }, // Last 2 hours
             },
             orderBy: { createdAt: 'desc' },
           });
@@ -98,7 +98,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
             where: { id: recentSession.id },
             data: { 
               isActive: true,
-              expiresAt: new Date(Date.now() + 5 * 60 * 1000), // TESTING: Extend to 5 minutes
+              expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000), // Extend to 2 hours
               updatedAt: new Date()
             }
           });
