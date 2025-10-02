@@ -1456,93 +1456,125 @@ const ExpertDashboard = () => {
 
 
   const StatCard = ({ icon: Icon, title, value, change, color = "blue", trend = "up" }) => (
-    <div className={`p-6 rounded-2xl shadow-sm ${
-      color === 'blue' ? 'bg-gradient-to-br from-blue-500 to-purple-600' :
-      color === 'green' ? 'bg-gradient-to-br from-green-400 to-blue-500' :
-      color === 'purple' ? 'bg-gradient-to-br from-purple-500 to-pink-500' :
-      color === 'orange' ? 'bg-gradient-to-br from-orange-400 to-red-500' :
-      'bg-white'
-    } ${color !== 'white' ? 'text-white' : 'text-gray-900'}`}>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className={`text-sm mb-1 ${color !== 'white' ? 'text-white/80' : 'text-gray-600'}`}>{title}</p>
-          <p className={`text-3xl font-bold ${color !== 'white' ? 'text-white' : 'text-gray-900'}`}>{value}</p>
-        </div>
-        <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${
-          color === 'blue' ? 'bg-white/20' :
-          color === 'green' ? 'bg-white/20' :
-          color === 'purple' ? 'bg-white/20' :
-          color === 'orange' ? 'bg-white/20' :
-          'bg-gray-100'
-        }`}>
-          <Icon className={`w-7 h-7 ${
-            color === 'blue' ? 'text-white' :
-            color === 'green' ? 'text-white' :
-            color === 'purple' ? 'text-white' :
-            color === 'orange' ? 'text-white' :
-            'text-gray-600'
-          }`} />
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -2 }}
+      className="group bg-white rounded-2xl border border-slate-200/60 p-6 hover:border-slate-300/60 hover:shadow-lg hover:shadow-slate-900/5 transition-all duration-300"
+    >
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <div className="flex items-center space-x-2 mb-3">
+            <div className={`p-2.5 rounded-xl ${
+              color === 'blue' ? 'bg-blue-50 group-hover:bg-blue-100' :
+              color === 'green' ? 'bg-emerald-50 group-hover:bg-emerald-100' :
+              color === 'purple' ? 'bg-violet-50 group-hover:bg-violet-100' :
+              color === 'orange' ? 'bg-orange-50 group-hover:bg-orange-100' :
+              'bg-slate-50 group-hover:bg-slate-100'
+            } transition-colors duration-300`}>
+              <Icon className={`h-5 w-5 ${
+                color === 'blue' ? 'text-blue-600' :
+                color === 'green' ? 'text-emerald-600' :
+                color === 'purple' ? 'text-violet-600' :
+                color === 'orange' ? 'text-orange-600' :
+                'text-slate-600'
+              }`} />
+            </div>
+            {change && (
+              <div className="flex items-center space-x-1">
+                {trend === 'up' ? (
+                  <TrendingUp className="h-4 w-4 text-emerald-500" />
+                ) : (
+                  <TrendingDown className="h-4 w-4 text-red-500" />
+                )}
+                <span className={`text-sm font-medium ${
+                  trend === 'up' ? 'text-emerald-600' : 'text-red-600'
+                }`}>
+                  {change}
+                </span>
+              </div>
+            )}
+          </div>
+          <h3 className="text-2xl font-bold text-slate-900 mb-1">{value}</h3>
+          <p className="text-sm text-slate-600">{title}</p>
         </div>
       </div>
-      {change && (
-        <div className="flex items-center space-x-1 mt-3">
-          {trend === 'up' ? (
-            <TrendingUp className={`h-4 w-4 ${color !== 'white' ? 'text-white/80' : 'text-green-600'}`} />
-          ) : (
-            <TrendingDown className={`h-4 w-4 ${color !== 'white' ? 'text-white/80' : 'text-red-500'}`} />
-          )}
-          <p className={`text-sm font-medium ${color !== 'white' ? 'text-white/80' : trend === 'up' ? 'text-green-600' : 'text-red-500'}`}>
-            {change}
-          </p>
-        </div>
-      )}
-    </div>
+    </motion.div>
   );
 
 
 
   const SidebarItem = ({ id, label, icon: Icon, isActive, onClick }) => (
-    <button
+    <motion.button
       onClick={() => onClick(id)}
-      className={`group flex items-center space-x-3 w-full px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      className={`group flex items-center space-x-3 w-full px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 ${
         isActive
-          ? 'bg-blue-600 text-white'
+          ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-sm'
           : 'text-gray-300 hover:text-white hover:bg-gray-800'
       }`}
     >
-      <Icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'}`} />
-      <span>{label}</span>
-    </button>
+      <motion.div
+        animate={{ 
+          rotate: isActive ? 0 : 0,
+          scale: isActive ? 1.1 : 1
+        }}
+        transition={{ duration: 0.2 }}
+      >
+        <Icon className={`h-5 w-5 transition-colors duration-200 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'}`} />
+      </motion.div>
+      <motion.span
+        animate={{ 
+          x: isActive ? 2 : 0,
+          fontWeight: isActive ? 600 : 500
+        }}
+        transition={{ duration: 0.2 }}
+      >
+        {label}
+      </motion.span>
+    </motion.button>
   );
 
 
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Classic Theme Layout with Dark Sidebar */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
+      {/* Modern Light Theme Layout */}
       <div className="flex h-screen overflow-hidden">
-        {/* Dark Sidebar */}
-        <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
+        {/* Black Sidebar */}
+        <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-56 bg-black border-r border-gray-800 transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
 
           <div className="flex flex-col h-full">
 
-            {/* Dark Sidebar Header */}
-            <div className="flex items-center justify-between px-6 py-6 border-b border-gray-700">
+            {/* Black Sidebar Header */}
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="flex items-center justify-between px-4 py-4 border-b border-gray-800"
+            >
               <div className="flex items-center space-x-3">
                 {profile?.profilePicture ? (
-                  <img 
+                  <motion.img 
                     src={getFullProfilePictureUrl(profile.profilePicture)} 
                     alt="Profile Picture" 
-                    className="w-10 h-10 rounded-lg object-cover"
+                    className="w-10 h-10 rounded-xl object-cover shadow-sm"
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ duration: 0.2 }}
                   />
                 ) : (
-                  <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                  <motion.div 
+                    className="w-10 h-10 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl flex items-center justify-center shadow-sm"
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ duration: 0.2 }}
+                  >
                     <User className="w-5 h-5 text-white" />
-                  </div>
+                  </motion.div>
                 )}
                 <div>
                   <h1 className="text-lg font-semibold text-white">{profile?.user?.fullName || user?.fullName || 'Expert'}</h1>
-                  <p className="text-sm text-gray-400">Dashboard</p>
+                  <p className="text-sm text-gray-400">Expert Dashboard</p>
                 </div>
               </div>
               <button
@@ -1551,113 +1583,110 @@ const ExpertDashboard = () => {
               >
                 <X className="h-4 w-4" />
               </button>
-            </div>
+            </motion.div>
 
 
 
             {/* Navigation */}
             <nav className="flex-1 px-4 py-4 space-y-1">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+              >
+                <SidebarItem
+                  id="overview"
+                  label="Overview"
+                  icon={Home}
+                  isActive={activeTab === 'overview'}
+                  onClick={handleTabChange}
+                />
+              </motion.div>
 
-              <SidebarItem
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: 0.15 }}
+              >
+                <SidebarItem
+                  id="profile"
+                  label="Profile"
+                  icon={User}
+                  isActive={activeTab === 'profile'}
+                  onClick={handleTabChange}
+                />
+              </motion.div>
 
-                id="overview"
-
-                label="Overview"
-
-                icon={Home}
-
-                isActive={activeTab === 'overview'}
-
-                onClick={handleTabChange}
-
-              />
-
-              <SidebarItem
-
-                id="profile"
-
-                label="Profile"
-
-                icon={User}
-
-                isActive={activeTab === 'profile'}
-
-                onClick={handleTabChange}
-
-              />
-
-              <SidebarItem
-
-                id="experience"
-
-                label="Experience"
-
-                icon={Briefcase}
-
-                isActive={activeTab === 'experience'}
-
-                onClick={handleTabChange}
-
-              />
-
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: 0.2 }}
+              >
+                <SidebarItem
+                  id="experience"
+                  label="Experience"
+                  icon={Briefcase}
+                  isActive={activeTab === 'experience'}
+                  onClick={handleTabChange}
+                />
+              </motion.div>
 
 
-              <SidebarItem
 
-                id="colleges"
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: 0.25 }}
+              >
+                <SidebarItem
+                  id="colleges"
+                  label="Opportunities"
+                  icon={Building2}
+                  isActive={activeTab === 'colleges'}
+                  onClick={() => handleFeatureAccess("Opportunities", 'colleges')}
+                />
+              </motion.div>
 
-                label="Opportunities"
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: 0.3 }}
+              >
+                <SidebarItem
+                  id="applications"
+                  label="Applications"
+                  icon={CheckCircle}
+                  isActive={activeTab === 'applications'}
+                  onClick={() => handleFeatureAccess("Applications", 'applications')}
+                />
+              </motion.div>
 
-                icon={Building2}
-
-                isActive={activeTab === 'colleges'}
-
-                onClick={() => handleFeatureAccess("Opportunities", 'colleges')}
-
-              />
-
-              <SidebarItem
-
-                id="applications"
-
-                label="Applications"
-
-                icon={CheckCircle}
-
-                isActive={activeTab === 'applications'}
-
-                onClick={() => handleFeatureAccess("Applications", 'applications')}
-
-              />
-
-              <SidebarItem
-
-                id="ratings"
-
-                label="Reviews"
-
-                icon={Star}
-
-                isActive={activeTab === 'ratings'}
-
-                onClick={() => handleFeatureAccess("Reviews", 'ratings')}
-
-              />
-
-              <SidebarItem
-
-                id="rating-requests"
-
-                label="Rating Requests"
-
-                icon={MessageCircle}
-
-                isActive={activeTab === 'rating-requests'}
-
-                onClick={() => handleFeatureAccess("Rating Requests", 'rating-requests')}
-
-              />
-
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: 0.35 }}
+              >
+                <SidebarItem
+                  id="ratings"
+                  label="Reviews"
+                  icon={Star}
+                  isActive={activeTab === 'ratings'}
+                  onClick={() => handleFeatureAccess("Reviews", 'ratings')}
+                />
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: 0.4 }}
+              >
+                <SidebarItem
+                  id="rating-requests"
+                  label="Rating Requests"
+                  icon={MessageCircle}
+                  isActive={activeTab === 'rating-requests'}
+                  onClick={() => handleFeatureAccess("Rating Requests", 'rating-requests')}
+                />
+              </motion.div>
             </nav>
 
 
@@ -1666,28 +1695,34 @@ const ExpertDashboard = () => {
 
 
             {/* Logout Button */}
-
-            <div className="px-6 py-4 border-t border-slate-200/60 mt-auto">
-
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.4 }}
+              className="px-4 py-4 border-t border-gray-800 mt-auto"
+            >
               <motion.button
-
-                whileHover={{ scale: 1.02 }}
-
-                whileTap={{ scale: 0.98 }}
-
                 onClick={() => setShowLogoutConfirm(true)}
-
-                className="group flex items-center space-x-3 w-full px-4 py-3 rounded-xl font-medium transition-all duration-200 text-gray-300 hover:text-red-400 hover:bg-red-900/20"
-
+                className="group flex items-center space-x-3 w-full px-4 py-3 rounded-lg font-medium transition-all duration-200 text-gray-300 hover:text-red-400 hover:bg-red-900/20"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
-
-                <LogOut className="h-5 w-5 text-gray-400 group-hover:text-red-400" />
-
-                <span className="font-semibold">Sign Out</span>
-
+                <motion.div
+                  animate={{ rotate: 0 }}
+                  whileHover={{ rotate: 5 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <LogOut className="h-5 w-5 text-gray-400 group-hover:text-red-400" />
+                </motion.div>
+                <motion.span
+                  animate={{ x: 0 }}
+                  whileHover={{ x: 2 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  Logout
+                </motion.span>
               </motion.button>
-
-            </div>
+            </motion.div>
 
           </div>
 
@@ -1695,20 +1730,20 @@ const ExpertDashboard = () => {
 
 
 
-        {/* Main Content - Classic Theme */}
-        <div className="flex-1 flex flex-col overflow-hidden bg-white rounded-l-3xl shadow-lg">
-          {/* Classic Header */}
-          <header className="bg-white border-b border-gray-200 px-8 py-6">
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Header */}
+          <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200/60 px-8 py-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <button
                   onClick={() => setSidebarOpen(true)}
-                  className="lg:hidden w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors"
+                  className="lg:hidden w-10 h-10 bg-slate-100 hover:bg-slate-200 rounded-xl flex items-center justify-center text-slate-600 hover:text-slate-800 transition-all duration-200 shadow-sm hover:shadow-md"
                 >
                   <Menu className="h-5 w-5" />
                 </button>
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">
+                  <h1 className="text-3xl font-bold text-slate-900">
                     {activeTab === 'overview' && 'Expert Dashboard'}
                     {activeTab === 'profile' && 'Profile Management'}
                     {activeTab === 'experience' && 'Work Experience'}
@@ -1717,14 +1752,14 @@ const ExpertDashboard = () => {
                     {activeTab === 'ratings' && 'Reviews & Ratings'}
                     {activeTab === 'rating-requests' && 'Rating Requests'}
                   </h1>
-                  <p className="text-gray-600 mt-1">
+                  <p className="text-slate-600 mt-1">
                     {activeTab === 'overview' && 'Manage your expert profile and track your opportunities'}
                     {activeTab === 'profile' && 'Manage your professional profile'}
-                    {activeTab === 'experience' && 'Showcase your work experience'}
-                    {activeTab === 'colleges' && 'Find new opportunities'}
-                    {activeTab === 'applications' && 'Track your applications'}
-                    {activeTab === 'ratings' && 'View your reviews and ratings'}
-                    {activeTab === 'rating-requests' && 'Request ratings from colleges'}
+                    {activeTab === 'experience' && 'Manage your work experience and skills'}
+                    {activeTab === 'colleges' && 'Browse and apply to opportunities'}
+                    {activeTab === 'applications' && 'Track your application status'}
+                    {activeTab === 'ratings' && 'View reviews and ratings from colleges'}
+                    {activeTab === 'rating-requests' && 'Manage rating requests from colleges'}
                   </p>
                 </div>
               </div>
@@ -1735,7 +1770,7 @@ const ExpertDashboard = () => {
 
 
           {/* Scrollable Content */}
-          <main className="flex-1 overflow-y-auto bg-gray-50">
+          <main className="flex-1 overflow-y-auto bg-slate-50/50">
             <div className="p-8 space-y-8">
               {/* All Tabs with Smooth Transitions */}
               <AnimatePresence mode="wait">
@@ -2170,7 +2205,7 @@ const ExpertDashboard = () => {
 
                           disabled={!isEditingProfile}
 
-                          className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-500 transition-colors"
+                          className="w-full px-4 py-3 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500 disabled:bg-slate-50 disabled:text-slate-500 transition-colors"
 
                           placeholder="Enter your full name"
 
@@ -2194,7 +2229,7 @@ const ExpertDashboard = () => {
                                    name="phone"
                                    value={editedProfile.phone || ''}
                                    onChange={handleProfileInputChange}
-                                   className="flex-1 px-4 py-3 pr-12 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   className="flex-1 px-4 py-3 pr-12 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500"
                           placeholder="Enter your phone number"
                         />
                                  {(phoneChanged || !user?.isPhoneVerified) && (
@@ -2202,7 +2237,7 @@ const ExpertDashboard = () => {
                                      type="button"
                                      onClick={handleSendPhoneOtpForUpdate}
                                      disabled={isPhoneSending || !isValidPhone(editedProfile.phone)}
-                                     className="w-full md:w-auto px-3 md:px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap"
+                                     className="w-full md:w-auto px-3 md:px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-sm font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap"
                                    >
                                      {isPhoneSending ? 'Sending...' : 'Verify Phone'}
                                    </button>
@@ -2262,7 +2297,7 @@ const ExpertDashboard = () => {
                                    name="email"
                                    value={editedProfile.email || ''}
                                    onChange={handleProfileInputChange}
-                                   className="flex-1 px-4 py-3 pr-12 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   className="flex-1 px-4 py-3 pr-12 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500"
                                    placeholder="Enter your email address"
                                  />
                                  {(emailChanged || !user?.isEmailVerified) && (
@@ -2270,7 +2305,7 @@ const ExpertDashboard = () => {
                                      type="button"
                                      onClick={handleSendEmailOtpForUpdate}
                                      disabled={isEmailSending || !isValidEmail(editedProfile.email)}
-                                     className="w-full md:w-auto px-3 md:px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap"
+                                     className="w-full md:w-auto px-3 md:px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-sm font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap"
                                    >
                                      {isEmailSending ? 'Sending...' : 'Verify Email'}
                                    </button>
@@ -2335,7 +2370,7 @@ const ExpertDashboard = () => {
 
                           disabled={!isEditingProfile}
 
-                          className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-500 transition-colors"
+                          className="w-full px-4 py-3 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500 disabled:bg-slate-50 disabled:text-slate-500 transition-colors"
 
                           placeholder="e.g., Software Engineer, Marketing Manager"
 
@@ -2361,7 +2396,7 @@ const ExpertDashboard = () => {
 
                           disabled={!isEditingProfile}
 
-                          className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-500 transition-colors"
+                          className="w-full px-4 py-3 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500 disabled:bg-slate-50 disabled:text-slate-500 transition-colors"
 
                           placeholder="e.g., San Francisco, CA"
 
@@ -2385,7 +2420,7 @@ const ExpertDashboard = () => {
 
                           onChange={handleProfileInputChange}
 
-                            className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                            className="w-full px-4 py-3 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500 transition-colors"
 
                           >
 
@@ -2471,7 +2506,7 @@ const ExpertDashboard = () => {
 
                           disabled={!isEditingProfile}
 
-                          className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-500 transition-colors"
+                          className="w-full px-4 py-3 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500 disabled:bg-slate-50 disabled:text-slate-500 transition-colors"
 
                           placeholder="e.g., 5 years"
 
@@ -2497,7 +2532,7 @@ const ExpertDashboard = () => {
 
                           rows={4}
 
-                          className="w-full px-4 py-3 border border-slate-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-500 transition-colors resize-none"
+                          className="w-full px-4 py-3 border border-slate-500 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500 disabled:bg-slate-50 disabled:text-slate-500 transition-colors resize-none"
 
                           placeholder="Tell us about yourself and your expertise..."
 
@@ -2531,7 +2566,7 @@ const ExpertDashboard = () => {
 
                             disabled={!isEditingProfile}
 
-                            className="w-full pl-8 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-500 transition-colors"
+                            className="w-full pl-8 pr-4 py-3 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500 disabled:bg-slate-50 disabled:text-slate-500 transition-colors"
 
                             placeholder="1500"
 
@@ -2597,7 +2632,7 @@ const ExpertDashboard = () => {
 
                           onClick={handleProfileUpdate}
 
-                          className="px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium shadow-lg shadow-blue-600/25"
+                          className="px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-md transition-all duration-200 shadow-sm hover:shadow-md font-medium"
 
                         >
 
@@ -2629,7 +2664,7 @@ const ExpertDashboard = () => {
 
                         onClick={() => setIsAddingSkill(true)}
 
-                        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium shadow-lg shadow-blue-600/25"
+                        className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-md transition-all duration-200 shadow-sm hover:shadow-md font-medium"
 
                       >
 
@@ -2673,7 +2708,7 @@ const ExpertDashboard = () => {
 
                               onChange={(e) => setNewSkill({ ...newSkill, name: e.target.value })}
 
-                              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-3 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500"
 
                             />
 
@@ -2687,7 +2722,7 @@ const ExpertDashboard = () => {
 
                               onChange={(e) => setNewSkill({ ...newSkill, skillLevel: e.target.value })}
 
-                              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-3 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500"
 
                             >
 
@@ -2737,7 +2772,7 @@ const ExpertDashboard = () => {
 
                             onClick={handleAddSkill}
 
-                            className="px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium shadow-lg shadow-blue-600/25"
+                            className="px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-md transition-all duration-200 shadow-sm hover:shadow-md font-medium"
 
                           >
 
@@ -2829,7 +2864,7 @@ const ExpertDashboard = () => {
 
                             onClick={() => setIsAddingSkill(true)}
 
-                            className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium shadow-lg shadow-blue-600/25"
+                            className="inline-flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-md transition-all duration-200 shadow-sm hover:shadow-md font-medium"
 
                           >
 
@@ -2905,7 +2940,7 @@ const ExpertDashboard = () => {
 
                             onClick={() => handleServiceTypeToggle(serviceType.id)}
 
-                            className={`relative overflow-hidden rounded-lg border transition-all duration-300 cursor-pointer ${
+                            className={`relative overflow-hidden rounded-xl border transition-all duration-300 cursor-pointer ${
 
                               isSelected 
 
@@ -3017,7 +3052,7 @@ const ExpertDashboard = () => {
 
                             placeholder="e.g., Blockchain Consulting, Digital Art, Music Production (separate multiple services with commas)"
 
-                            className="flex-1 px-4 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="flex-1 px-4 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500"
 
                             onKeyPress={(e) => e.key === 'Enter' && handleCustomServiceSubmit()}
 
@@ -3027,7 +3062,7 @@ const ExpertDashboard = () => {
 
                             onClick={handleCustomServiceSubmit}
 
-                            className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+                            className="px-6 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-md transition-all duration-200 shadow-sm hover:shadow-md font-medium"
 
                           >
 
@@ -3095,7 +3130,7 @@ const ExpertDashboard = () => {
 
                         onClick={() => setShowAddForm(true)}
 
-                        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium shadow-lg shadow-blue-600/25"
+                        className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-md transition-all duration-200 shadow-sm hover:shadow-md font-medium"
 
                       >
 
@@ -3121,7 +3156,7 @@ const ExpertDashboard = () => {
 
                         exit={{ opacity: 0, height: 0 }}
 
-                        className="mb-6 p-6 bg-slate-50 rounded-xl border border-slate-200/60"
+                        className="mb-6 p-6 bg-slate-50/50 rounded-xl border border-slate-200/60"
 
                       >
 
@@ -3141,7 +3176,7 @@ const ExpertDashboard = () => {
 
                               onChange={(e) => setNewExperience({ ...newExperience, jobTitle: e.target.value })}
 
-                              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-3 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500"
 
                               placeholder="e.g., Senior Software Engineer"
 
@@ -3161,7 +3196,7 @@ const ExpertDashboard = () => {
 
                               onChange={(e) => setNewExperience({ ...newExperience, company: e.target.value })}
 
-                              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-3 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500"
 
                               placeholder="e.g., Google Inc."
 
@@ -3181,7 +3216,7 @@ const ExpertDashboard = () => {
 
                               onChange={(e) => setNewExperience({ ...newExperience, location: e.target.value })}
 
-                              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-3 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500"
 
                               placeholder="e.g., San Francisco, CA"
 
@@ -3201,7 +3236,7 @@ const ExpertDashboard = () => {
 
                               onChange={(e) => setNewExperience({ ...newExperience, startDate: e.target.value })}
 
-                              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-3 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500"
 
                             />
 
@@ -3221,7 +3256,7 @@ const ExpertDashboard = () => {
 
                               disabled={newExperience.isCurrent}
 
-                              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-100 disabled:text-slate-500"
+                              className="w-full px-4 py-3 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500 disabled:bg-slate-100 disabled:text-slate-500"
 
                             />
 
@@ -3267,7 +3302,7 @@ const ExpertDashboard = () => {
 
                               rows={3}
 
-                              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                              className="w-full px-4 py-3 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500 resize-none"
 
                               placeholder="Describe your role and responsibilities..."
 
@@ -3287,7 +3322,7 @@ const ExpertDashboard = () => {
 
                               onChange={(e) => setNewExperience({ ...newExperience, skills: e.target.value })}
 
-                              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-3 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500"
 
                               placeholder="e.g., React, Node.js, Python (comma separated)"
 
@@ -3307,7 +3342,7 @@ const ExpertDashboard = () => {
 
                               rows={3}
 
-                              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                              className="w-full px-4 py-3 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500 resize-none"
 
                               placeholder="List your key achievements and contributions..."
 
@@ -3355,7 +3390,7 @@ const ExpertDashboard = () => {
 
                             onClick={handleAddExperience}
 
-                            className="px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium shadow-lg shadow-blue-600/25"
+                            className="px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-md transition-all duration-200 shadow-sm hover:shadow-md font-medium"
 
                           >
 
@@ -3409,7 +3444,7 @@ const ExpertDashboard = () => {
 
                                       onChange={(e) => setEditingExperience({ ...editingExperience, jobTitle: e.target.value })}
 
-                                      className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                      className="w-full px-4 py-3 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500"
 
                                     />
 
@@ -3427,7 +3462,7 @@ const ExpertDashboard = () => {
 
                                       onChange={(e) => setEditingExperience({ ...editingExperience, company: e.target.value })}
 
-                                      className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                      className="w-full px-4 py-3 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500"
 
                                     />
 
@@ -3445,7 +3480,7 @@ const ExpertDashboard = () => {
 
                                       onChange={(e) => setEditingExperience({ ...editingExperience, location: e.target.value })}
 
-                                      className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                      className="w-full px-4 py-3 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500"
 
                                     />
 
@@ -3463,7 +3498,7 @@ const ExpertDashboard = () => {
 
                                       onChange={(e) => setEditingExperience({ ...editingExperience, startDate: e.target.value })}
 
-                                      className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                      className="w-full px-4 py-3 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500"
 
                                     />
 
@@ -3483,7 +3518,7 @@ const ExpertDashboard = () => {
 
                                       disabled={editingExperience.isCurrent}
 
-                                      className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-100 disabled:text-slate-500"
+                                      className="w-full px-4 py-3 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500 disabled:bg-slate-100 disabled:text-slate-500"
 
                                     />
 
@@ -3529,7 +3564,7 @@ const ExpertDashboard = () => {
 
                                       rows={3}
 
-                                      className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                      className="w-full px-4 py-3 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500 resize-none"
 
                                     />
 
@@ -3547,7 +3582,7 @@ const ExpertDashboard = () => {
 
                                       onChange={(e) => setEditingExperience({ ...editingExperience, skills: e.target.value })}
 
-                                      className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                      className="w-full px-4 py-3 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500"
 
                                     />
 
@@ -3565,7 +3600,7 @@ const ExpertDashboard = () => {
 
                                       rows={3}
 
-                                      className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                      className="w-full px-4 py-3 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500 resize-none"
 
                                     />
 
@@ -3599,7 +3634,7 @@ const ExpertDashboard = () => {
 
                                     onClick={handleUpdateExperience}
 
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium shadow-lg shadow-blue-600/25"
+                                    className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-md transition-all duration-200 shadow-sm hover:shadow-md font-medium"
 
                                   >
 
@@ -3781,7 +3816,7 @@ const ExpertDashboard = () => {
 
                             onClick={() => setShowAddForm(true)}
 
-                            className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium shadow-lg shadow-blue-600/25"
+                            className="inline-flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-md transition-all duration-200 shadow-sm hover:shadow-md font-medium"
 
                           >
 
@@ -3827,7 +3862,7 @@ const ExpertDashboard = () => {
 
                   </motion.div>
                 ) : (
-                  <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+                  <div className="bg-white rounded-2xl border border-slate-200/60 p-6">
                     <div className="text-center py-8">
                       <Building2 className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                       <p className="text-gray-500 mb-3">Verification required to access Opportunities</p>
@@ -3835,7 +3870,7 @@ const ExpertDashboard = () => {
                         {!user?.isEmailVerified && (
                           <button
                             onClick={handleVerifyEmailFromFeature}
-                            className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700"
+                            className="w-full px-3 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-sm rounded-md transition-all duration-200 shadow-sm hover:shadow-md"
                           >
                             Verify Email
                           </button>
@@ -3843,7 +3878,7 @@ const ExpertDashboard = () => {
                         {!user?.isPhoneVerified && (
                           <button
                             onClick={handleVerifyPhoneFromFeature}
-                            className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700"
+                            className="w-full px-3 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-sm rounded-md transition-all duration-200 shadow-sm hover:shadow-md"
                           >
                             Verify Phone
                           </button>
@@ -3874,7 +3909,7 @@ const ExpertDashboard = () => {
 
                   </motion.div>
                 ) : (
-                  <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+                  <div className="bg-white rounded-2xl border border-slate-200/60 p-6">
                     <div className="text-center py-8">
                       <CheckCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                       <p className="text-gray-500 mb-3">Verification required to access Applications</p>
@@ -3882,7 +3917,7 @@ const ExpertDashboard = () => {
                         {!user?.isEmailVerified && (
                           <button
                             onClick={handleVerifyEmailFromFeature}
-                            className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700"
+                            className="w-full px-3 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-sm rounded-md transition-all duration-200 shadow-sm hover:shadow-md"
                           >
                             Verify Email
                           </button>
@@ -3890,7 +3925,7 @@ const ExpertDashboard = () => {
                         {!user?.isPhoneVerified && (
                           <button
                             onClick={handleVerifyPhoneFromFeature}
-                            className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700"
+                            className="w-full px-3 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-sm rounded-md transition-all duration-200 shadow-sm hover:shadow-md"
                           >
                             Verify Phone
                           </button>
@@ -3922,7 +3957,7 @@ const ExpertDashboard = () => {
 
                   {/* Reviews List */}
 
-                  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                  <div className="bg-white rounded-2xl border border-slate-200/60 p-6">
 
                     <div className="flex items-center justify-between mb-6">
                       <h3 className="text-xl font-bold text-slate-900">Recent Reviews</h3>
@@ -3950,7 +3985,7 @@ const ExpertDashboard = () => {
 
                             animate={{ opacity: 1, y: 0 }}
 
-                            className="p-4 bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-shadow"
+                            className="p-4 bg-white rounded-xl border border-slate-200/60 shadow-sm hover:shadow-md transition-all duration-200"
 
                           >
 
@@ -4081,7 +4116,7 @@ const ExpertDashboard = () => {
 
                 </motion.div>
                 ) : (
-                  <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+                  <div className="bg-white rounded-2xl border border-slate-200/60 p-6">
                     <div className="text-center py-8">
                       <Star className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                       <p className="text-gray-500 mb-3">Verification required to access Reviews</p>
@@ -4089,7 +4124,7 @@ const ExpertDashboard = () => {
                         {!user?.isEmailVerified && (
                           <button
                             onClick={handleVerifyEmailFromFeature}
-                            className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700"
+                            className="w-full px-3 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-sm rounded-md transition-all duration-200 shadow-sm hover:shadow-md"
                           >
                             Verify Email
                           </button>
@@ -4097,7 +4132,7 @@ const ExpertDashboard = () => {
                         {!user?.isPhoneVerified && (
                           <button
                             onClick={handleVerifyPhoneFromFeature}
-                            className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700"
+                            className="w-full px-3 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-sm rounded-md transition-all duration-200 shadow-sm hover:shadow-md"
                           >
                             Verify Phone
                           </button>
@@ -4129,7 +4164,7 @@ const ExpertDashboard = () => {
                     </div>
                   </motion.div>
                 ) : (
-                  <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+                  <div className="bg-white rounded-2xl border border-slate-200/60 p-6">
                     <div className="text-center py-8">
                       <MessageCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                       <p className="text-gray-500 mb-3">Verification required to access Rating Requests</p>
@@ -4137,7 +4172,7 @@ const ExpertDashboard = () => {
                         {!user?.isEmailVerified && (
                           <button
                             onClick={handleVerifyEmailFromFeature}
-                            className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700"
+                            className="w-full px-3 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-sm rounded-md transition-all duration-200 shadow-sm hover:shadow-md"
                           >
                             Verify Email
                           </button>
@@ -4145,7 +4180,7 @@ const ExpertDashboard = () => {
                         {!user?.isPhoneVerified && (
                           <button
                             onClick={handleVerifyPhoneFromFeature}
-                            className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700"
+                            className="w-full px-3 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-sm rounded-md transition-all duration-200 shadow-sm hover:shadow-md"
                           >
                             Verify Phone
                           </button>
