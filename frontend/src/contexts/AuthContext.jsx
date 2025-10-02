@@ -20,14 +20,8 @@ export const AuthProvider = ({ children }) => {
   const [checkingAuth, setCheckingAuth] = useState(false);
 
   const handleAuthFailure = useCallback(() => {
-    apiService.clearTokens();
-    setUser(null);
-    setIsAuthenticated(false);
-    
-    // Redirect to login if not already there
-    if (window.location.pathname !== '/login') {
-      window.location.href = '/login';
-    }
+    // Don't automatically logout on auth failures - let user decide
+    console.warn('🚨 Auth failure detected - user remains logged in');
   }, []);
 
   const checkAuthStatus = useCallback(async () => {

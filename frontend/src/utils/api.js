@@ -81,13 +81,8 @@ class ApiService {
 
   // Handle 401 Unauthorized responses
   async handleUnauthorized() {
-    // Clear tokens
-    this.clearTokens();
-    
-    // Redirect to login page
-    if (window.location.pathname !== '/login') {
-      window.location.href = '/login';
-    }
+    // Don't automatically logout on unauthorized errors - let user decide
+    console.warn('🚨 Unauthorized error detected - user remains logged in');
   }
 
   // Check if token is expired
