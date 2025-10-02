@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 import { 
 
-  User, Settings, BarChart3, Star, Eye, DollarSign, BookOpen, Award, Edit3, Edit,
+  User, UserCheck, Settings, BarChart3, Star, Eye, DollarSign, BookOpen, Award, Edit3, Edit,
 
   Plus, Trash2, Save, X, CheckCircle, AlertCircle, TrendingUp, Calendar, MapPin,
 
@@ -1790,13 +1790,19 @@ const ExpertDashboard = () => {
 
 
                   {/* Classic Stats Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {/* Profile Completeness */}
-                    <div className="p-6 rounded-2xl shadow-sm bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 }}
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      className="bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl p-4 text-white shadow-lg"
+                    >
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-white/80 mb-1">Profile Completeness</p>
-                          <p className="text-3xl font-bold text-white">
+                          <p className="text-teal-100 text-sm font-medium">Profile Complete</p>
+                          <p className="text-2xl font-bold mt-1">
                             {(() => {
                               const completionFields = [
                                 { field: 'fullName', value: profile?.user?.fullName, label: 'Full Name' },
@@ -1820,50 +1826,68 @@ const ExpertDashboard = () => {
                             })()}%
                           </p>
                         </div>
-                        <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
-                          <CheckCircle className="w-7 h-7 text-white" />
+                        <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                          <UserCheck className="w-6 h-6" />
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
 
                     {/* Total Applications */}
-                    <div className="p-6 rounded-2xl shadow-sm bg-gradient-to-br from-green-400 to-blue-500 text-white">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg"
+                    >
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-white/80 mb-1">Total Applications</p>
-                          <p className="text-3xl font-bold text-white">{applicationStats.total}</p>
+                          <p className="text-blue-100 text-sm font-medium">Total Applications</p>
+                          <p className="text-2xl font-bold mt-1">{applicationStats.total}</p>
                         </div>
-                        <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
-                          <CheckCircle className="w-7 h-7 text-white" />
+                        <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                          <CheckCircle className="w-6 h-6" />
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
 
                     {/* Under Review */}
-                    <div className="p-6 rounded-2xl shadow-sm bg-gradient-to-br from-purple-500 to-pink-500 text-white">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      className="bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl p-4 text-white shadow-lg"
+                    >
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-white/80 mb-1">Under Review</p>
-                          <p className="text-3xl font-bold text-white">{applicationStats.pending}</p>
+                          <p className="text-pink-100 text-sm font-medium">Under Review</p>
+                          <p className="text-2xl font-bold mt-1">{applicationStats.pending}</p>
                         </div>
-                        <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
-                          <Clock className="w-7 h-7 text-white" />
+                        <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                          <Clock className="w-6 h-6" />
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
 
                     {/* Selected */}
-                    <div className="p-6 rounded-2xl shadow-sm bg-white text-gray-900">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4 }}
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white shadow-lg"
+                    >
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-gray-600 mb-1">Selected</p>
-                          <p className="text-3xl font-bold text-gray-900">{applicationStats.accepted}</p>
+                          <p className="text-purple-100 text-sm font-medium">Selected</p>
+                          <p className="text-2xl font-bold mt-1">{applicationStats.accepted}</p>
                         </div>
-                        <div className="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center">
-                          <Award className="w-7 h-7 text-gray-600" />
+                        <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                          <Award className="w-6 h-6" />
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
                   </div>
 
 
