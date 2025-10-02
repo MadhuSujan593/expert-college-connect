@@ -1,4 +1,4 @@
-import { IsEnum, IsInt, IsNotEmpty, IsOptional, IsPositive, IsString, MaxLength } from 'class-validator';
+import { IsEnum, IsInt, IsNotEmpty, IsOptional, IsPositive, IsString, MaxLength, Min } from 'class-validator';
 
 export enum AudienceEnum {
   COLLEGE = 'COLLEGE',
@@ -28,7 +28,7 @@ export class CreatePlanDto {
   billingPeriod: BillingPeriodEnum;
 
   @IsInt()
-  @IsPositive()
+  @Min(0)
   priceCents: number;
 
   @IsString()

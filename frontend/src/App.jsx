@@ -19,6 +19,7 @@ import EmailVerificationRequired from './pages/auth/EmailVerificationRequired';
 import ExpertDashboard from './pages/expert/ExpertDashboard';
 import CollegeDashboard from './pages/college/CollegeDashboard';
 import SuperAdminDashboard from './pages/super-admin/SuperAdminDashboard';
+import SubscriptionPlans from './pages/college/SubscriptionPlans';
 import RequirementDetails from './components/expert/RequirementDetails';
 // import SearchExperts from './pages/search/SearchExperts';
 // import SearchRequirements from './pages/search/SearchRequirements';
@@ -78,6 +79,7 @@ const AppContent = () => {
   
   const isDashboardPage = location.pathname.startsWith('/dashboard');
   const isRequirementPage = location.pathname.startsWith('/requirement');
+  const isSubscriptionPage = location.pathname === '/subscription-plans';
   
   // Debug logging
   console.log('Current pathname:', location.pathname);
@@ -87,7 +89,7 @@ const AppContent = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      {!isAuthPage && !isDashboardPage && !isRequirementPage && <Navbar />}
+      {!isAuthPage && !isDashboardPage && !isRequirementPage && !isSubscriptionPage && <Navbar />}
       <main className="flex-1">
         <Routes>
           {/* Public Routes */}
@@ -132,6 +134,16 @@ const AppContent = () => {
             } 
           />
           
+          {/* Subscription Plans Route */}
+          <Route 
+            path="/subscription-plans" 
+            element={
+              <ProtectedRoute requiredRole="COLLEGE_ADMIN">
+                <SubscriptionPlans />
+              </ProtectedRoute>
+            } 
+          />
+          
           {/* Requirement Details Route */}
           <Route 
             path="/requirement/:id" 
@@ -148,7 +160,7 @@ const AppContent = () => {
           <Route path="/college/:id" element={<CollegeProfile />} /> */}
         </Routes>
       </main>
-      {!isAuthPage && !isDashboardPage && !isRequirementPage && <Footer />}
+      {!isAuthPage && !isDashboardPage && !isRequirementPage && !isSubscriptionPage && <Footer />}
       <Toaster
         position="top-right"
         toastOptions={{

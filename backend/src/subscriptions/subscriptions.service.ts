@@ -7,7 +7,9 @@ export class SubscriptionsService {
 
   async getActiveSubscriptionForUser(userId: string) {
     const now = new Date();
-    return this.prisma.subscription.findFirst({
+    console.log('Fetching subscription for user:', userId, 'at time:', now.toISOString());
+    
+    const subscription = await this.prisma.subscription.findFirst({
       where: {
         userId,
         status: 'ACTIVE',
@@ -24,6 +26,9 @@ export class SubscriptionsService {
         },
       },
     });
+    
+    console.log('Found subscription:', subscription);
+    return subscription;
   }
 
   private getPeriodBounds(date: Date) {
@@ -137,14 +142,127 @@ export class SubscriptionsService {
     }
   }
 
-  async incrementContactUsage(userId: string) {
+  async incrementContactUsage(userId: string, expertId: string) {
     const subscription = await this.getActiveSubscriptionForUser(userId);
     if (!subscription) return;
     const usage = await this.getOrCreateUsage(subscription.id);
+    
+    // Get current revealed experts
+    const currentUsage = await this.prisma.subscriptionusage.findUnique({
+      where: { id: usage.id },
+      select: { revealedExpertIds: true }
+    });
+    
+    // Parse revealed expert IDs
+    const revealedExpertIds = (currentUsage?.revealedExpertIds as string[]) || [];
+    
+    // Check if this expert has already been revealed
+    if (revealedExpertIds.includes(expertId)) {
+      // Expert already revealed, don't increment counter
+      return;
+    }
+    
+    // Add expert to revealed list and increment counter
+    const updatedRevealedIds = [...revealedExpertIds, expertId];
+    
     await this.prisma.subscriptionusage.update({
       where: { id: usage.id },
-      data: { usedExpertContacts: { increment: 1 } },
+      data: { 
+        usedExpertContacts: { increment: 1 },
+        revealedExpertIds: updatedRevealedIds
+      },
     });
+  }
+
+  async confirmPayment(userId: string, planId: string, paymentData: any) {
+    try {
+      console.log('Starting payment confirmation:', { userId, planId, paymentData });
+      
+      // Verify the plan exists and is active
+      const plan = await this.prisma.subscriptionplan.findUnique({
+        where: { id: planId, isActive: true }
+      });
+      
+      console.log('Plan found:', plan);
+      
+      if (!plan) {
+        throw new NotFoundException('Plan not found or inactive');
+      }
+
+      // Calculate subscription end date based on billing period
+      const now = new Date();
+      let endsAt: Date;
+      
+      if (plan.billingPeriod === 'MONTHLY') {
+        endsAt = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+      } else if (plan.billingPeriod === 'QUARTERLY') {
+        endsAt = new Date(now.getFullYear(), now.getMonth() + 3, now.getDate());
+      } else if (plan.billingPeriod === 'YEARLY') {
+        endsAt = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+      } else {
+        endsAt = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate()); // Default to monthly
+      }
+
+      // Cancel any existing active subscription
+      await this.prisma.subscription.updateMany({
+        where: {
+          userId,
+          status: 'ACTIVE'
+        },
+        data: {
+          status: 'CANCELED',
+          updatedAt: new Date()
+        }
+      });
+
+      // Create new subscription
+      const subscription = await this.prisma.subscription.create({
+        data: {
+          userId,
+          planId,
+          status: 'ACTIVE',
+          startsAt: now,
+          endsAt,
+          createdAt: now,
+          updatedAt: now
+        },
+        include: {
+          plan: true,
+          usages: {
+            orderBy: { periodStart: 'desc' },
+            take: 1,
+          },
+        }
+      });
+
+      console.log('Subscription created:', subscription);
+
+      // Create payment record
+      const paymentId = `pay_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const payment = await this.prisma.payment.create({
+        data: {
+          id: paymentId,
+          userId,
+          amount: plan.priceCents / 100, // Convert from cents to dollars
+          currency: plan.currency || 'INR',
+          paymentMethod: 'DIGITAL_WALLET',
+          status: 'COMPLETED',
+          transactionId: paymentData.razorpay_payment_id || paymentData.payment_id,
+          description: `Subscription payment for ${plan.name} plan`,
+          metadata: paymentData,
+          createdAt: now,
+          updatedAt: now,
+          completedAt: now
+        }
+      });
+
+      console.log('Payment record created:', payment);
+
+      return subscription;
+    } catch (error) {
+      console.error('Error confirming payment:', error);
+      throw error;
+    }
   }
 }
 

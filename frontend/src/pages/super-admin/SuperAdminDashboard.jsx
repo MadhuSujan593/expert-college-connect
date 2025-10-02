@@ -16,16 +16,21 @@ import {
   Trash2,
   RefreshCw,
   Home,
-  BarChart3,
-  Settings,
   LogOut,
   Menu,
   ChevronRight,
   Shield,
-  Activity,
   X,
   BadgeDollarSign,
-  Plus
+  Plus,
+  UserCog,
+  GraduationCap,
+  Briefcase,
+  Database,
+  Clock,
+  Calendar,
+  Target,
+  Zap
 } from 'lucide-react';
 
 const SuperAdminDashboard = () => {
@@ -67,9 +72,6 @@ const SuperAdminDashboard = () => {
     { id: 'overview', label: 'Overview', icon: Home },
     { id: 'users', label: 'User Management', icon: Users },
     { id: 'plans', label: 'Plans', icon: BadgeDollarSign },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'settings', label: 'Settings', icon: Settings },
-    
   ];
 
   useEffect(() => {
@@ -173,8 +175,8 @@ const SuperAdminDashboard = () => {
         maxRequirements: createPlanForm.maxRequirements === '' ? null : Number(createPlanForm.maxRequirements),
         maxExpertContacts: createPlanForm.maxExpertContacts === '' ? null : Number(createPlanForm.maxExpertContacts),
       };
-      if (!payload.priceCents || payload.priceCents <= 0) {
-        alert('Please enter a price greater than 0.');
+      if (payload.priceCents < 0) {
+        alert('Please enter a valid price (0 or greater).');
         return;
       }
       await apiService.adminCreatePlan(payload);
@@ -336,108 +338,200 @@ const SuperAdminDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600">Loading dashboard...</p>
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-slate-200 border-t-blue-600"></div>
+          <p className="text-slate-600 font-medium">Loading your dashboard...</p>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <div className="w-64 bg-white shadow-lg flex-shrink-0">
-        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
-          <div className="flex items-center">
-            <Shield className="h-8 w-8 text-red-600" />
-            <span className="ml-2 text-xl font-bold text-gray-900">Super Admin</span>
-          </div>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="lg:hidden text-gray-500 hover:text-gray-700"
-          >
-            <X className="h-6 w-6" />
-          </button>
-        </div>
+  const SidebarItem = ({ id, label, icon: Icon, isActive, onClick }) => (
+    <motion.button
+      onClick={() => onClick(id)}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      className={`group flex items-center space-x-3 w-full px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+        isActive
+          ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-sm'
+          : 'text-gray-300 hover:text-white hover:bg-gray-800'
+      }`}
+    >
+      <motion.div
+        animate={{ 
+          rotate: isActive ? 0 : 0,
+          scale: isActive ? 1.1 : 1
+        }}
+        transition={{ duration: 0.2 }}
+      >
+        <Icon className={`h-5 w-5 transition-colors duration-200 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'}`} />
+      </motion.div>
+      <motion.span
+        animate={{ 
+          x: isActive ? 2 : 0,
+          fontWeight: isActive ? 600 : 500
+        }}
+        transition={{ duration: 0.2 }}
+      >
+        {label}
+      </motion.span>
+    </motion.button>
+  );
 
-        <nav className="mt-6 px-3">
-          <div className="space-y-1">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => handleTabChange(tab.id)}
-                  className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
-                    activeTab === tab.id
-                      ? 'bg-red-100 text-red-700 border-r-2 border-red-500'
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                  }`}
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
+      {/* Modern Light Theme Layout */}
+      <div className="flex h-screen overflow-hidden">
+        {/* Black Sidebar */}
+        <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-56 bg-black border-r border-gray-800 transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
+          <div className="flex flex-col h-full">
+            {/* Black Sidebar Header */}
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="flex items-center justify-between px-4 py-4 border-b border-gray-800"
+            >
+              <div className="flex items-center space-x-3">
+                <motion.div 
+                  className="w-10 h-10 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl flex items-center justify-center shadow-sm"
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ duration: 0.2 }}
                 >
-                  <Icon className="h-5 w-5 mr-3" />
-                  {tab.label}
-                  {activeTab === tab.id && (
-                    <ChevronRight className="h-4 w-4 ml-auto" />
-                  )}
-                </button>
-              );
-            })}
+                  <Shield className="w-5 h-5 text-white" />
+                </motion.div>
+                <div>
+                  <motion.h1 
+                    className="text-base font-semibold text-white"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    Super Admin
+                  </motion.h1>
+                  <motion.p 
+                    className="text-xs text-gray-300"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    Dashboard
+                  </motion.p>
           </div>
+              </div>
+              <motion.button
+            onClick={() => setSidebarOpen(false)}
+                className="lg:hidden w-8 h-8 bg-gray-800 hover:bg-gray-700 rounded-lg flex items-center justify-center text-gray-300 hover:text-white transition-colors"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <X className="h-4 w-4" />
+              </motion.button>
+            </motion.div>
+
+            {/* Navigation */}
+            <nav className="flex-1 px-3 py-3 space-y-1">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+              >
+                <SidebarItem
+                  id="overview"
+                  label="Overview"
+                  icon={Home}
+                  isActive={activeTab === 'overview'}
+                  onClick={handleTabChange}
+                />
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: 0.15 }}
+              >
+                <SidebarItem
+                  id="users"
+                  label="Users"
+                  icon={Users}
+                  isActive={activeTab === 'users'}
+                  onClick={handleTabChange}
+                />
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: 0.2 }}
+              >
+                <SidebarItem
+                  id="plans"
+                  label="Plans"
+                  icon={BadgeDollarSign}
+                  isActive={activeTab === 'plans'}
+                  onClick={handleTabChange}
+                />
+              </motion.div>
         </nav>
 
-        {/* User info and logout */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
-          <div className="flex items-center mb-4">
-            <div className="h-10 w-10 bg-red-100 rounded-full flex items-center justify-center">
-              <span className="text-red-600 font-semibold text-sm">SA</span>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-900">{user?.fullName}</p>
-              <p className="text-xs text-gray-500">Super Administrator</p>
-            </div>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-lg transition-colors duration-200"
-          >
-            <LogOut className="h-4 w-4 mr-3" />
-            Sign Out
-          </button>
+            {/* Logout Button */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.4 }}
+              className="px-4 py-4 border-t border-gray-800 mt-auto"
+            >
+              <motion.button
+                onClick={() => setShowLogoutConfirm(true)}
+                className="group flex items-center space-x-3 w-full px-4 py-3 rounded-lg font-medium transition-all duration-200 text-gray-300 hover:text-blue-400 hover:bg-blue-900/20"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <motion.div
+                  animate={{ rotate: 0 }}
+                  whileHover={{ rotate: 5 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <LogOut className="h-5 w-5 text-gray-400 group-hover:text-blue-400" />
+                </motion.div>
+                <span>Sign Out</span>
+              </motion.button>
+            </motion.div>
         </div>
       </div>
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col">
-        {/* Top bar */}
-        <div className="bg-white shadow-sm border-b border-gray-200">
-          <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center">
+        {/* Main Content - Modern Light Theme */}
+        <div className="flex-1 flex flex-col overflow-hidden bg-white/80 backdrop-blur-sm rounded-l-3xl shadow-lg">
+          {/* Modern Header */}
+          <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 px-8 py-6 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="lg:hidden text-gray-500 hover:text-gray-700"
+                  className="lg:hidden w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors"
               >
-                <Menu className="h-6 w-6" />
+                  <Menu className="h-5 w-5" />
               </button>
-              <h1 className="ml-2 text-2xl font-bold text-gray-900">
+                <div>
+                  <h1 className="text-xl font-bold text-gray-900">
                 {tabs.find(tab => tab.id === activeTab)?.label || 'Dashboard'}
               </h1>
+                </div>
             </div>
             <div className="flex items-center space-x-4">
               <button
                 onClick={loadDashboardData}
-                className="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                  className="flex items-center px-3 py-2 text-sm text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg transition-colors duration-200"
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
               </button>
             </div>
           </div>
-        </div>
+          </header>
 
-        {/* Content area */}
-        <main className="flex-1 p-6 overflow-auto">
+          {/* Scrollable Content */}
+          <main className="flex-1 overflow-y-auto bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
+            <div className="p-6 space-y-6">
           <AnimatePresence mode="wait">
             {activeTab === 'overview' && (
               <motion.div
@@ -448,93 +542,132 @@ const SuperAdminDashboard = () => {
                 transition={{ duration: 0.3 }}
               >
                 {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <div className="flex items-center">
-                      <div className="p-2 bg-blue-100 rounded-lg">
-                        <Users className="h-6 w-6 text-blue-600" />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    className="bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl p-4 text-white shadow-lg"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-teal-100 text-sm font-medium">Total Users</p>
+                        <p className="text-2xl font-bold mt-1">{stats?.totalUsers || 0}</p>
                       </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-600">Total Users</p>
-                        <p className="text-2xl font-bold text-gray-900">{stats?.totalUsers || 0}</p>
+                      <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                        <UserCog className="w-6 h-6" />
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
 
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <div className="flex items-center">
-                      <div className="p-2 bg-green-100 rounded-lg">
-                        <Building2 className="h-6 w-6 text-green-600" />
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-blue-100 text-sm font-medium">College Admins</p>
+                        <p className="text-2xl font-bold mt-1">{stats?.collegeAdmins || 0}</p>
                       </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-600">College Admins</p>
-                        <p className="text-2xl font-bold text-gray-900">{stats?.collegeAdmins || 0}</p>
+                      <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                        <GraduationCap className="w-6 h-6" />
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
 
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <div className="flex items-center">
-                      <div className="p-2 bg-purple-100 rounded-lg">
-                        <UserCheck className="h-6 w-6 text-purple-600" />
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    className="bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl p-4 text-white shadow-lg"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-pink-100 text-sm font-medium">Experts</p>
+                        <p className="text-2xl font-bold mt-1">{stats?.experts || 0}</p>
                       </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-600">Experts</p>
-                        <p className="text-2xl font-bold text-gray-900">{stats?.experts || 0}</p>
+                      <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                        <Briefcase className="w-6 h-6" />
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
 
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <div className="flex items-center">
-                      <div className="p-2 bg-orange-100 rounded-lg">
-                        <FileText className="h-6 w-6 text-orange-600" />
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white shadow-lg"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-purple-100 text-sm font-medium">Applications</p>
+                        <p className="text-2xl font-bold mt-1">{stats?.totalApplications || 0}</p>
                       </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-600">Applications</p>
-                        <p className="text-2xl font-bold text-gray-900">{stats?.totalApplications || 0}</p>
+                      <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                        <Database className="w-6 h-6" />
                       </div>
                     </div>
-                  </div>
-                </div>
+                  </motion.div>
 
-                {/* Additional Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <div className="flex items-center">
-                      <div className="p-2 bg-yellow-100 rounded-lg">
-                        <Star className="h-6 w-6 text-yellow-600" />
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-4 text-white shadow-lg"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-emerald-100 text-sm font-medium">Total Ratings</p>
+                        <p className="text-2xl font-bold mt-1">{stats?.totalRatings || 0}</p>
                       </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-600">Total Ratings</p>
-                        <p className="text-2xl font-bold text-gray-900">{stats?.totalRatings || 0}</p>
+                      <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                        <Target className="w-6 h-6" />
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
 
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <div className="flex items-center">
-                      <div className="p-2 bg-indigo-100 rounded-lg">
-                        <TrendingUp className="h-6 w-6 text-indigo-600" />
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6 }}
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    className="bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-xl p-4 text-white shadow-lg"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-cyan-100 text-sm font-medium">Recent Users</p>
+                        <p className="text-2xl font-bold mt-1">{stats?.recentUsers || 0}</p>
                       </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-600">Recent Users</p>
-                        <p className="text-2xl font-bold text-gray-900">{stats?.recentUsers || 0}</p>
+                      <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                        <TrendingUp className="w-6 h-6" />
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
 
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <div className="flex items-center">
-                      <div className="p-2 bg-green-100 rounded-lg">
-                        <Activity className="h-6 w-6 text-green-600" />
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.7 }}
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    className="bg-gradient-to-br from-violet-500 to-violet-600 rounded-xl p-4 text-white shadow-lg"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-violet-100 text-sm font-medium">Active Users</p>
+                        <p className="text-2xl font-bold mt-1">{stats?.activeUsers || 0}</p>
                       </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-600">Active Users</p>
-                        <p className="text-2xl font-bold text-gray-900">{stats?.activeUsers || 0}</p>
+                      <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                        <Zap className="w-6 h-6" />
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
                 </div>
               </motion.div>
             )}
@@ -548,9 +681,9 @@ const SuperAdminDashboard = () => {
                 transition={{ duration: 0.3 }}
               >
                 {/* Filters */}
-                <div className="bg-white rounded-lg shadow mb-6">
-                  <div className="px-6 py-4 border-b border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900">User Management</h3>
+                <div className="bg-white rounded-2xl border border-slate-200/60 shadow-lg shadow-slate-900/5 mb-6">
+                  <div className="px-6 py-4 border-b border-slate-200/60">
+                    <h3 className="text-lg font-semibold text-slate-900">User Management</h3>
                   </div>
                   <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -563,7 +696,7 @@ const SuperAdminDashboard = () => {
                             placeholder="Search users..."
                             value={filters.search}
                             onChange={(e) => handleFilterChange('search', e.target.value)}
-                            className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition-colors"
                           />
                         </div>
                       </div>
@@ -573,7 +706,7 @@ const SuperAdminDashboard = () => {
                         <select
                           value={filters.role}
                           onChange={(e) => handleFilterChange('role', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition-colors"
                         >
                           <option value="">All Roles</option>
                           <option value="EXPERT">Expert</option>
@@ -586,7 +719,7 @@ const SuperAdminDashboard = () => {
                         <select
                           value={filters.isActive === null ? '' : filters.isActive.toString()}
                           onChange={(e) => handleFilterChange('isActive', e.target.value === '' ? null : e.target.value === 'true')}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition-colors"
                         >
                           <option value="">All Status</option>
                           <option value="true">Active</option>
@@ -599,7 +732,7 @@ const SuperAdminDashboard = () => {
                         <select
                           value={filters.limit}
                           onChange={(e) => handleFilterChange('limit', parseInt(e.target.value))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition-colors"
                         >
                           <option value={10}>10</option>
                           <option value={25}>25</option>
@@ -636,7 +769,7 @@ const SuperAdminDashboard = () => {
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
                         {users.map((user) => (
-                          <tr key={user.id} className="hover:bg-gray-50">
+                          <tr key={user.id} className="hover:bg-blue-50">
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center">
                                 <div className="h-10 w-10 flex-shrink-0">
@@ -703,7 +836,11 @@ const SuperAdminDashboard = () => {
                                   disabled={actionLoading[user.id]}
                                   title={user.isActive ? 'Deactivate user' : 'Activate user'}
                                 >
-                                  <UserX className="h-4 w-4" />
+                                  {actionLoading[user.id] ? (
+                                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                  ) : (
+                                    <UserX className="h-4 w-4" />
+                                  )}
                                 </button>
                                 <button
                                   onClick={() => handleUserAction('delete', user.id, user)}
@@ -711,7 +848,11 @@ const SuperAdminDashboard = () => {
                                   disabled={actionLoading[user.id]}
                                   title="Delete user"
                                 >
-                                  <Trash2 className="h-4 w-4" />
+                                  {actionLoading[user.id] ? (
+                                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                  ) : (
+                                    <Trash2 className="h-4 w-4" />
+                                  )}
                                 </button>
                               </div>
                             </td>
@@ -732,14 +873,14 @@ const SuperAdminDashboard = () => {
                           <button
                             onClick={() => handlePageChange(pagination.page - 1)}
                             disabled={pagination.page === 1}
-                            className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-3 py-2 text-sm font-medium text-blue-600 bg-white border border-blue-300 rounded-md hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             Previous
                           </button>
                           <button
                             onClick={() => handlePageChange(pagination.page + 1)}
                             disabled={pagination.page === pagination.pages}
-                            className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-3 py-2 text-sm font-medium text-blue-600 bg-white border border-blue-300 rounded-md hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             Next
                           </button>
@@ -759,77 +900,114 @@ const SuperAdminDashboard = () => {
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.3 }}
               >
-                <div className="bg-white rounded-lg shadow mb-6">
-                  <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-gray-900">Subscription Plans</h3>
-                    <button onClick={() => setShowCreatePlan(true)} className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md">
+                <div className="bg-white rounded-2xl border border-slate-200/60 shadow-lg shadow-slate-900/5 mb-6">
+                  <div className="px-6 py-4 border-b border-slate-200/60 flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-slate-900">Subscription Plans</h3>
+                    <button onClick={() => setShowCreatePlan(true)} className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 rounded-md transition-all duration-200">
                       <Plus className="h-4 w-4 mr-2" /> New Plan
                     </button>
                   </div>
                   <div className="px-6 py-4">
                     {plansLoading ? (
-                      <div className="text-gray-600">Loading plans...</div>
+                      <div className="text-center py-12">
+                        <div className="w-8 h-8 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+                        <p className="text-gray-500 text-sm">Loading plans...</p>
+                      </div>
                     ) : plans.length === 0 ? (
                       <div className="text-gray-600">No plans yet.</div>
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {plans.map((plan) => (
-                          <div key={plan.id} className="rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow">
-                            <div className="p-5 border-b border-gray-100 flex items-start justify-between">
-                              <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                  <h4 className="text-lg font-semibold text-gray-900">{plan.name}</h4>
-                                  <span className={`px-2 py-0.5 text-xs rounded-full ${plan.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>{plan.isActive ? 'Active' : 'Inactive'}</span>
+                          <motion.div 
+                            key={plan.id} 
+                            className="group bg-white rounded-xl border border-gray-200/60 shadow-sm hover:shadow-lg hover:border-gray-300/60 transition-all duration-300 overflow-hidden"
+                            whileHover={{ y: -4, scale: 1.02 }}
+                          >
+                            {/* Header with gradient background */}
+                            <div className={`px-6 py-4 ${plan.isActive ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-gray-400 to-gray-500'}`}>
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <h3 className="text-lg font-bold text-white">{plan.name}</h3>
+                                  <p className="text-emerald-100 text-sm font-medium">{plan.audience} • {plan.billingPeriod}</p>
                                 </div>
-                                <p className="text-xs text-gray-500 uppercase tracking-wide">{plan.audience} • {plan.billingPeriod}</p>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-sm text-gray-700">₹{(plan.priceCents/100).toFixed(2)} <span className="text-gray-500">/ {plan.billingPeriod.toLowerCase()}</span></div>
+                                <div className="text-right">
+                                  <div className="text-2xl font-bold text-white">
+                                    {plan.priceCents === 0 ? 'Free' : `₹${(plan.priceCents/100).toFixed(0)}`}
+                                  </div>
+                                  <div className="text-emerald-100 text-sm">per {plan.billingPeriod.toLowerCase()}</div>
+                                </div>
                               </div>
                             </div>
+
+                            {/* Description */}
                             {plan.description && (
-                              <div className="px-5 py-3 text-sm text-gray-700">{plan.description}</div>
+                              <div className="px-6 py-4 border-b border-gray-100">
+                                <p className="text-gray-600 text-sm leading-relaxed">{plan.description}</p>
+                              </div>
                             )}
-                            <div className="px-5 py-3 grid grid-cols-2 gap-3 text-sm">
-                              <div className="rounded-lg bg-gray-50 p-3">
-                                <div className="text-xs text-gray-500">Requirements / mo</div>
-                                <div className="font-semibold text-gray-900">{plan.maxRequirements ?? 'Unlimited'}</div>
-                              </div>
-                              <div className="rounded-lg bg-gray-50 p-3">
-                                <div className="text-xs text-gray-500">Expert contacts / mo</div>
-                                <div className="font-semibold text-gray-900">{plan.maxExpertContacts ?? 'Unlimited'}</div>
-                              </div>
-                            </div>
-                            <div className="px-5 py-4 flex items-center justify-between border-t border-gray-100">
-                              <div className="flex gap-3">
-                                <button onClick={() => handleTogglePlan(plan.id)} className="text-sm text-indigo-600 hover:text-indigo-800">{plan.isActive ? 'Deactivate' : 'Activate'}</button>
-                                <button onClick={async () => {
-                                  const subs = await apiService.adminListPlanSubscribers(plan.id, { page: 1, limit: 10 });
-                                  alert(`Subscribers: ${subs.pagination.total}`);
-                                }} className="text-sm text-gray-600 hover:text-gray-800">View Subscribers</button>
-                              </div>
-                              <div className="flex gap-3">
-                                <button onClick={() => {
-                                  setCreatePlanForm({
-                                    name: plan.name,
-                                    description: plan.description || '',
-                                    audience: plan.audience,
-                                    billingPeriod: plan.billingPeriod,
-                                    priceDisplay: String((plan.priceCents/100).toFixed(2)),
-                                    currency: plan.currency,
-                                    maxRequirements: plan.maxRequirements ?? '',
-                                    maxExpertContacts: plan.maxExpertContacts ?? '',
-                                  });
-                                  setShowCreatePlan('edit-' + plan.id);
-                                }} className="text-sm text-blue-600 hover:text-blue-800">Edit</button>
-                                <button onClick={async () => {
-                                  if (confirm('Delete this plan? This cannot be undone.')) {
-                                    try { await apiService.adminDeletePlan(plan.id); await loadPlans(); } catch (e) { alert(e.message || 'Delete failed'); }
-                                  }
-                                }} className="text-sm text-red-600 hover:text-red-800">Delete</button>
+
+                            {/* Features */}
+                            <div className="px-6 py-4">
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-gray-600 font-medium">Requirements</span>
+                                  <span className="text-gray-900 font-semibold">{plan.maxRequirements ?? 'Unlimited'}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-gray-600 font-medium">Expert Contacts</span>
+                                  <span className="text-gray-900 font-semibold">{plan.maxExpertContacts ?? 'Unlimited'}</span>
+                                </div>
                               </div>
                             </div>
-                          </div>
+
+                            {/* Actions */}
+                            <div className="px-6 py-4 bg-gray-50/50 border-t border-gray-100">
+                              <div className="flex items-center justify-between">
+                                <div className="flex space-x-2">
+                                  <button 
+                                    onClick={() => handleTogglePlan(plan.id)} 
+                                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                                      plan.isActive 
+                                        ? 'text-red-600 hover:bg-red-50' 
+                                        : 'text-emerald-600 hover:bg-emerald-50'
+                                    }`}
+                                  >
+                                    {plan.isActive ? 'Deactivate' : 'Activate'}
+                                  </button>
+                                </div>
+                                <div className="flex space-x-2">
+                                  <button 
+                                    onClick={() => {
+                                      setCreatePlanForm({
+                                        name: plan.name,
+                                        description: plan.description || '',
+                                        audience: plan.audience,
+                                        billingPeriod: plan.billingPeriod,
+                                        priceDisplay: String((plan.priceCents/100).toFixed(2)),
+                                        currency: plan.currency,
+                                        maxRequirements: plan.maxRequirements ?? '',
+                                        maxExpertContacts: plan.maxExpertContacts ?? '',
+                                      });
+                                      setShowCreatePlan('edit-' + plan.id);
+                                    }} 
+                                    className="px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button 
+                                    onClick={async () => {
+                                      if (confirm('Delete this plan? This cannot be undone.')) {
+                                        try { await apiService.adminDeletePlan(plan.id); await loadPlans(); } catch (e) { alert(e.message || 'Delete failed'); }
+                                      }
+                                    }} 
+                                    className="px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
                         ))}
                       </div>
                     )}
@@ -842,23 +1020,23 @@ const SuperAdminDashboard = () => {
                     <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="text-lg font-semibold text-gray-900">{String(showCreatePlan).startsWith('edit-') ? 'Edit Plan' : 'Create Plan'}</h3>
-                        <button onClick={() => setShowCreatePlan(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+                        <button onClick={() => setShowCreatePlan(false)} className="text-blue-400 hover:text-blue-600">✕</button>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                          <input value={createPlanForm.name} onChange={e => setCreatePlanForm({ ...createPlanForm, name: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                          <input value={createPlanForm.name} onChange={e => setCreatePlanForm({ ...createPlanForm, name: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-colors" />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Audience</label>
-                          <select value={createPlanForm.audience} onChange={e => setCreatePlanForm({ ...createPlanForm, audience: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md">
+                          <select value={createPlanForm.audience} onChange={e => setCreatePlanForm({ ...createPlanForm, audience: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-colors">
                             <option value="COLLEGE">College</option>
                             <option value="EXPERT">Expert</option>
                           </select>
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Billing Period</label>
-                          <select value={createPlanForm.billingPeriod} onChange={e => setCreatePlanForm({ ...createPlanForm, billingPeriod: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md">
+                          <select value={createPlanForm.billingPeriod} onChange={e => setCreatePlanForm({ ...createPlanForm, billingPeriod: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-colors">
                             <option value="MONTHLY">Monthly</option>
                             <option value="QUARTERLY">Quarterly</option>
                             <option value="YEARLY">Yearly</option>
@@ -875,24 +1053,24 @@ const SuperAdminDashboard = () => {
                             value={createPlanForm.priceDisplay}
                             onFocus={(e) => { if (e.target.value === '0') { e.target.value = ''; } }}
                             onChange={e => setCreatePlanForm({ ...createPlanForm, priceDisplay: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-colors"
                           />
                         </div>
                         <div className="md:col-span-2">
                           <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                          <textarea rows={3} value={createPlanForm.description} onChange={e => setCreatePlanForm({ ...createPlanForm, description: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                          <textarea rows={3} value={createPlanForm.description} onChange={e => setCreatePlanForm({ ...createPlanForm, description: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-colors" />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Max Requirements / mo (empty for unlimited)</label>
-                          <input type="number" value={createPlanForm.maxRequirements} onChange={e => setCreatePlanForm({ ...createPlanForm, maxRequirements: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                          <input type="number" value={createPlanForm.maxRequirements} onChange={e => setCreatePlanForm({ ...createPlanForm, maxRequirements: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-colors" />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Max Expert Contacts / mo (empty for unlimited)</label>
-                          <input type="number" value={createPlanForm.maxExpertContacts} onChange={e => setCreatePlanForm({ ...createPlanForm, maxExpertContacts: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                          <input type="number" value={createPlanForm.maxExpertContacts} onChange={e => setCreatePlanForm({ ...createPlanForm, maxExpertContacts: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-colors" />
                         </div>
                       </div>
                       <div className="mt-4 flex justify-end space-x-2">
-                        <button onClick={() => setShowCreatePlan(false)} className="px-4 py-2 border border-gray-300 rounded-md">Cancel</button>
+                        <button onClick={() => setShowCreatePlan(false)} className="px-4 py-2 border border-blue-300 text-blue-600 hover:bg-blue-50 rounded-md">Cancel</button>
                         <button onClick={async () => {
                           if (String(showCreatePlan).startsWith('edit-')) {
                             const id = String(showCreatePlan).replace('edit-','');
@@ -903,7 +1081,7 @@ const SuperAdminDashboard = () => {
                                 maxRequirements: createPlanForm.maxRequirements === '' ? null : Number(createPlanForm.maxRequirements),
                                 maxExpertContacts: createPlanForm.maxExpertContacts === '' ? null : Number(createPlanForm.maxExpertContacts),
                               };
-                              if (!payload.priceCents || payload.priceCents <= 0) { alert('Please enter a price greater than 0.'); return; }
+                              if (payload.priceCents < 0) { alert('Please enter a valid price (0 or greater).'); return; }
                               await apiService.adminUpdatePlan(id, payload);
                               setShowCreatePlan(false);
                               await loadPlans();
@@ -911,7 +1089,7 @@ const SuperAdminDashboard = () => {
                           } else {
                             await handleCreatePlan();
                           }
-                        }} disabled={creatingPlan} className="px-4 py-2 bg-red-600 text-white rounded-md disabled:opacity-50">{creatingPlan ? 'Saving...' : (String(showCreatePlan).startsWith('edit-') ? 'Save Changes' : 'Create Plan')}</button>
+                        }} disabled={creatingPlan} className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-md disabled:opacity-50 transition-all duration-200">{creatingPlan ? 'Saving...' : (String(showCreatePlan).startsWith('edit-') ? 'Save Changes' : 'Create Plan')}</button>
                       </div>
                     </div>
                   </div>
@@ -919,37 +1097,10 @@ const SuperAdminDashboard = () => {
               </motion.div>
             )}
 
-            {activeTab === 'analytics' && (
-              <motion.div
-                key="analytics"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-              >
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Analytics</h3>
-                  <p className="text-gray-600">Analytics features coming soon...</p>
-                </div>
-              </motion.div>
-            )}
-
-            {activeTab === 'settings' && (
-              <motion.div
-                key="settings"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-              >
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Settings</h3>
-                  <p className="text-gray-600">Settings features coming soon...</p>
-                </div>
-              </motion.div>
-            )}
           </AnimatePresence>
+            </div>
         </main>
+        </div>
       </div>
 
       {/* Confirmation Modal */}

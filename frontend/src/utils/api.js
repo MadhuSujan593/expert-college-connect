@@ -946,7 +946,9 @@ class ApiService {
   // ===== Self subscription & usage =====
   async getMySubscription() {
     const headers = await this.getAuthHeaders();
-    const response = await fetch(`${this.baseURL}/subscriptions/me`, { method: 'GET', headers });
+    // Add timestamp to prevent caching
+    const timestamp = new Date().getTime();
+    const response = await fetch(`${this.baseURL}/subscriptions/me?t=${timestamp}`, { method: 'GET', headers });
     return this.handleResponse(response);
   }
 
@@ -983,6 +985,16 @@ class ApiService {
       method: 'POST',
       headers,
       body: JSON.stringify({ planId }),
+    });
+    return this.handleResponse(response);
+  }
+
+  async confirmRazorpayPayment(planId, paymentData) {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}/subscriptions/confirm-payment`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ planId, paymentData }),
     });
     return this.handleResponse(response);
   }

@@ -856,13 +856,42 @@ export class ExpertProfileService {
       });
     }
 
+    // Debug: Check if there are any ratings in the database
+    const totalRatings = await this.prisma.rating.count();
+    console.log(`Total ratings in database: ${totalRatings}`);
+    
+    if (totalRatings > 0) {
+      const sampleRatings = await this.prisma.rating.findMany({
+        take: 3,
+        select: {
+          id: true,
+          expertProfileId: true,
+          overallRating: true,
+        },
+      });
+      console.log('Sample ratings:', sampleRatings);
+    }
+
+    // Calculate average rating for each expert
+    const expertsWithRatings = await Promise.all(
+      filteredExperts.map(async (expert) => {
+        const avgRating = await this.prisma.rating.aggregate({
+          where: { expertProfileId: expert.id },
+          _avg: { overallRating: true },
+        });
+        
+        // Debug: Log rating calculation
+        console.log(`Expert ${expert.id} (${expert.user?.fullName}): avgRating = ${avgRating._avg.overallRating}`);
+        
+        return {
+          ...expert,
+          averageRating: avgRating._avg.overallRating ?? 0,
+        };
+      })
+    );
+
     return {
-      experts: filteredExperts.map(expert => ({
-        ...expert,
-                averageRating: ((expert as any).rating || []).length > 0
-          ? ((expert as any).rating || []).reduce((sum, r) => sum + r.rating, 0) / ((expert as any).rating || []).length
-          : 0,
-      })),
+      experts: expertsWithRatings,
       total,
       page,
       limit,

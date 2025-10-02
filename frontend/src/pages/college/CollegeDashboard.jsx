@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { 
   Home, 
   User, 
@@ -32,7 +33,8 @@ import {
   MessageCircle,
   Briefcase,
   UserCheck,
-  Sparkles
+  Sparkles,
+  RefreshCw
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import apiService from '../../utils/api';
@@ -47,9 +49,11 @@ import VerificationRequirementModal from '../../components/common/VerificationRe
 import RequirementCard from '../../components/common/RequirementCard';
 import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
 import ApplicationManagement from '../../components/college/ApplicationManagement';
+import PlanLimitationModal from '../../components/common/PlanLimitationModal';
 
 const CollegeDashboard = () => {
   const { user, logout, setUser } = useAuth();
+  const navigate = useNavigate();
   // Get active tab from URL or default to 'overview'
   const [activeTab, setActiveTab] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -127,10 +131,11 @@ const CollegeDashboard = () => {
   // Subscription state
   const [mySubscription, setMySubscription] = useState(null);
   const [subsLoading, setSubsLoading] = useState(false);
-  const [showPlansModal, setShowPlansModal] = useState(false);
-  const [availablePlans, setAvailablePlans] = useState([]);
-  const [loadingPlans, setLoadingPlans] = useState(false);
   const [subscribingPlanId, setSubscribingPlanId] = useState(null);
+
+  // Plan limitation modal state
+  const [showPlanLimitationModal, setShowPlanLimitationModal] = useState(false);
+  const [limitationType, setLimitationType] = useState(null);
 
   // Tab management with URL persistence
   const handleTabChange = (tabId) => {
@@ -146,7 +151,10 @@ const CollegeDashboard = () => {
   const loadMySubscription = async () => {
     try {
       setSubsLoading(true);
+      // Add timestamp to prevent caching
       const data = await apiService.getMySubscription();
+      console.log('Subscription data loaded:', data);
+      console.log('Current time:', new Date().toISOString());
       setMySubscription(data);
     } catch (e) {
       console.error('Failed to load subscription', e);
@@ -155,25 +163,97 @@ const CollegeDashboard = () => {
     }
   };
 
-  const openPlansModal = async () => {
-    try {
-      setShowPlansModal(true);
-      setLoadingPlans(true);
-      const plans = await apiService.listActivePlans('COLLEGE');
-      setAvailablePlans(plans || []);
-    } catch (e) {
-      console.error('Failed to load plans', e);
-      showToast('error', 'Failed to load plans');
-    } finally {
-      setLoadingPlans(false);
+  const openPlansPage = () => {
+    navigate('/subscription-plans');
+  };
+
+  // Handle plan limitation modal
+  const handlePlanLimitationUpgrade = () => {
+    setShowPlanLimitationModal(false);
+    navigate('/subscription-plans');
+  };
+
+  const handlePlanLimitationClose = () => {
+    setShowPlanLimitationModal(false);
+    setLimitationType(null);
+  };
+
+  // Handle expert contact limitation
+  const handleExpertContactLimit = async () => {
+    // Refresh subscription data first to get updated usage
+    await loadMySubscription();
+    setLimitationType('expert_contacts');
+    setShowPlanLimitationModal(true);
+  };
+
+  // Global function to handle expert contact limit (accessible from anywhere)
+  window.handleExpertContactLimit = async () => {
+    // Refresh subscription data first to get updated usage
+    await loadMySubscription();
+    setLimitationType('expert_contacts');
+    setShowPlanLimitationModal(true);
+  };
+
+  // Get current limitation details for modal
+  const getCurrentLimitationDetails = () => {
+    if (!mySubscription?.plan) return null;
+    
+    // Check if subscription is expired
+    if (mySubscription.endsAt && new Date(mySubscription.endsAt) < new Date()) {
+      return {
+        type: 'expired',
+        currentUsage: 0,
+        planLimit: 0,
+        planName: mySubscription.plan.name
+      };
     }
+    
+    // Check requirements limit
+    const usedRequirements = mySubscription.usages?.[0]?.usedRequirements || 0;
+    const maxRequirements = mySubscription.plan.maxRequirements;
+    
+    if (maxRequirements && usedRequirements >= maxRequirements) {
+      return {
+        type: 'requirements',
+        currentUsage: usedRequirements,
+        planLimit: maxRequirements,
+        planName: mySubscription.plan.name
+      };
+    }
+    
+    // Check expert contacts limit
+    const usedExpertContacts = mySubscription.usages?.[0]?.usedExpertContacts || 0;
+    const maxExpertContacts = mySubscription.plan.maxExpertContacts;
+    
+    if (maxExpertContacts && usedExpertContacts >= maxExpertContacts) {
+      return {
+        type: 'expert_contacts',
+        currentUsage: usedExpertContacts,
+        planLimit: maxExpertContacts,
+        planName: mySubscription.plan.name
+      };
+    }
+    
+    return null;
   };
 
   const subscribeToPlan = async (planId) => {
     try {
       setSubscribingPlanId(planId);
       // Create order on backend
-      const { order, keyId } = await apiService.createRazorpayOrder(planId);
+      const response = await apiService.createRazorpayOrder(planId);
+      
+      // Check if it's a free plan
+      if (response.isFreePlan) {
+        console.log('Free plan activated:', response);
+        showToast('success', response.message || 'Free plan activated successfully!');
+        setShowPlansModal(false);
+        await loadMySubscription();
+        return;
+      }
+      
+      // For paid plans, proceed with Razorpay
+      const { order, keyId } = response;
       if (!order || !keyId) throw new Error('Failed to create payment order');
 
       // Load Razorpay script if not present
@@ -410,6 +490,92 @@ const CollegeDashboard = () => {
     const isVerified = user?.isEmailVerified || user?.isPhoneVerified;
     const hasPlan = !!mySubscription?.plan;
     return isVerified && hasPlan;
+  };
+
+  // Check if user can create requirements (plan limits)
+  const canCreateRequirement = () => {
+    if (!mySubscription?.plan) return false;
+    
+    // Check if subscription is expired
+    if (mySubscription.endsAt && new Date(mySubscription.endsAt) < new Date()) {
+      return false;
+    }
+    
+    // Check requirements limit
+    const usedRequirements = mySubscription.usages?.[0]?.usedRequirements || 0;
+    const maxRequirements = mySubscription.plan.maxRequirements;
+    
+    if (maxRequirements && usedRequirements >= maxRequirements) {
+      return false;
+    }
+    
+    return true;
+  };
+
+  // Get limitation details for modal
+  const getLimitationDetails = () => {
+    if (!mySubscription?.plan) return null;
+    
+    // Check if subscription is expired
+    if (mySubscription.endsAt && new Date(mySubscription.endsAt) < new Date()) {
+      return {
+        type: 'expired',
+        currentUsage: 0,
+        planLimit: 0,
+        planName: mySubscription.plan.name
+      };
+    }
+    
+    // Check requirements limit
+    const usedRequirements = mySubscription.usages?.[0]?.usedRequirements || 0;
+    const maxRequirements = mySubscription.plan.maxRequirements;
+    
+    if (maxRequirements && usedRequirements >= maxRequirements) {
+      return {
+        type: 'requirements',
+        currentUsage: usedRequirements,
+        planLimit: maxRequirements,
+        planName: mySubscription.plan.name
+      };
+    }
+    
+    // Check expert contacts limit
+    const usedExpertContacts = mySubscription.usages?.[0]?.usedExpertContacts || 0;
+    const maxExpertContacts = mySubscription.plan.maxExpertContacts;
+    
+    if (maxExpertContacts && usedExpertContacts >= maxExpertContacts) {
+      return {
+        type: 'expert_contacts',
+        currentUsage: usedExpertContacts,
+        planLimit: maxExpertContacts,
+        planName: mySubscription.plan.name
+      };
+    }
+    
+    return null;
+  };
+
+  // Handle requirement creation with plan validation
+  const handleCreateRequirementClick = (onShowForm) => {
+    if (!canAccessRequirements()) {
+      setVerificationFeatureName("Requirements Creation");
+      setShowVerificationRequirement(true);
+      return;
+    }
+    
+    if (!canCreateRequirement()) {
+      const limitation = getLimitationDetails();
+      if (limitation) {
+        setLimitationType(limitation.type);
+        setShowPlanLimitationModal(true);
+        return;
+      }
+    }
+    
+    // If all checks pass, show the form
+    if (onShowForm) {
+      onShowForm(true);
+    }
   };
 
   // Check if user can access application management (only requires email verification)
@@ -1332,7 +1498,9 @@ const CollegeDashboard = () => {
                 label="Requirements"
                 icon={BarChart3}
                 isActive={activeTab === 'requirements'}
-                onClick={handleRequirementsAccess}
+                onClick={(tabId) => {
+                  handleTabChange(tabId);
+                }}
               />
               </motion.div>
               <motion.div
@@ -1346,12 +1514,7 @@ const CollegeDashboard = () => {
                 icon={CheckCircle}
                 isActive={activeTab === 'applications'}
                 onClick={(tabId) => {
-                  if (tabId === 'applications' && !canAccessApplicationManagement()) {
-                    setVerificationFeatureName("Application Management");
-                    setShowVerificationRequirement(true);
-                  } else {
-                    handleTabChange(tabId);
-                  }
+                  handleTabChange(tabId);
                 }}
               />
               </motion.div>
@@ -1366,12 +1529,7 @@ const CollegeDashboard = () => {
                 icon={Users}
                 isActive={activeTab === 'experts'}
                 onClick={(tabId) => {
-                  if (tabId === 'experts' && !canAccessRequirements()) {
-                    setVerificationFeatureName("Expert Directory");
-                    setShowVerificationRequirement(true);
-                  } else {
-                    handleTabChange(tabId);
-                  }
+                  handleTabChange(tabId);
                 }}
               />
               </motion.div>
@@ -1548,7 +1706,7 @@ const CollegeDashboard = () => {
                     >
                       <div className="flex items-center justify-between mb-4">
                       <h3 className="text-xl font-semibold text-gray-900">Subscription</h3>
-                        <button onClick={openPlansModal} className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 text-sm font-medium shadow-sm hover:shadow-md">Change Plan</button>
+                          <button onClick={openPlansPage} className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 text-sm font-medium shadow-sm hover:shadow-md">Change Plan</button>
                     </div>
                     {subsLoading ? (
                       <p className="text-gray-600">Loading subscription...</p>
@@ -1557,9 +1715,9 @@ const CollegeDashboard = () => {
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-2">
                               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                              <span className="text-sm font-semibold text-gray-900">Gold Plan</span>
+                              <span className="text-sm font-semibold text-gray-900">{mySubscription.plan.name}</span>
                               <span className="text-sm text-gray-500">•</span>
-                              <span className="text-sm text-gray-500">₹5,000/quarterly</span>
+                              <span className="text-sm text-gray-500">₹{(mySubscription.plan.priceCents/100).toFixed(0)}/{mySubscription.plan.billingPeriod.toLowerCase()}</span>
                         </div>
                             <span className="text-xs text-gray-500">
                               Due {mySubscription.endsAt 
@@ -1572,25 +1730,37 @@ const CollegeDashboard = () => {
                           <div className="space-y-2">
                             <div className="flex items-center justify-between">
                               <span className="text-sm text-gray-600">Requirements</span>
-                              <span className="text-sm font-medium text-gray-900">{(mySubscription.usages?.[0]?.usedRequirements || 0)}/{mySubscription.plan.maxRequirements ?? '∞'}</span>
+                              {mySubscription.plan.maxRequirements ? (
+                                <span className="text-sm font-medium text-gray-900">{(mySubscription.usages?.[0]?.usedRequirements || 0)}/{mySubscription.plan.maxRequirements}</span>
+                              ) : (
+                                <span className="text-sm font-medium text-green-600">Unlimited</span>
+                              )}
                         </div>
+                            {mySubscription.plan.maxRequirements && (
                             <div className="w-full bg-gray-200 rounded-full h-1.5">
-                              <div className="bg-blue-600 h-1.5 rounded-full" style={{ width: `${Math.min(100, Math.round(((mySubscription.usages?.[0]?.usedRequirements || 0) / (mySubscription.plan.maxRequirements || Infinity)) * 100))}%` }}></div>
+                                <div className="bg-blue-600 h-1.5 rounded-full" style={{ width: `${Math.min(100, Math.round(((mySubscription.usages?.[0]?.usedRequirements || 0) / mySubscription.plan.maxRequirements) * 100))}%` }}></div>
                           </div>
+                            )}
                             
                             <div className="flex items-center justify-between">
                               <span className="text-sm text-gray-600">Expert Contacts</span>
-                              <span className="text-sm font-medium text-gray-900">{(mySubscription.usages?.[0]?.usedExpertContacts || 0)}/{mySubscription.plan.maxExpertContacts ?? '∞'}</span>
+                              {mySubscription.plan.maxExpertContacts ? (
+                                <span className="text-sm font-medium text-gray-900">{(mySubscription.usages?.[0]?.usedExpertContacts || 0)}/{mySubscription.plan.maxExpertContacts}</span>
+                              ) : (
+                                <span className="text-sm font-medium text-green-600">Unlimited</span>
+                              )}
                             </div>
+                            {mySubscription.plan.maxExpertContacts && (
                             <div className="w-full bg-gray-200 rounded-full h-1.5">
-                              <div className="bg-purple-600 h-1.5 rounded-full" style={{ width: `${Math.min(100, Math.round(((mySubscription.usages?.[0]?.usedExpertContacts || 0) / (mySubscription.plan.maxExpertContacts || Infinity)) * 100))}%` }}></div>
+                                <div className="bg-purple-600 h-1.5 rounded-full" style={{ width: `${Math.min(100, Math.round(((mySubscription.usages?.[0]?.usedExpertContacts || 0) / mySubscription.plan.maxExpertContacts) * 100))}%` }}></div>
                             </div>
+                            )}
                         </div>
                       </div>
                     ) : (
                       <div className="flex items-center justify-between">
                         <p className="text-gray-700">No active subscription. Choose a plan to unlock requirements and expert contacts.</p>
-                          <button onClick={openPlansModal} className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 shadow-sm hover:shadow-md">View Plans</button>
+                          <button onClick={openPlansPage} className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 shadow-sm hover:shadow-md">View Plans</button>
                       </div>
                     )}
                     </motion.div>
@@ -1606,7 +1776,7 @@ const CollegeDashboard = () => {
                       <h3 className="text-xl font-semibold text-gray-900 mb-3">Quick Actions</h3>
                       <div className="space-y-2">
                         <motion.button
-                        onClick={handleRequirementsAccess}
+                        onClick={() => handleTabChange('requirements')}
                           className="group w-full flex items-center space-x-3 p-3 bg-white hover:bg-blue-50 rounded-lg border border-gray-100 hover:border-blue-200 transition-all duration-200 hover:shadow-sm"
                           whileHover={{ scale: 1.01 }}
                           whileTap={{ scale: 0.99 }}
@@ -1826,6 +1996,7 @@ const CollegeDashboard = () => {
                     loadingMore={loadingMore}
                     hasMore={hasMore}
                     loadMoreRequirements={loadMoreRequirements}
+                    onCreateRequirementClick={handleCreateRequirementClick}
                   />
 
 
@@ -1841,38 +2012,19 @@ const CollegeDashboard = () => {
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.3 }}
                 >
-                {canAccessApplicationManagement() ? (
-                  <>
+                {activeTab === 'applications' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                  >
                     <ApplicationManagement 
                       requirementId={null}
                       user={user}
+                      onRefreshSubscription={loadMySubscription}
                     />
-                  </>
-                ) : (
-                  <div className="mb-8">
-                    <div className="text-center py-8">
-                      <CheckCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                      <p className="text-gray-500 mb-3">Verification required to access Application Management</p>
-                      <div className="space-y-2">
-                        {!user?.isEmailVerified && (
-                          <button
-                            onClick={handleVerifyEmailFromRequirements}
-                            className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
-                          >
-                            Verify Email
-                          </button>
-                        )}
-                        {!user?.isPhoneVerified && (
-                          <button
-                            onClick={handleVerifyPhoneFromRequirements}
-                            className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
-                          >
-                            Verify Phone
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                  </motion.div>
                 )}
                 </motion.div>
               )}
@@ -1885,38 +2037,15 @@ const CollegeDashboard = () => {
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.3 }}
                 >
-                {canAccessExperts() ? (
-                  <>
+                {activeTab === 'experts' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                  >
                     <ExpertsTab user={user} key={`experts-${user?.id || 'no-user'}`} />
-                  </>
-                ) : (
-                  <div className="mb-8">
-                    <div className="text-center py-8">
-                      <Users className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                      <p className="text-gray-500 mb-3">Verification required to access Expert Directory</p>
-                      <div className="space-y-2">
-                        {!user?.isEmailVerified && (
-                          <button
-                            onClick={handleVerifyEmailFromRequirements}
-                            className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
-                          >
-                            Verify Email
-                          </button>
-                        )}
-                        {!user?.isPhoneVerified && (
-                          <button
-                            onClick={handleVerifyPhoneFromRequirements}
-                            className="px-4 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors"
-                          >
-                            Verify Phone
-                          </button>
-                        )}
-                        {user?.isEmailVerified && user?.isPhoneVerified && (
-                          <p className="text-sm text-green-600 text-center">✅ All verifications complete!</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                  </motion.div>
                 )}
                 </motion.div>
               )}
@@ -1929,33 +2058,15 @@ const CollegeDashboard = () => {
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.3 }}
                 >
-                {canAccessExperts() ? (
-                <RatingsTab user={user} key={`ratings-${user?.id || 'no-user'}`} />
-                ) : (
-                  <div className="mb-8">
-                    <div className="text-center py-8">
-                      <Star className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                      <p className="text-gray-500 mb-3">Verification required to access Ratings & Trust</p>
-                      <div className="space-y-2">
-                        {!user?.isEmailVerified && (
-                          <button
-                            onClick={handleVerifyEmailFromRequirements}
-                            className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
-                          >
-                            Verify Email
-                          </button>
-                        )}
-                        {!user?.isPhoneVerified && (
-                          <button
-                            onClick={handleVerifyPhoneFromRequirements}
-                            className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
-                          >
-                            Verify Phone
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                {activeTab === 'ratings' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <RatingsTab user={user} key={`ratings-${user?.id || 'no-user'}`} />
+                  </motion.div>
                 )}
                 </motion.div>
               )}
@@ -2100,58 +2211,6 @@ const CollegeDashboard = () => {
         featureName={verificationFeatureName}
       />
 
-      {/* Plans Modal */}
-      {showPlansModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="w-full max-w-2xl bg-white rounded-xl shadow-2xl overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="text-lg font-semibold text-gray-900">Choose a Plan</h3>
-              <button onClick={() => setShowPlansModal(false)} className="text-gray-500 hover:text-gray-700">✕</button>
-            </div>
-            <div className="p-4">
-              {loadingPlans ? (
-                <div className="text-gray-500">Loading plans...</div>
-              ) : availablePlans.length === 0 ? (
-                <div className="text-gray-500">No plans available.</div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {availablePlans.map(plan => (
-                    <div key={plan.id} className="rounded-lg border border-gray-200 p-4">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <div className="text-lg font-semibold text-gray-900">{plan.name}</div>
-                          <div className="text-sm text-gray-500 uppercase">{plan.billingPeriod}</div>
-                        </div>
-                        <div className="text-right text-gray-800 font-semibold">₹{(plan.priceCents/100).toFixed(2)}</div>
-                      </div>
-                      {plan.description && (
-                        <p className="text-sm text-gray-600 mt-2">{plan.description}</p>
-                      )}
-                      <div className="mt-3 text-sm grid grid-cols-2 gap-2">
-                        <div className="bg-gray-50 rounded-md p-2">
-                          <div className="text-xs text-gray-500">Requirements / mo</div>
-                          <div className="font-medium">{plan.maxRequirements ?? 'Unlimited'}</div>
-                        </div>
-                        <div className="bg-gray-50 rounded-md p-2">
-                          <div className="text-xs text-gray-500">Expert contacts / mo</div>
-                          <div className="font-medium">{plan.maxExpertContacts ?? 'Unlimited'}</div>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => subscribeToPlan(plan.id)}
-                        disabled={subscribingPlanId === plan.id}
-                        className="mt-4 w-full px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-                      >
-                        {subscribingPlanId === plan.id ? 'Subscribing...' : 'Subscribe'}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* View Requirement Page */}
       {showViewModal && viewingRequirement && (
@@ -2300,6 +2359,22 @@ const CollegeDashboard = () => {
         application={selectedApplication}
         onRatingSubmitted={handleRatingSubmitted}
       />
+
+      {/* Plan Limitation Modal */}
+      {(() => {
+        const limitationDetails = getCurrentLimitationDetails();
+        return (
+          <PlanLimitationModal
+            isOpen={showPlanLimitationModal}
+            onClose={handlePlanLimitationClose}
+            onUpgrade={handlePlanLimitationUpgrade}
+            limitationType={limitationType}
+            currentUsage={limitationDetails?.currentUsage || 0}
+            planLimit={limitationDetails?.planLimit || 0}
+            planName={limitationDetails?.planName || ''}
+          />
+        );
+      })()}
   </div>
 );
 };
@@ -3025,7 +3100,7 @@ const ProfileTab = ({
 };
 
 // Requirements Tab Component - Enhanced with form
-const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhone, onPostRequirement, showToast, setActiveTab, onView, onDelete, onRate, onToggleActive, requirements, setRequirements, refreshRequirements, totalRequirements, loading, loadingMore, hasMore, loadMoreRequirements }) => {
+const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhone, onPostRequirement, showToast, setActiveTab, onView, onDelete, onRate, onToggleActive, requirements, setRequirements, refreshRequirements, totalRequirements, loading, loadingMore, hasMore, loadMoreRequirements, onCreateRequirementClick }) => {
   // Check if user can access requirements creation
   const canAccessRequirements = () => {
     return user?.isEmailVerified || user?.isPhoneVerified;
@@ -3189,6 +3264,9 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
           onPostRequirement();
         }
         
+        // Refresh subscription data to update usage counts
+        await loadMySubscription();
+        
         // Show success message
         showToast('success', 'Requirement created successfully!');
         
@@ -3351,7 +3429,7 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
                 <h2 className="text-lg font-medium text-gray-900 mb-1">All Requirements ({totalRequirements})</h2>
               </div>
               <button 
-                onClick={() => setShowForm(true)}
+                onClick={() => onCreateRequirementClick(setShowForm)}
                 className="px-4 py-2 text-sm font-semibold transition-all duration-300 shadow-lg hover:shadow-xl bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-700 hover:to-cyan-700 rounded-md"
               >
                 Create requirement
@@ -3781,7 +3859,7 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
               <h3 className="text-lg font-medium text-gray-900 mb-2">No requirements yet</h3>
               <p className="text-gray-500 mb-6 text-sm">Create your first requirement to connect with experts</p>
               <button 
-                onClick={() => setShowForm(true)}
+                onClick={() => onCreateRequirementClick(setShowForm)}
                 className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white text-sm font-semibold hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 shadow-lg hover:shadow-xl rounded-md"
               >
                 Create requirement
@@ -4179,6 +4257,12 @@ const ExpertsTab = ({ user }) => {
   // Contact modal state
   const [showContactModal, setShowContactModal] = useState(false);
   const [selectedExpert, setSelectedExpert] = useState(null);
+  const [revealedContactDetails, setRevealedContactDetails] = useState(null);
+  const [revealedExpertIds, setRevealedExpertIds] = useState(() => {
+    // Load revealed expert IDs from localStorage on component mount
+    const saved = localStorage.getItem('revealedExpertIds');
+    return saved ? new Set(JSON.parse(saved)) : new Set();
+  });
   
   // Profile modal state
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -4186,6 +4270,20 @@ const ExpertsTab = ({ user }) => {
   // Handle contact expert
   const handleContactExpert = (expert) => {
     setSelectedExpert(expert);
+    
+    // Check if this expert has been revealed in current session
+    if (revealedExpertIds.has(expert.id)) {
+      // Expert was already revealed, show contact details
+      setRevealedContactDetails({
+        email: expert.user?.email,
+        phone: expert.user?.phone,
+        fullName: expert.user?.fullName
+      });
+    } else {
+      // Expert not revealed yet, show masked details
+      setRevealedContactDetails(null);
+    }
+    
     setShowContactModal(true);
   };
 
@@ -4199,6 +4297,7 @@ const ExpertsTab = ({ user }) => {
   const closeContactModal = () => {
     setShowContactModal(false);
     setSelectedExpert(null);
+    setRevealedContactDetails(null);
   };
 
   const closeProfileModal = () => {
@@ -4423,19 +4522,21 @@ const ExpertsTab = ({ user }) => {
                   </div>
 
                   {/* Rating - Compact */}
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center">
-                      {[...Array(5)].map((_, i) => (
-                        <Star 
-                          key={i} 
-                          className={`w-3 h-3 ${i < Math.floor(expert.averageRating || 0) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
-                        />
-                      ))}
+                  {expert.averageRating > 0 && (
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center">
+                        {[...Array(5)].map((_, i) => (
+                          <Star 
+                            key={i} 
+                            className={`w-3 h-3 ${i < Math.floor(expert.averageRating || 0) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
+                          />
+                        ))}
+                      </div>
+                      <span className="text-xs text-gray-500">
+                        {expert.averageRating.toFixed(1)}
+                      </span>
                     </div>
-                    <span className="text-xs text-gray-500">
-                      {expert.averageRating ? `${expert.averageRating.toFixed(1)}` : 'No ratings'}
-                    </span>
-                  </div>
+                  )}
 
                   {/* Hourly Rate - Compact */}
                   {expert.hourlyRate && (
@@ -4486,16 +4587,10 @@ const ExpertsTab = ({ user }) => {
 
                 {/* Action Buttons - Compact */}
                 <div className="px-4 pb-4">
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => handleContactExpert(expert)}
-                      className="flex-1 px-3 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-xs font-medium rounded-md transition-all duration-300 shadow-lg hover:shadow-xl"
-                    >
-                      Contact
-                    </button>
+                  <div className="flex justify-center">
                     <button
                       onClick={() => handleViewProfile(expert)}
-                      className="px-3 py-2 bg-white text-gray-700 text-xs font-medium rounded-md hover:bg-gray-50 transition-colors border border-gray-300 shadow-sm hover:shadow-md"
+                      className="px-6 py-2 bg-white text-gray-700 text-xs font-medium rounded-md hover:bg-gray-50 transition-colors border border-gray-300 shadow-sm hover:shadow-md"
                     >
                       View Profile
                     </button>
@@ -4604,19 +4699,82 @@ const ExpertsTab = ({ user }) => {
               {/* Contact Information */}
               <div className="p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
+                
+                {/* Show message if already revealed */}
+                {revealedContactDetails && (
+                  <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
+                    <div className="flex items-center">
+                      <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                      <span className="text-sm text-green-700 font-medium">Contact details already revealed</span>
+                    </div>
+                  </div>
+                )}
+                
                 <div className="space-y-3">
                 {/* Email */}
                   <div className="flex items-center space-x-3">
-                    <Mail className="w-4 h-4 text-blue-600" />
-                    <span className="text-sm text-gray-900">{selectedExpert.user?.email}</span>
+                    <Mail className="w-4 h-4 text-gray-500" />
+                    <span className="text-sm text-gray-700">
+                      {revealedContactDetails?.email || (selectedExpert.user?.email ? '••••••••••@•••' : 'Not provided')}
+                    </span>
                 </div>
 
                 {/* Phone */}
-                {selectedExpert.user?.phone && (
+                {(revealedContactDetails?.phone || selectedExpert.user?.phone) && (
                     <div className="flex items-center space-x-3">
-                      <Phone className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm text-gray-900">{selectedExpert.user?.phone}</span>
+                      <Phone className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm text-gray-700">
+                        {revealedContactDetails?.phone || '••••••••••'}
+                      </span>
                   </div>
+                )}
+                
+                {/* Single Reveal Button - only show if not revealed */}
+                {!revealedContactDetails && (
+                <div className="pt-3">
+                  <button
+                    onClick={async () => {
+                      try {
+                        const response = await apiService.revealExpertContact(selectedExpert.id);
+                        if (response.success && response.contactDetails) {
+                          const { email, phone, fullName } = response.contactDetails;
+                          
+                          // Store revealed contact details in state
+                          setRevealedContactDetails({
+                            email,
+                            phone,
+                            fullName
+                          });
+                          
+                          // Add expert ID to revealed set
+                          setRevealedExpertIds(prev => {
+                            const newSet = new Set([...prev, selectedExpert.id]);
+                            // Save to localStorage
+                            localStorage.setItem('revealedExpertIds', JSON.stringify([...newSet]));
+                            return newSet;
+                          });
+                          
+                          // Contact details revealed successfully
+                          // Refresh subscription data to show updated usage
+                          await loadMySubscription();
+                        }
+                      } catch (e) {
+                        console.error('Contact revelation error:', e);
+                        if (e.message && e.message.includes('Expert contact view limit reached')) {
+                          // Show plan limitation modal for expert contacts
+                          if (window.handleExpertContactLimit) {
+                            window.handleExpertContactLimit();
+                          }
+                        } else {
+                          alert(e.message || 'Unable to reveal contact. Please check your plan limits.');
+                        }
+                      }
+                    }}
+                    className="w-full px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-sm font-medium rounded-md transition-all duration-300 shadow-sm hover:shadow-md"
+                  >
+                    Reveal Contact Details
+                  </button>
+                </div>
                 )}
                 </div>
               </div>
@@ -4630,9 +4788,41 @@ const ExpertsTab = ({ user }) => {
                   Close
                 </button>
                 <button
-                  onClick={() => {
-                    const mailtoLink = `mailto:${selectedExpert.user?.email}?subject=Collaboration Opportunity&body=Hi ${selectedExpert.user?.fullName},%0A%0AI'm interested in collaborating with you for a project. Could you please let me know your availability and discuss the details?%0A%0ABest regards,`;
+                  onClick={async () => {
+                    try {
+                      const response = await apiService.revealExpertContact(selectedExpert.id);
+                      if (response.success && response.contactDetails) {
+                        const { email, fullName } = response.contactDetails;
+                        if (email) {
+                          const mailtoLink = `mailto:${email}?subject=Collaboration Opportunity&body=Hi ${fullName},%0A%0AI'm interested in collaborating with you for a project. Could you please let me know your availability and discuss the details?%0A%0ABest regards,`;
                     window.open(mailtoLink, '_blank');
+                          alert('Contact details revealed! Email client opened.');
+                        } else {
+                          alert('Email not available');
+                        }
+                        
+                        // Add expert ID to revealed set
+                        setRevealedExpertIds(prev => {
+                          const newSet = new Set([...prev, selectedExpert.id]);
+                          // Save to localStorage
+                          localStorage.setItem('revealedExpertIds', JSON.stringify([...newSet]));
+                          return newSet;
+                        });
+                        
+                        // Contact details revealed successfully
+                        // Note: Subscription usage will update when user navigates or refreshes
+                      }
+                    } catch (e) {
+                      console.error('Contact revelation error:', e);
+                      if (e.message && e.message.includes('Expert contact view limit reached')) {
+                        // Show plan limitation modal for expert contacts
+                        if (window.handleExpertContactLimit) {
+                          window.handleExpertContactLimit();
+                        }
+                      } else {
+                        alert(e.message || 'Unable to reveal contact. Please check your plan limits.');
+                      }
+                    }
                   }}
                   className="px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-medium rounded-md transition-all duration-300 shadow-lg hover:shadow-xl"
                 >
@@ -4867,16 +5057,56 @@ const ExpertsTab = ({ user }) => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Contact */}
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-3">Contact Information</h3>
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-lg font-semibold text-gray-900">Contact Information</h3>
+                        {!revealedExpertIds.has(selectedExpert.id) && (
+                          <button
+                            onClick={async () => {
+                              try {
+                                const response = await apiService.revealExpertContact(selectedExpert.id);
+                                if (response.success && response.contactDetails) {
+                                  // Add expert ID to revealed set
+                                  setRevealedExpertIds(prev => {
+                                    const newSet = new Set([...prev, selectedExpert.id]);
+                                    // Save to localStorage
+                                    localStorage.setItem('revealedExpertIds', JSON.stringify([...newSet]));
+                                    return newSet;
+                                  });
+                                  
+                                    // Refresh subscription data to show updated usage
+                                    await loadMySubscription();
+                                }
+                              } catch (e) {
+                                console.error('Contact revelation error:', e);
+                                if (e.message && e.message.includes('Expert contact view limit reached')) {
+                                  // Show plan limitation modal for expert contacts
+                                  if (window.handleExpertContactLimit) {
+                                    window.handleExpertContactLimit();
+                                  }
+                                } else {
+                                  alert(e.message || 'Unable to reveal contact. Please check your plan limits.');
+                                }
+                              }
+                            }}
+                            className="text-sm text-indigo-600 hover:text-indigo-800 font-medium px-3 py-1 border border-indigo-300 rounded-md hover:bg-indigo-50 transition-colors"
+                          >
+                            Reveal
+                          </button>
+                        )}
+                      </div>
                       <div className="space-y-2">
                         <div className="flex items-center space-x-3 p-2">
                           <Mail className="w-4 h-4 text-gray-500" />
-                          <span className="text-sm text-gray-700">{selectedExpert.user?.email}</span>
+                          <span className="text-sm text-gray-700">
+                            {revealedExpertIds.has(selectedExpert.id) ? selectedExpert.user?.email : '••••••••••@•••'}
+                          </span>
                         </div>
                         {selectedExpert.user?.phone && (
                           <div className="flex items-center space-x-3 p-2">
                             <Phone className="w-4 h-4 text-gray-500" />
-                            <span className="text-sm text-gray-700">{selectedExpert.user?.phone}</span>
+                            <span className="text-sm text-gray-700">
+                              {revealedExpertIds.has(selectedExpert.id) ? selectedExpert.user?.phone : '••••••••••'}
+                            </span>
                           </div>
                         )}
                         {selectedExpert.website && (
@@ -4927,10 +5157,20 @@ const ExpertsTab = ({ user }) => {
                   </button>
                   <button
                     onClick={() => {
-                      closeProfileModal();
-                      handleContactExpert(selectedExpert);
+                      if (revealedExpertIds.has(selectedExpert.id) && selectedExpert.user?.email) {
+                        const subject = `Expert Inquiry - ${selectedExpert.user.fullName}`;
+                        const body = `Dear ${selectedExpert.user.fullName},\n\nI hope this email finds you well. I am reaching out regarding your expertise.\n\nBest regards,`;
+                        const mailtoLink = `mailto:${selectedExpert.user.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                        window.open(mailtoLink);
+                        closeProfileModal();
+                      }
                     }}
-                    className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-md transition-all duration-300 shadow-lg hover:shadow-xl"
+                    disabled={!revealedExpertIds.has(selectedExpert.id)}
+                    className={`px-4 py-2 rounded-md transition-all duration-300 ${
+                      revealedExpertIds.has(selectedExpert.id)
+                        ? 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-lg hover:shadow-xl'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    }`}
                   >
                     Contact Expert
                   </button>
@@ -5036,7 +5276,7 @@ const RatingsTab = ({ user }) => {
         </div>
     </div>
   </div>
-);
+  );
 };
 
 export default CollegeDashboard;

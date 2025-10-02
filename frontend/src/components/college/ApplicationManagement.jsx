@@ -27,7 +27,7 @@ import ApplicationTable from './ApplicationTable';
 import { useAuth } from '../../contexts/AuthContext';
 
 
-const ApplicationManagement = ({ requirementId }) => {
+const ApplicationManagement = ({ requirementId, onRefreshSubscription }) => {
   const { user } = useAuth();
   const [selectedRequirement, setSelectedRequirement] = useState(null);
   const [showAllApplications, setShowAllApplications] = useState(true);
@@ -501,44 +501,18 @@ const ApplicationManagement = ({ requirementId }) => {
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-3">Contact Information</h3>
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between p-2">
+                      <div className="flex items-center p-2">
                         <div className="flex items-center space-x-3">
                           <Mail className="w-4 h-4 text-gray-500" />
-                          <span className="text-sm text-gray-700">{selectedExpert.email ? '••••••••••@•••' : 'Not provided'}</span>
+                          <span className="text-sm text-gray-700">{selectedExpert.email || 'Not provided'}</span>
                         </div>
-                        <button
-                          onClick={async () => {
-                            try {
-                              await apiService.revealExpertContact(selectedExpert.id);
-                              window.location.href = `mailto:${selectedExpert.email}`;
-                            } catch (e) {
-                              alert(e.message || 'Unable to reveal contact. Please upgrade your plan.');
-                            }
-                          }}
-                          className="text-sm text-indigo-600 hover:text-indigo-800"
-                        >
-                          Reveal
-                        </button>
                       </div>
                       {selectedExpert.phone && (
-                        <div className="flex items-center justify-between p-2">
+                        <div className="flex items-center p-2">
                           <div className="flex items-center space-x-3">
                             <Phone className="w-4 h-4 text-gray-500" />
-                            <span className="text-sm text-gray-700">••••••••••</span>
+                            <span className="text-sm text-gray-700">{selectedExpert.phone}</span>
                           </div>
-                          <button
-                            onClick={async () => {
-                              try {
-                                await apiService.revealExpertContact(selectedExpert.id);
-                                alert(`Phone: ${selectedExpert.phone}`);
-                              } catch (e) {
-                                alert(e.message || 'Unable to reveal contact. Please upgrade your plan.');
-                              }
-                            }}
-                            className="text-sm text-indigo-600 hover:text-indigo-800"
-                          >
-                            Reveal
-                          </button>
                         </div>
                       )}
                     </div>
@@ -581,7 +555,7 @@ const ApplicationManagement = ({ requirementId }) => {
                     const mailtoLink = `mailto:${selectedExpert.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
                     window.open(mailtoLink);
                   }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-md transition-all duration-200 shadow-sm hover:shadow-md"
                 >
                   Contact Expert
                 </button>

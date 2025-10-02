@@ -197,6 +197,7 @@ model subscriptionusage {
   periodEnd         DateTime
   usedRequirements  Int                          @default(0)
   usedExpertContacts Int                          @default(0)
+  revealedExpertIds Json?                        // Array of expert IDs that have been revealed
   createdAt         DateTime                     @default(now())
   updatedAt         DateTime                     @default(now())
 
