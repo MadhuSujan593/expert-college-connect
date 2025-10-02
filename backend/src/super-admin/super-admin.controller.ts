@@ -138,6 +138,11 @@ export class SuperAdminController {
     return this.superAdminService.listPlans();
   }
 
+  @Get('plans/active')
+  async listActivePlans() {
+    return this.superAdminService.listActivePlans();
+  }
+
   @Post('plans')
   async createPlan(@Body() dto: CreatePlanDto) {
     return this.superAdminService.createPlan(dto);
@@ -192,5 +197,17 @@ export class SuperAdminController {
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
   ) {
     return this.superAdminService.listPlanSubscribers(planId, page, limit);
+  }
+
+  @Get('invoices')
+  async getInvoiceDetails(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+    @Query('status') status?: string,
+    @Query('planId') planId?: string,
+    @Query('search') search?: string,
+    @Query('paymentStatus') paymentStatus?: string,
+  ) {
+    return this.superAdminService.getInvoiceDetails(page, limit, status, planId, search, paymentStatus);
   }
 }

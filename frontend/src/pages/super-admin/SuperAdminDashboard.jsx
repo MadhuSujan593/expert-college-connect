@@ -67,11 +67,26 @@ const SuperAdminDashboard = () => {
     isLoading: false
   });
 
+  // Invoice details state
+  const [invoices, setInvoices] = useState([]);
+  const [invoicePagination, setInvoicePagination] = useState({});
+  const [invoiceFilters, setInvoiceFilters] = useState({
+    status: '',
+    planId: '',
+    search: '',
+    paymentStatus: '',
+    page: 1,
+    limit: 20
+  });
+  const [invoiceStats, setInvoiceStats] = useState(null);
+  const [invoiceLoading, setInvoiceLoading] = useState(false);
+
   // Navigation tabs
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Home },
     { id: 'users', label: 'User Management', icon: Users },
     { id: 'plans', label: 'Plans', icon: BadgeDollarSign },
+    { id: 'invoices', label: 'Invoice Details', icon: FileText },
   ];
 
   useEffect(() => {
@@ -83,9 +98,31 @@ const SuperAdminDashboard = () => {
       loadUsers();
     }
     if (activeTab === 'plans') {
-      loadPlans();
+      loadPlans(); // Load all plans (active + inactive) for management
+    }
+    if (activeTab === 'invoices') {
+      loadActivePlans(); // Load only active plans for dropdown
+      loadInvoiceData();
     }
   }, [filters, activeTab]);
+
+  // Effect for invoice filters (except search)
+  useEffect(() => {
+    if (activeTab === 'invoices') {
+      loadInvoiceData();
+    }
+  }, [invoiceFilters.status, invoiceFilters.planId, invoiceFilters.paymentStatus, invoiceFilters.page]);
+
+  // Debounced search effect for invoices
+  useEffect(() => {
+    if (activeTab === 'invoices') {
+      const timeoutId = setTimeout(() => {
+        loadInvoiceData();
+      }, 500); // 500ms delay for search
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [invoiceFilters.search]);
 
   const loadDashboardData = async () => {
     try {
@@ -159,6 +196,36 @@ const SuperAdminDashboard = () => {
       console.error('Failed to load plans', e);
     } finally {
       setPlansLoading(false);
+    }
+  };
+
+  const loadActivePlans = async () => {
+    try {
+      const data = await apiService.adminListActivePlans();
+      setPlans(data);
+    } catch (e) {
+      console.error('Failed to load active plans', e);
+    }
+  };
+
+  const loadInvoiceData = async () => {
+    try {
+      setInvoiceLoading(true);
+      const response = await apiService.getInvoiceDetails(
+        invoiceFilters.page,
+        invoiceFilters.limit,
+        invoiceFilters.status || undefined,
+        invoiceFilters.planId || undefined,
+        invoiceFilters.search || undefined,
+        invoiceFilters.paymentStatus || undefined
+      );
+      setInvoices(response.subscriptions);
+      setInvoicePagination(response.pagination);
+      setInvoiceStats(response.stats);
+    } catch (error) {
+      console.error('Failed to load invoice data:', error);
+    } finally {
+      setInvoiceLoading(false);
     }
   };
 
@@ -468,6 +535,19 @@ const SuperAdminDashboard = () => {
                   label="Plans"
                   icon={BadgeDollarSign}
                   isActive={activeTab === 'plans'}
+                  onClick={handleTabChange}
+                />
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: 0.25 }}
+              >
+                <SidebarItem
+                  id="invoices"
+                  label="Invoice Details"
+                  icon={FileText}
+                  isActive={activeTab === 'invoices'}
                   onClick={handleTabChange}
                 />
               </motion.div>
@@ -1094,6 +1174,282 @@ const SuperAdminDashboard = () => {
                     </div>
                   </div>
                 )}
+              </motion.div>
+            )}
+
+            {activeTab === 'invoices' && (
+              <motion.div
+                key="invoices"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                {/* Invoice Stats */}
+                {invoiceStats && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 }}
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-blue-100 text-sm font-medium">Total Subscriptions</p>
+                          <p className="text-2xl font-bold mt-1">{invoiceStats.totalSubscriptions}</p>
+                        </div>
+                        <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                          <FileText className="w-6 h-6" />
+                        </div>
+                      </div>
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white shadow-lg"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-green-100 text-sm font-medium">Total Revenue</p>
+                          <p className="text-2xl font-bold mt-1">₹{invoiceStats.totalRevenue.toLocaleString()}</p>
+                        </div>
+                        <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                          <TrendingUp className="w-6 h-6" />
+                        </div>
+                      </div>
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white shadow-lg"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-purple-100 text-sm font-medium">Active Subscriptions</p>
+                          <p className="text-2xl font-bold mt-1">
+                            {invoices.filter(inv => inv.status === 'ACTIVE').length}
+                          </p>
+                        </div>
+                        <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                          <UserCheck className="w-6 h-6" />
+                        </div>
+                      </div>
+                    </motion.div>
+                  </div>
+                )}
+
+                {/* Filters */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Subscription Status</label>
+                      <select
+                        value={invoiceFilters.status}
+                        onChange={(e) => setInvoiceFilters(prev => ({ ...prev, status: e.target.value, page: 1 }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-colors"
+                      >
+                        <option value="">All Status</option>
+                        <option value="ACTIVE">Active</option>
+                        <option value="CANCELED">Canceled</option>
+                        <option value="EXPIRED">Expired</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Payment Status</label>
+                      <select
+                        value={invoiceFilters.paymentStatus || ''}
+                        onChange={(e) => setInvoiceFilters(prev => ({ ...prev, paymentStatus: e.target.value, page: 1 }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-colors"
+                      >
+                        <option value="">All Payments</option>
+                        <option value="COMPLETED">Completed</option>
+                        <option value="PENDING">Pending</option>
+                        <option value="FAILED">Failed</option>
+                        <option value="NO_PAYMENT">No Payment</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Plan</label>
+                      <select
+                        value={invoiceFilters.planId}
+                        onChange={(e) => setInvoiceFilters(prev => ({ ...prev, planId: e.target.value, page: 1 }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-colors"
+                      >
+                        <option value="">All Plans</option>
+                        {plans.map(plan => (
+                          <option key={plan.id} value={plan.id}>{plan.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                        <input
+                          type="text"
+                          placeholder="Search users or plans..."
+                          value={invoiceFilters.search}
+                          onChange={(e) => setInvoiceFilters(prev => ({ ...prev, search: e.target.value, page: 1 }))}
+                          className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-colors"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Invoice Table */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                  <div className="px-6 py-4 border-b border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900">Subscription Invoices</h3>
+                  </div>
+                  
+                  {invoiceLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-blue-600"></div>
+                      <span className="ml-3 text-gray-600">Loading invoices...</span>
+                    </div>
+                  ) : invoices.length === 0 ? (
+                    <div className="text-center py-12">
+                      <FileText className="mx-auto h-12 w-12 text-gray-400" />
+                      <h3 className="mt-2 text-sm font-medium text-gray-900">No invoices found</h3>
+                      <p className="mt-1 text-sm text-gray-500">Try adjusting your search criteria.</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan Price</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount Paid</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Status</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {invoices.map((invoice) => (
+                            <tr key={invoice.id} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center">
+                                  <div className="flex-shrink-0 h-10 w-10">
+                                    <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center">
+                                      <span className="text-sm font-medium text-white">
+                                        {invoice.user.fullName.charAt(0).toUpperCase()}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="ml-4">
+                                    <div className="text-sm font-medium text-gray-900">{invoice.user.fullName}</div>
+                                    <div className="text-sm text-gray-500">{invoice.user.email}</div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm text-gray-900">{invoice.plan.name}</div>
+                                <div className="text-sm text-gray-500">{invoice.plan.audience}</div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                  invoice.status === 'ACTIVE' ? 'bg-green-100 text-green-800' :
+                                  invoice.status === 'CANCELED' ? 'bg-red-100 text-red-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {invoice.status}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm text-gray-900">₹{(invoice.plan.priceCents / 100).toLocaleString()}</div>
+                                <div className="text-sm text-gray-500">{invoice.plan.billingPeriod}</div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm text-gray-900">₹{invoice.totalPaid.toLocaleString()}</div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                  invoice.paymentStatus === 'COMPLETED' ? 'bg-green-100 text-green-800' :
+                                  invoice.paymentStatus === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                                  invoice.paymentStatus === 'FAILED' ? 'bg-red-100 text-red-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {invoice.paymentStatus === 'NO_PAYMENT' ? 'No Payment' : invoice.paymentStatus}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm text-gray-900">
+                                  {new Date(invoice.startsAt).toLocaleDateString()}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  {invoice.endsAt ? new Date(invoice.endsAt).toLocaleDateString() : 'N/A'}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {new Date(invoice.createdAt).toLocaleDateString()}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <button
+                                  onClick={() => {
+                                    // You can add a modal to show detailed invoice information
+                                    console.log('View invoice details:', invoice);
+                                  }}
+                                  className="text-blue-600 hover:text-blue-900 mr-3"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {/* Pagination */}
+                  {invoicePagination && invoicePagination.pages > 1 && (
+                    <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm text-gray-700">
+                          Showing {((invoicePagination.page - 1) * invoicePagination.limit) + 1} to{' '}
+                          {Math.min(invoicePagination.page * invoicePagination.limit, invoicePagination.total)} of{' '}
+                          {invoicePagination.total} results
+                        </div>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => setInvoiceFilters(prev => ({ ...prev, page: prev.page - 1 }))}
+                            disabled={invoicePagination.page === 1}
+                            className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Previous
+                          </button>
+                          <span className="px-3 py-1 text-sm text-gray-700">
+                            Page {invoicePagination.page} of {invoicePagination.pages}
+                          </span>
+                          <button
+                            onClick={() => setInvoiceFilters(prev => ({ ...prev, page: prev.page + 1 }))}
+                            disabled={invoicePagination.page === invoicePagination.pages}
+                            className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Next
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </motion.div>
             )}
 

@@ -480,6 +480,13 @@ export class SuperAdminService {
     });
   }
 
+  async listActivePlans() {
+    return this.prisma.subscriptionplan.findMany({
+      where: { isActive: true },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
+
   async createPlan(dto: CreatePlanDto) {
     try {
       return await this.prisma.subscriptionplan.create({
@@ -655,6 +662,160 @@ export class SuperAdminService {
         limit,
         total,
         pages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  /**
+   * Get invoice details with subscription and payment information
+   */
+  async getInvoiceDetails(page: number, limit: number, status?: string, planId?: string, search?: string, paymentStatus?: string) {
+    const skip = (page - 1) * limit;
+    
+    // Build where clause
+    const where: any = {};
+    
+    // Add non-search filters
+    if (status) {
+      where.status = status;
+    }
+    
+    if (planId) {
+      where.planId = planId;
+    }
+    
+    // Handle search - combine with other filters using AND
+    if (search) {
+      where.AND = [
+        {
+          OR: [
+            { user: { fullName: { contains: search } } },
+            { user: { email: { contains: search } } },
+            { plan: { name: { contains: search } } },
+          ]
+        }
+      ];
+      
+      // Add existing filters to AND array
+      if (status) {
+        where.AND.push({ status: status });
+      }
+      if (planId) {
+        where.AND.push({ planId: planId });
+      }
+      
+      // Remove individual filters since they're now in AND
+      delete where.status;
+      delete where.planId;
+    }
+
+    // First, get all subscriptions that match the basic filters
+    const allSubscriptions = await this.prisma.subscription.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            fullName: true,
+            role: true,
+            phone: true,
+            createdAt: true,
+          },
+        },
+        plan: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            audience: true,
+            billingPeriod: true,
+            priceCents: true,
+            currency: true,
+            maxRequirements: true,
+            maxExpertContacts: true,
+          },
+        },
+        usages: {
+          orderBy: { periodStart: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    // Get payment information for each subscription
+    const subscriptionsWithPayments = await Promise.all(
+      allSubscriptions.map(async (subscription) => {
+        // Find payment records for this subscription
+        const payments = await this.prisma.payment.findMany({
+          where: {
+            userId: subscription.userId,
+            createdAt: {
+              gte: subscription.startsAt,
+              lte: subscription.endsAt || new Date(),
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        });
+
+        // Calculate total amount paid
+        const totalPaid = payments
+          .filter(p => p.status === 'COMPLETED')
+          .reduce((sum, p) => sum + Number(p.amount), 0);
+
+        // Get the most recent payment for this subscription
+        const lastPayment = payments.find(p => p.status === 'COMPLETED') || payments[0] || null;
+
+        return {
+          ...subscription,
+          payments,
+          totalPaid,
+          paymentCount: payments.length,
+          lastPayment,
+          // Add payment status for this subscription
+          paymentStatus: payments.length > 0 ? payments[0].status : 'NO_PAYMENT',
+        };
+      })
+    );
+
+    // Filter by payment status if specified
+    let filteredSubscriptions = subscriptionsWithPayments;
+    if (paymentStatus) {
+      filteredSubscriptions = subscriptionsWithPayments.filter(sub => {
+        if (paymentStatus === 'NO_PAYMENT') {
+          return sub.paymentStatus === 'NO_PAYMENT';
+        }
+        return sub.paymentStatus === paymentStatus;
+      });
+    }
+
+    // Apply pagination to filtered results
+    const totalFiltered = filteredSubscriptions.length;
+    const paginatedSubscriptions = filteredSubscriptions.slice(skip, skip + limit);
+
+    // Calculate total revenue from completed payments
+    const userIds = filteredSubscriptions.map(sub => sub.userId);
+    
+    const revenueQuery = await this.prisma.payment.aggregate({
+      where: {
+        status: 'COMPLETED',
+        userId: { in: userIds },
+      },
+      _sum: { amount: true },
+    });
+
+    return {
+      subscriptions: paginatedSubscriptions,
+      pagination: {
+        page,
+        limit,
+        total: totalFiltered,
+        pages: Math.ceil(totalFiltered / limit),
+      },
+      stats: {
+        totalSubscriptions: totalFiltered,
+        totalRevenue: Number(revenueQuery._sum?.amount || 0),
       },
     };
   }

@@ -905,6 +905,12 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  async adminListActivePlans() {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}/super-admin/plans/active`, { method: 'GET', headers });
+    return this.handleResponse(response);
+  }
+
   async adminCreatePlan(data) {
     const headers = await this.getAuthHeaders();
     const response = await fetch(`${this.baseURL}/super-admin/plans`, {
@@ -988,6 +994,25 @@ class ApiService {
     const params = new URLSearchParams({ page: String(page), limit: String(limit) });
     const headers = await this.getAuthHeaders();
     const response = await fetch(`${this.baseURL}/super-admin/plans/${planId}/subscribers?${params.toString()}`, {
+      method: 'GET',
+      headers,
+    });
+    return this.handleResponse(response);
+  }
+
+  async getInvoiceDetails(page = 1, limit = 20, status, planId, search, paymentStatus) {
+    const headers = await this.getAuthHeaders();
+    const params = new URLSearchParams({ 
+      page: page.toString(), 
+      limit: limit.toString() 
+    });
+    
+    if (status) params.append('status', status);
+    if (planId) params.append('planId', planId);
+    if (search) params.append('search', search);
+    if (paymentStatus) params.append('paymentStatus', paymentStatus);
+    
+    const response = await fetch(`${this.baseURL}/super-admin/invoices?${params.toString()}`, {
       method: 'GET',
       headers,
     });
