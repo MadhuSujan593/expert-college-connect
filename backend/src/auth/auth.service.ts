@@ -299,10 +299,14 @@ export class AuthService {
     const { refreshToken } = refreshTokenDto;
 
     try {
+      console.log('🔄 Auth Service - Starting token refresh process...');
+      
       // Verify refresh token
       const payload = await this.jwtService.verifyAsync(refreshToken, {
         secret: this.configService.get('JWT_REFRESH_SECRET'),
       });
+
+      console.log('✅ Auth Service - Refresh token verified for user:', payload.sub);
 
       // Check if refresh token exists and is not revoked
       const tokenRecord = await this.prisma.refreshtoken.findFirst({
@@ -315,8 +319,11 @@ export class AuthService {
       });
 
       if (!tokenRecord) {
+        console.log('❌ Auth Service - Refresh token not found or expired');
         throw new UnauthorizedException('Invalid refresh token');
       }
+
+      console.log('✅ Auth Service - Refresh token record found, generating new tokens...');
 
       // Generate new tokens
       const tokens = await this.generateTokens(payload.sub);
@@ -327,8 +334,12 @@ export class AuthService {
         data: { isRevoked: true }
       });
 
+      console.log('✅ Auth Service - Token refresh completed successfully');
+      console.log('🆕 New access token expires at:', new Date(JSON.parse(atob(tokens.accessToken.split('.')[1])).exp * 1000).toLocaleTimeString());
+
       return tokens;
     } catch (error) {
+      console.log('❌ Auth Service - Token refresh failed:', error.message);
       throw new UnauthorizedException('Invalid refresh token');
     }
   }
@@ -743,8 +754,8 @@ export class AuthService {
       const payload = { sub: userId, type: 'access' };
       const refreshPayload = { sub: userId, type: 'refresh' };
 
-      const jwtExpiresIn = this.configService.get('JWT_EXPIRES_IN', '2h');
-      const refreshExpiresIn = this.configService.get('JWT_REFRESH_EXPIRES_IN', '7d');
+      const jwtExpiresIn = this.configService.get('JWT_EXPIRES_IN', '3m'); // TESTING: 3 minutes
+      const refreshExpiresIn = this.configService.get('JWT_REFRESH_EXPIRES_IN', '5m'); // TESTING: 5 minutes
       
       
       const [accessToken, refreshToken] = await Promise.all([
@@ -764,7 +775,7 @@ export class AuthService {
           id: uuidv4(),
           userId,
           token: refreshToken,
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+          expiresAt: new Date(Date.now() + 5 * 60 * 1000), // TESTING: 5 minutes to match JWT_REFRESH_EXPIRES_IN
           updatedAt: new Date(),
         },
       });
@@ -782,9 +793,9 @@ export class AuthService {
   private async createSession(userId: string, token: string) {
     try {
       
-      // Get session expiration from config or default to match token expiration
-      const sessionExpiration = this.configService.get('JWT_EXPIRES_IN', '2h');
-      let expiresInMs = 2 * 60 * 60 * 1000; // Default 2 hours to match token expiration
+      // Get session expiration from config or default to match refresh token expiration
+      const sessionExpiration = this.configService.get('JWT_REFRESH_EXPIRES_IN', '5m'); // TESTING: 5 minutes
+      let expiresInMs = 5 * 60 * 1000; // TESTING: 5 minutes to match refresh token expiration
       
       // Parse the expiration time
       if (sessionExpiration.includes('h')) {

@@ -37,12 +37,11 @@ export const AuthProvider = ({ children }) => {
       setCheckingAuth(true);
       setLoading(true);
       
-      // Check if we have a valid token
-      const isAuth = apiService.isAuthenticated();
-      console.log('🔑 Is authenticated check:', isAuth);
+      // Check if we have a valid token (this will trigger refresh if needed)
+      const token = await apiService.getValidToken();
+      const isAuth = !!token;
       
       if (!isAuth) {
-        console.log('❌ No valid token found, setting unauthenticated');
         setUser(null);
         setIsAuthenticated(false);
         return;
@@ -82,19 +81,15 @@ export const AuthProvider = ({ children }) => {
 
   const validateToken = useCallback(async () => {
     if (checkingAuth) {
-      console.log('🔒 Token validation already in progress, skipping...');
       return;
     }
     
     try {
-      console.log('🔄 Validating token...');
       setCheckingAuth(true);
       
       // This will automatically refresh the token if needed
       await apiService.getProfile();
-      console.log('✅ Token validation successful');
     } catch (error) {
-      console.error('❌ Token validation failed:', error);
       handleAuthFailure();
     } finally {
       setCheckingAuth(false);
@@ -220,35 +215,12 @@ export const AuthProvider = ({ children }) => {
     return () => clearInterval(interval);
   }, [initialized, checkingAuth, isAuthenticated, user, checkAuthStatus, validateToken]); // Include memoized functions
 
-  // Auto-logout on inactivity (2 hours)
+  // Auto-logout on inactivity (disabled for better UX)
+  // Removed inactivity logout - refresh token expiration (7 days) provides sufficient security
+  // Users can stay logged in as long as they're active within 7 days
   useEffect(() => {
-    if (isAuthenticated) {
-      let inactivityTimer;
-      
-      const resetTimer = () => {
-        clearTimeout(inactivityTimer);
-        // Logout after 2 hours of inactivity
-        inactivityTimer = setTimeout(() => {
-          console.log('🕐 Auto-logout due to inactivity (2 hours)');
-          logout();
-        }, 2 * 60 * 60 * 1000); // 2 hours
-      };
-
-      // Reset timer on user activity
-      const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
-      events.forEach(event => {
-        document.addEventListener(event, resetTimer, true);
-      });
-
-      resetTimer(); // Start the timer
-
-      return () => {
-        clearTimeout(inactivityTimer);
-        events.forEach(event => {
-          document.removeEventListener(event, resetTimer, true);
-        });
-      };
-    }
+    // Inactivity logout disabled for better user experience
+    // The 7-day refresh token expiration provides adequate security
   }, [isAuthenticated, logout]);
 
   const value = useMemo(() => ({

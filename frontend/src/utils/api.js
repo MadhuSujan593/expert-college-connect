@@ -103,6 +103,51 @@ class ApiService {
     }
   }
 
+  // Check if token will expire soon (within 1 minute for testing)
+  isTokenExpiringSoon(token) {
+    if (!token) return true;
+    
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const currentTime = Date.now() / 1000;
+      const oneMinuteFromNow = currentTime + (1 * 60); // TESTING: 1 minute in seconds
+      const willExpireSoon = payload.exp < oneMinuteFromNow;
+      
+      if (willExpireSoon) {
+        const timeLeft = Math.round(payload.exp - currentTime);
+        console.log(`⏰ Token expires in ${timeLeft} seconds - will refresh soon`);
+      }
+      
+      return willExpireSoon;
+    } catch (error) {
+      console.log('❌ Token parsing error:', error.message);
+      return true;
+    }
+  }
+
+  // TESTING: Force token refresh for testing purposes
+  async forceTokenRefresh() {
+    console.log('🧪 TESTING: Forcing token refresh...');
+    const refreshToken = localStorage.getItem('refreshToken');
+    
+    if (refreshToken) {
+      try {
+        console.log('🔄 TESTING: Manually refreshing token...');
+        const response = await this.refreshToken(refreshToken);
+        if (response.accessToken) {
+          this.setTokens(response.accessToken, response.refreshToken || refreshToken);
+          console.log('✅ TESTING: Manual refresh successful');
+          console.log('🆕 New token expires at:', new Date(JSON.parse(atob(response.accessToken.split('.')[1])).exp * 1000).toLocaleTimeString());
+          return true;
+        }
+      } catch (error) {
+        console.log('❌ TESTING: Manual refresh failed:', error.message);
+        return false;
+      }
+    }
+    return false;
+  }
+
   // Check if user is authenticated
   isAuthenticated() {
     const token = localStorage.getItem('accessToken');
@@ -185,32 +230,38 @@ class ApiService {
   async getValidToken() {
     let token = localStorage.getItem('accessToken');
     
-    // Check if token is expired
-    if (this.isTokenExpired(token)) {
+    // If no token, try to refresh
+    if (!token) {
       const refreshToken = localStorage.getItem('refreshToken');
-      
-      if (refreshToken) {
+      if (refreshToken && !this.isTokenExpired(refreshToken)) {
         try {
-          // Try to refresh the token
           const response = await this.refreshToken(refreshToken);
           if (response.accessToken) {
             this.setTokens(response.accessToken, response.refreshToken || refreshToken);
-            token = response.accessToken;
-          } else {
-            // Refresh failed, redirect to login
-            await this.handleUnauthorized();
-            return null;
+            return response.accessToken;
           }
         } catch (error) {
-          // Refresh failed, redirect to login
-          await this.handleUnauthorized();
-          return null;
+          // Refresh failed
         }
-      } else {
-        // No refresh token, redirect to login
-        await this.handleUnauthorized();
-        return null;
       }
+      return null;
+    }
+    
+    // If token is expired, try to refresh
+    if (this.isTokenExpired(token)) {
+      const refreshToken = localStorage.getItem('refreshToken');
+      if (refreshToken && !this.isTokenExpired(refreshToken)) {
+        try {
+          const response = await this.refreshToken(refreshToken);
+          if (response.accessToken) {
+            this.setTokens(response.accessToken, response.refreshToken || refreshToken);
+            return response.accessToken;
+          }
+        } catch (error) {
+          // Refresh failed
+        }
+      }
+      return null;
     }
     
     return token;
