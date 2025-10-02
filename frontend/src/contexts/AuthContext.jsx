@@ -4,36 +4,38 @@ import apiService from '../utils/api';
 const AuthContext = createContext();
 
 export const useAuth = () => {
-  console.log('useAuth hook called');
   const context = useContext(AuthContext);
-  console.log('AuthContext value:', context);
   
   if (!context) {
-    console.error('useAuth called outside of AuthProvider');
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };
 
 export const AuthProvider = ({ children }) => {
-  console.log('🔄 AuthProvider rendering, children:', children);
-  
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(false);
 
-  console.log('🔄 Current state:', { user: !!user, loading, isAuthenticated, initialized, checkingAuth });
+  const handleAuthFailure = useCallback(() => {
+    apiService.clearTokens();
+    setUser(null);
+    setIsAuthenticated(false);
+    
+    // Redirect to login if not already there
+    if (window.location.pathname !== '/login') {
+      window.location.href = '/login';
+    }
+  }, []);
 
   const checkAuthStatus = useCallback(async () => {
     if (checkingAuth) {
-      console.log('🔒 Auth check already in progress, skipping...');
       return;
     }
     
     try {
-      console.log('🔍 Checking authentication status...');
       setCheckingAuth(true);
       setLoading(true);
       
@@ -48,9 +50,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       // Verify token by fetching user profile
-      console.log('👤 Fetching user profile...');
       const userProfile = await apiService.getProfile();
-      console.log('✅ User profile loaded:', userProfile);
       
       // Also check localStorage for updated user data (e.g., after email verification)
       const storedUser = localStorage.getItem('user');
@@ -58,7 +58,6 @@ export const AuthProvider = ({ children }) => {
         const localUser = JSON.parse(storedUser);
         // Merge localStorage user data with API response, prioritizing API data
         const mergedUser = { ...localUser, ...userProfile };
-        console.log('🔄 Merged user data:', mergedUser);
         setUser(mergedUser);
         // Update localStorage with merged data
         localStorage.setItem('user', JSON.stringify(mergedUser));
@@ -70,14 +69,13 @@ export const AuthProvider = ({ children }) => {
       
       setIsAuthenticated(true);
     } catch (error) {
-      console.error('❌ Auth check failed:', error);
       // Token might be expired or invalid
       handleAuthFailure();
     } finally {
       setLoading(false);
       setCheckingAuth(false);
     }
-  }, [checkingAuth]);
+  }, [checkingAuth, handleAuthFailure]);
 
   const validateToken = useCallback(async () => {
     if (checkingAuth) {
@@ -94,18 +92,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setCheckingAuth(false);
     }
-  }, [checkingAuth]);
-
-  const handleAuthFailure = useCallback(() => {
-    apiService.clearTokens();
-    setUser(null);
-    setIsAuthenticated(false);
-    
-    // Redirect to login if not already there
-    if (window.location.pathname !== '/login') {
-      window.location.href = '/login';
-    }
-  }, []);
+  }, [checkingAuth, handleAuthFailure]);
 
   const login = useCallback(async (credentials) => {
     try {
