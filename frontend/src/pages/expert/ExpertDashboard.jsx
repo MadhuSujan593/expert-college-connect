@@ -1460,7 +1460,7 @@ const ExpertDashboard = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -2 }}
-      className="group bg-white rounded-2xl border border-slate-200/60 p-6 hover:border-slate-300/60 hover:shadow-lg hover:shadow-slate-900/5 transition-all duration-300"
+      className="group bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 p-6 hover:border-gray-300/60 hover:shadow-lg hover:shadow-gray-900/5 transition-all duration-300"
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
@@ -1539,7 +1539,7 @@ const ExpertDashboard = () => {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100/50 to-slate-100/60" style={{ background: 'linear-gradient(135deg, #f9fafb 0%, #f3f4f6 50%, #e5e7eb 100%)' }}>
       {/* Modern Light Theme Layout */}
       <div className="flex h-screen overflow-hidden">
         {/* Black Sidebar */}
@@ -1733,7 +1733,7 @@ const ExpertDashboard = () => {
         {/* Main Content */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Header */}
-          <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200/60 px-8 py-6">
+          <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200/60 px-8 py-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <button
@@ -1743,7 +1743,7 @@ const ExpertDashboard = () => {
                   <Menu className="h-5 w-5" />
                 </button>
                 <div>
-                  <h1 className="text-3xl font-bold text-slate-900">
+                  <h1 className="text-2xl font-semibold text-gray-900">
                     {activeTab === 'overview' && 'Expert Dashboard'}
                     {activeTab === 'profile' && 'Profile Management'}
                     {activeTab === 'experience' && 'Work Experience'}
@@ -1752,7 +1752,7 @@ const ExpertDashboard = () => {
                     {activeTab === 'ratings' && 'Reviews & Ratings'}
                     {activeTab === 'rating-requests' && 'Rating Requests'}
                   </h1>
-                  <p className="text-slate-600 mt-1">
+                  <p className="text-gray-600 mt-0.5 text-sm">
                     {activeTab === 'overview' && 'Manage your expert profile and track your opportunities'}
                     {activeTab === 'profile' && 'Manage your professional profile'}
                     {activeTab === 'experience' && 'Manage your work experience and skills'}
@@ -1770,7 +1770,7 @@ const ExpertDashboard = () => {
 
 
           {/* Scrollable Content */}
-          <main className="flex-1 overflow-y-auto bg-slate-50/50">
+          <main className="flex-1 overflow-y-auto bg-gray-50/70">
             <div className="p-8 space-y-8">
               {/* All Tabs with Smooth Transitions */}
               <AnimatePresence mode="wait">
@@ -1893,7 +1893,7 @@ const ExpertDashboard = () => {
 
 
                   {/* Classic Quick Actions */}
-                  <div className="bg-white rounded-2xl shadow-sm p-6">
+                  <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/50 p-6">
                     <h3 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <button
@@ -2521,7 +2521,7 @@ const ExpertDashboard = () => {
 
                           rows={4}
 
-                          className="w-full px-4 py-3 border border-slate-500 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500 disabled:bg-slate-50 disabled:text-slate-500 transition-colors resize-none"
+                          className="w-full px-4 py-3 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500 disabled:bg-slate-50 disabled:text-slate-500 transition-colors resize-none"
 
                           placeholder="Tell us about yourself and your expertise..."
 

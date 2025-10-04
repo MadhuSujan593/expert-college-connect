@@ -1409,7 +1409,7 @@ const CollegeDashboard = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100/50 to-slate-100/60">
       {/* Modern Light Theme Layout */}
       <div className="flex h-screen overflow-hidden">
         {/* Black Sidebar */}
@@ -1588,7 +1588,7 @@ const CollegeDashboard = () => {
         {/* Main Content - Modern Light Theme */}
         <div className="flex-1 flex flex-col overflow-hidden bg-white/80 backdrop-blur-sm rounded-l-3xl shadow-lg">
           {/* Modern Header */}
-          <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 px-8 py-6 shadow-sm">
+          <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200/60 px-8 py-6 shadow-sm">
               <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <button
@@ -1614,7 +1614,7 @@ const CollegeDashboard = () => {
           </header>
 
           {/* Scrollable Content */}
-          <main className="flex-1 overflow-y-auto bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
+          <main className="flex-1 overflow-y-auto bg-gray-50/70">
             <div className="p-6 space-y-6">
               {/* All Tabs with Smooth Transitions */}
               <AnimatePresence mode="wait">
