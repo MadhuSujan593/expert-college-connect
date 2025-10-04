@@ -29,6 +29,13 @@ export class SubscriptionsController {
     return this.subscriptionsService.listActivePlans(audience);
   }
 
+  // List active plans filtered by user's subscription history
+  @Get('plans/for-user')
+  async listPlansForUser(@Req() req: any, @Query('audience') audience?: 'COLLEGE' | 'EXPERT') {
+    const userId = req.user?.userId || req.user?.id;
+    return this.subscriptionsService.listActivePlansForUser(userId, audience);
+  }
+
   // Self-serve subscribe for authenticated user
   @Post('subscribe')
   async subscribe(@Req() req: any, @Body('planId') planId: string) {
@@ -38,7 +45,8 @@ export class SubscriptionsController {
 
   // Create Razorpay order for selected plan (client opens checkout with returned order)
   @Post('create-order')
-  async createOrder(@Req() req: any, @Body('planId') planId: string) {
+  async createOrder(@Req() req: any, @Body() body: { planId: string; billingPeriod?: string }) {
+    const { planId, billingPeriod = 'MONTHLY' } = body;
     const userId = req.user?.userId || req.user?.id;
     const plan = await this.subscriptionsService['prisma'].subscriptionplan.findUnique({ where: { id: planId } });
     if (!plan || !plan.isActive) {
@@ -52,7 +60,7 @@ export class SubscriptionsController {
           razorpay_payment_id: 'free_plan_' + Date.now(),
           razorpay_order_id: 'free_order_' + Date.now(),
           razorpay_signature: 'free_signature_' + Date.now()
-        });
+        }, billingPeriod);
         return { 
           isFreePlan: true, 
           subscription,
@@ -64,13 +72,16 @@ export class SubscriptionsController {
       }
     }
     
-    // For paid plans, create Razorpay order
+    // For paid plans, create Razorpay order with dynamic pricing
     const shortPlan = String(planId).replace(/[^a-zA-Z0-9]/g, '').slice(0, 8);
     const shortUser = String(userId).replace(/[^a-zA-Z0-9]/g, '').slice(0, 8);
     const ts = Date.now().toString().slice(-8);
     const receipt = `p${shortPlan}_u${shortUser}_${ts}`.slice(0, 40);
-    const order = await this.razorpay.createOrder(plan.priceCents, plan.currency || 'INR', receipt);
-    return { order, keyId: process.env.RAZORPAY_KEY_ID };
+    
+    // Calculate dynamic price based on billing period
+    const dynamicPrice = this.subscriptionsService.calculateDynamicPrice(plan, billingPeriod);
+    const order = await this.razorpay.createOrder(dynamicPrice, plan.currency || 'INR', receipt);
+    return { order, keyId: process.env.RAZORPAY_KEY_ID, billingPeriod };
   }
 
   // Reveal contact (college-only) and consume quota
@@ -116,14 +127,14 @@ export class SubscriptionsController {
 
   // Confirm payment and activate subscription
   @Post('confirm-payment')
-  async confirmPayment(@Req() req: any, @Body() body: { planId: string; paymentData: any }) {
+  async confirmPayment(@Req() req: any, @Body() body: { planId: string; paymentData: any; billingPeriod?: string }) {
     const userId = req.user?.userId || req.user?.id;
-    const { planId, paymentData } = body;
+    const { planId, paymentData, billingPeriod = 'MONTHLY' } = body;
     
     console.log('Payment confirmation request:', { userId, planId, paymentData });
     
     try {
-      const subscription = await this.subscriptionsService.confirmPayment(userId, planId, paymentData);
+      const subscription = await this.subscriptionsService.confirmPayment(userId, planId, paymentData, billingPeriod);
       console.log('Payment confirmed successfully:', subscription);
       return { success: true, subscription };
     } catch (error) {

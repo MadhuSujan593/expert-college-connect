@@ -492,13 +492,15 @@ export class SuperAdminService {
       return await this.prisma.subscriptionplan.create({
         data: {
           name: dto.name,
-          description: dto.description,
           audience: dto.audience,
+          planType: dto.planType,
           billingPeriod: dto.billingPeriod,
+          durationDays: dto.durationDays,
           priceCents: dto.priceCents,
           currency: dto.currency ?? 'INR',
-          maxRequirements: dto.maxRequirements ?? null,
-          maxExpertContacts: dto.maxExpertContacts ?? null,
+          maxRequirements: null, // Unlimited
+          maxExpertContacts: null, // Unlimited
+          isActive: true, // Explicitly set to active
           createdAt: new Date(),
           updatedAt: new Date(),
         },

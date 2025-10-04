@@ -58,14 +58,6 @@ const SuperAdminDashboard = () => {
   const [showUserModal, setShowUserModal] = useState(false);
   const [actionLoading, setActionLoading] = useState({});
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [confirmationModal, setConfirmationModal] = useState({
-    isOpen: false,
-    title: '',
-    message: '',
-    type: 'danger',
-    onConfirm: null,
-    isLoading: false
-  });
 
   // Invoice details state
   const [invoices, setInvoices] = useState([]);
@@ -171,19 +163,59 @@ const SuperAdminDashboard = () => {
     setFilters(prev => ({ ...prev, page: newPage }));
   };
 
+  // ===== Confirmation helpers =====
+  const showConfirmation = (title, message, onConfirm, variant = 'danger', confirmText = 'Confirm') => {
+    setConfirmationModal({
+      isOpen: true,
+      title,
+      message,
+      onConfirm,
+      variant,
+      confirmText,
+      cancelText: 'Cancel'
+    });
+  };
+
+  const hideConfirmation = () => {
+    setConfirmationModal(prev => ({ ...prev, isOpen: false }));
+  };
+
+  // ===== Form reset helper =====
+  const resetCreatePlanForm = () => {
+    setCreatePlanForm({
+      name: '',
+      audience: 'COLLEGE',
+      planType: 'PAID',
+      billingPeriod: 'MONTHLY',
+      durationDays: 30,
+      priceDisplay: '',
+      currency: 'INR',
+    });
+  };
+
   // ===== Plans state =====
   const [plans, setPlans] = useState([]);
   const [plansLoading, setPlansLoading] = useState(false);
   const [showCreatePlan, setShowCreatePlan] = useState(false);
+  
+  // ===== Confirmation modal state =====
+  const [confirmationModal, setConfirmationModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: null,
+    variant: 'danger',
+    confirmText: 'Confirm',
+    cancelText: 'Cancel'
+  });
   const [createPlanForm, setCreatePlanForm] = useState({
     name: '',
-    description: '',
     audience: 'COLLEGE',
+    planType: 'PAID',
     billingPeriod: 'MONTHLY',
+    durationDays: 30,
     priceDisplay: '',
     currency: 'INR',
-    maxRequirements: '',
-    maxExpertContacts: '',
   });
   const [creatingPlan, setCreatingPlan] = useState(false);
 
@@ -191,6 +223,7 @@ const SuperAdminDashboard = () => {
     try {
       setPlansLoading(true);
       const data = await apiService.adminListPlans();
+      console.log('Loaded plans:', data); // Debug log
       setPlans(data);
     } catch (e) {
       console.error('Failed to load plans', e);
@@ -234,21 +267,41 @@ const SuperAdminDashboard = () => {
       setCreatingPlan(true);
       const payload = {
         name: createPlanForm.name,
-        description: createPlanForm.description,
         audience: createPlanForm.audience,
+        planType: createPlanForm.planType,
         billingPeriod: createPlanForm.billingPeriod,
+        durationDays: createPlanForm.durationDays,
         priceCents: Math.round((Number(createPlanForm.priceDisplay || '0')) * 100),
         currency: createPlanForm.currency,
-        maxRequirements: createPlanForm.maxRequirements === '' ? null : Number(createPlanForm.maxRequirements),
-        maxExpertContacts: createPlanForm.maxExpertContacts === '' ? null : Number(createPlanForm.maxExpertContacts),
+        maxRequirements: null, // Unlimited
+        maxExpertContacts: null, // Unlimited
       };
-      if (payload.priceCents < 0) {
-        alert('Please enter a valid price (0 or greater).');
+      console.log('Creating plan with payload:', payload); // Debug log
+      // For free plans, set price to 0
+      if (payload.planType === 'FREE') {
+        payload.priceCents = 0;
+      } else if (payload.priceCents < 0) {
+        showConfirmation(
+          'Invalid Price',
+          'Please enter a valid price (0 or greater).',
+          () => {}, // No action needed for info modal
+          'warning',
+          'OK'
+        );
+        return;
+      } else if (!payload.durationDays || payload.durationDays <= 0) {
+        showConfirmation(
+          'Invalid Duration',
+          'Please enter a valid duration (greater than 0 days).',
+          () => {}, // No action needed for info modal
+          'warning',
+          'OK'
+        );
         return;
       }
       await apiService.adminCreatePlan(payload);
       setShowCreatePlan(false);
-      setCreatePlanForm({ name: '', description: '', audience: 'COLLEGE', billingPeriod: 'MONTHLY', priceDisplay: '', currency: 'INR', maxRequirements: '', maxExpertContacts: '' });
+      resetCreatePlanForm();
       await loadPlans();
     } catch (e) {
       console.error('Create plan failed', e);
@@ -295,7 +348,13 @@ const SuperAdminDashboard = () => {
         setShowUserModal(true);
       } catch (error) {
         console.error('Failed to load user details:', error);
-        alert('Failed to load user details. Please try again.');
+        showConfirmation(
+          'Error Loading Details',
+          'Failed to load user details. Please try again.',
+          () => {},
+          'warning',
+          'OK'
+        );
       }
     }
   };
@@ -983,7 +1042,10 @@ const SuperAdminDashboard = () => {
                 <div className="bg-white rounded-2xl border border-slate-200/60 shadow-lg shadow-slate-900/5 mb-6">
                   <div className="px-6 py-4 border-b border-slate-200/60 flex items-center justify-between">
                     <h3 className="text-lg font-semibold text-slate-900">Subscription Plans</h3>
-                    <button onClick={() => setShowCreatePlan(true)} className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 rounded-md transition-all duration-200">
+                    <button onClick={() => {
+                      resetCreatePlanForm();
+                      setShowCreatePlan(true);
+                    }} className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 rounded-md transition-all duration-200">
                       <Plus className="h-4 w-4 mr-2" /> New Plan
                     </button>
                   </div>
@@ -996,109 +1058,122 @@ const SuperAdminDashboard = () => {
                     ) : plans.length === 0 ? (
                       <div className="text-gray-600">No plans yet.</div>
                     ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {plans.map((plan) => (
-                          <motion.div 
-                            key={plan.id} 
-                            className="group bg-white rounded-xl border border-gray-200/60 shadow-sm hover:shadow-lg hover:border-gray-300/60 transition-all duration-300 overflow-hidden"
-                            whileHover={{ y: -4, scale: 1.02 }}
-                          >
-                            {/* Header with gradient background */}
-                            <div className={`px-6 py-4 ${plan.isActive ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-gray-400 to-gray-500'}`}>
-                              <div className="flex items-center justify-between">
+                      <div className="border border-gray-200 rounded-lg overflow-hidden">
+                        {/* Table Header */}
+                        <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
+                          <div className="grid grid-cols-6 gap-4 text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                            <div>Plan Name</div>
+                            <div>Audience</div>
+                            <div>Type</div>
+                            <div>Duration</div>
+                            <div>Price</div>
+                            <div className="text-center">Actions</div>
+                          </div>
+                        </div>
+
+                        {/* Table Body */}
+                        <div className="divide-y divide-gray-200">
+                          {plans.map((plan, index) => (
+                            <motion.div
+                              key={plan.id}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: index * 0.05 }}
+                              className="px-6 py-4 hover:bg-gray-50 transition-colors"
+                            >
+                              <div className="grid grid-cols-6 gap-4 items-center text-sm">
+                                {/* Plan Name */}
                                 <div>
-                                  <h3 className="text-lg font-bold text-white">{plan.name}</h3>
-                                  <p className="text-emerald-100 text-sm font-medium">{plan.audience} • {plan.billingPeriod}</p>
+                                  <div className="font-medium text-gray-900">{plan.name}</div>
+                                  <div className="text-gray-500 text-xs">{plan.billingPeriod}</div>
                                 </div>
-                                <div className="text-right">
-                                  <div className="text-2xl font-bold text-white">
-                                    {plan.priceCents === 0 ? 'Free' : `₹${(plan.priceCents/100).toFixed(0)}`}
-                                  </div>
-                                  <div className="text-emerald-100 text-sm">per {plan.billingPeriod.toLowerCase()}</div>
+
+                                {/* Audience */}
+                                <div>
+                                  <span className="text-gray-700">{plan.audience}</span>
                                 </div>
-                              </div>
-                            </div>
 
-                            {/* Description */}
-                            {plan.description && (
-                              <div className="px-6 py-4 border-b border-gray-100">
-                                <p className="text-gray-600 text-sm leading-relaxed">{plan.description}</p>
-                              </div>
-                            )}
+                                {/* Type */}
+                                <div>
+                                  <span className={`inline-flex px-2 py-1 text-xs font-medium rounded ${
+                                    plan.planType === 'FREE' 
+                                      ? 'bg-gray-100 text-gray-800' 
+                                      : 'bg-blue-100 text-blue-800'
+                                  }`}>
+                                    {plan.planType || 'PAID'}
+                                  </span>
+                                </div>
 
-                            {/* Features */}
-                            <div className="px-6 py-4">
-                              <div className="space-y-3">
-                                {plan.audience === 'EXPERT' && (
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-gray-600 font-medium">Max Applications</span>
-                                    <span className="text-gray-900 font-semibold">{plan.maxRequirements ?? 'Unlimited'}</span>
-                                  </div>
-                                )}
-                                {plan.audience === 'COLLEGE' && (
-                                  <>
-                                    <div className="flex items-center justify-between">
-                                      <span className="text-gray-600 font-medium">Requirements</span>
-                                      <span className="text-gray-900 font-semibold">{plan.maxRequirements ?? 'Unlimited'}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                      <span className="text-gray-600 font-medium">Expert Contacts</span>
-                                      <span className="text-gray-900 font-semibold">{plan.maxExpertContacts ?? 'Unlimited'}</span>
-                                    </div>
-                                  </>
-                                )}
-                              </div>
-                            </div>
+                                {/* Duration */}
+                                <div>
+                                  <span className="text-gray-900 font-medium">{plan.durationDays} days</span>
+                                </div>
 
-                            {/* Actions */}
-                            <div className="px-6 py-4 bg-gray-50/50 border-t border-gray-100">
-                              <div className="flex items-center justify-between">
-                                <div className="flex space-x-2">
+                                {/* Price */}
+                                <div>
+                                  <span className="text-gray-900 font-medium">
+                                    {plan.priceCents === 0 ? 'Free' : `₹${(plan.priceCents / 100).toFixed(0)}`}
+                                  </span>
+                                </div>
+
+                                {/* Actions */}
+                                <div className="flex items-center justify-center space-x-2">
                                   <button 
                                     onClick={() => handleTogglePlan(plan.id)} 
-                                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                                    className={`px-2 py-1 text-xs font-medium rounded border transition-colors ${
                                       plan.isActive 
-                                        ? 'text-red-600 hover:bg-red-50' 
-                                        : 'text-emerald-600 hover:bg-emerald-50'
+                                        ? 'border-red-200 text-red-700 bg-red-50 hover:bg-red-100' 
+                                        : 'border-green-200 text-green-700 bg-green-50 hover:bg-green-100'
                                     }`}
                                   >
                                     {plan.isActive ? 'Deactivate' : 'Activate'}
                                   </button>
-                                </div>
-                                <div className="flex space-x-2">
                                   <button 
                                     onClick={() => {
+                                      console.log('Edit button clicked for plan:', plan); // Debug log
                                       setCreatePlanForm({
                                         name: plan.name,
-                                        description: plan.description || '',
                                         audience: plan.audience,
+                                        planType: plan.planType || 'PAID',
                                         billingPeriod: plan.billingPeriod,
+                                        durationDays: plan.durationDays || 30,
                                         priceDisplay: String((plan.priceCents/100).toFixed(2)),
                                         currency: plan.currency,
-                                        maxRequirements: plan.maxRequirements ?? '',
-                                        maxExpertContacts: plan.maxExpertContacts ?? '',
                                       });
                                       setShowCreatePlan('edit-' + plan.id);
+                                      console.log('Set showCreatePlan to:', 'edit-' + plan.id); // Debug log
                                     }} 
-                                    className="px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                                    className="px-2 py-1 text-xs font-medium text-blue-700 border border-blue-200 bg-blue-50 rounded hover:bg-blue-100 transition-colors"
                                   >
                                     Edit
                                   </button>
                                   <button 
-                                    onClick={async () => {
-                                      if (confirm('Delete this plan? This cannot be undone.')) {
-                                        try { await apiService.adminDeletePlan(plan.id); await loadPlans(); } catch (e) { alert(e.message || 'Delete failed'); }
-                                      }
+                                    onClick={() => {
+                                      showConfirmation(
+                                        'Delete Plan',
+                                        `Are you sure you want to delete "${plan.name}"? This action cannot be undone and will affect all users subscribed to this plan.`,
+                                        async () => {
+                                          try { 
+                                            await apiService.adminDeletePlan(plan.id); 
+                                            loadPlans();
+                                          } catch (e) { 
+                                            console.error('Delete failed:', e);
+                                            // Could show toast notification here instead of alert
+                                          }
+                                        },
+                                        'danger',
+                                        'Delete Plan'
+                                      );
                                     }} 
-                                    className="px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                    className="px-2 py-1 text-xs font-medium text-red-700 border border-red-200 bg-red-50 rounded hover:bg-red-100 transition-colors"
                                   >
                                     Delete
                                   </button>
                                 </div>
                               </div>
-                            </div>
-                          </motion.div>
-                        ))}
+                            </motion.div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1106,11 +1181,14 @@ const SuperAdminDashboard = () => {
 
                 {/* Create Plan Modal */}
                 {showCreatePlan && (
-                  <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-                    <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
-                      <div className="flex items-center justify-between mb-4">
+                  <div className="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50">
+                    <div className="relative top-20 mx-auto p-6 border w-11/12 md:w-3/4 lg:w-1/2 shadow-xl rounded-lg bg-white">
+                      <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
                         <h3 className="text-lg font-semibold text-gray-900">{String(showCreatePlan).startsWith('edit-') ? 'Edit Plan' : 'Create Plan'}</h3>
-                        <button onClick={() => setShowCreatePlan(false)} className="text-blue-400 hover:text-blue-600">✕</button>
+                        <button onClick={() => {
+                          setShowCreatePlan(false);
+                          resetCreatePlanForm();
+                        }} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -1125,67 +1203,135 @@ const SuperAdminDashboard = () => {
                           </select>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Billing Period</label>
-                          <select value={createPlanForm.billingPeriod} onChange={e => setCreatePlanForm({ ...createPlanForm, billingPeriod: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-colors">
-                            <option value="MONTHLY">Monthly</option>
-                            <option value="QUARTERLY">Quarterly</option>
-                            <option value="YEARLY">Yearly</option>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Plan Type</label>
+                          <select value={createPlanForm.planType} onChange={e => setCreatePlanForm({ ...createPlanForm, planType: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-colors">
+                            <option value="FREE">Free Plan (Trial)</option>
+                            <option value="PAID">Paid Plan</option>
                           </select>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
-                          <input
-                            type="number"
-                            inputMode="decimal"
-                            step="0.01"
-                            min="0.01"
-                            placeholder="0"
-                            value={createPlanForm.priceDisplay}
-                            onFocus={(e) => { if (e.target.value === '0') { e.target.value = ''; } }}
-                            onChange={e => setCreatePlanForm({ ...createPlanForm, priceDisplay: e.target.value })}
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Billing Period</label>
+                          <select value={createPlanForm.billingPeriod} onChange={e => {
+                            const durationMap = { MONTHLY: 30, QUARTERLY: 90, SEMIANNUAL: 180, YEARLY: 365 };
+                            setCreatePlanForm({ 
+                              ...createPlanForm, 
+                              billingPeriod: e.target.value,
+                              durationDays: durationMap[e.target.value] || 30
+                            });
+                          }} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-colors">
+                            <option value="MONTHLY">Monthly (30 days)</option>
+                            <option value="QUARTERLY">Quarterly (90 days)</option>
+                            <option value="SEMIANNUAL">6 Months (180 days)</option>
+                            <option value="YEARLY">Yearly (365 days)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Duration (Days)</label>
+                          <input 
+                            type="number" 
+                            value={createPlanForm.durationDays} 
+                            onChange={e => {
+                              const value = e.target.value;
+                              // Allow empty string for editing, only validate on blur or submit
+                              if (value === '') {
+                                setCreatePlanForm({ 
+                                  ...createPlanForm, 
+                                  durationDays: ''
+                                });
+                              } else {
+                                const numValue = parseInt(value);
+                                if (!isNaN(numValue) && numValue > 0) {
+                                  setCreatePlanForm({ 
+                                    ...createPlanForm, 
+                                    durationDays: numValue
+                                  });
+                                }
+                              }
+                            }}
+                            onBlur={e => {
+                              const value = e.target.value;
+                              const numValue = parseInt(value);
+                              // On blur, if empty or invalid, set to 30
+                              if (value === '' || isNaN(numValue) || numValue <= 0) {
+                                setCreatePlanForm({ 
+                                  ...createPlanForm, 
+                                  durationDays: 30
+                                });
+                              }
+                            }} 
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-colors"
+                            min="1"
                           />
                         </div>
-                        <div className="md:col-span-2">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                          <textarea rows={3} value={createPlanForm.description} onChange={e => setCreatePlanForm({ ...createPlanForm, description: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-colors" />
-                        </div>
-                        {createPlanForm.audience === 'EXPERT' && (
+                        {createPlanForm.planType === 'PAID' && (
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Max Requirements / mo (empty for unlimited)</label>
-                            <input type="number" value={createPlanForm.maxRequirements} onChange={e => setCreatePlanForm({ ...createPlanForm, maxRequirements: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-colors" />
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
+                            <input
+                              type="number"
+                              inputMode="decimal"
+                              step="0.01"
+                              min="0.01"
+                              placeholder="0"
+                              value={createPlanForm.priceDisplay}
+                              onFocus={(e) => { if (e.target.value === '0') { e.target.value = ''; } }}
+                              onChange={e => setCreatePlanForm({ ...createPlanForm, priceDisplay: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-colors"
+                            />
                           </div>
                         )}
-                        {createPlanForm.audience === 'COLLEGE' && (
+                        {createPlanForm.planType === 'FREE' && (
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Max Requirements / mo (empty for unlimited)</label>
-                            <input type="number" value={createPlanForm.maxRequirements} onChange={e => setCreatePlanForm({ ...createPlanForm, maxRequirements: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-colors" />
-                          </div>
-                        )}
-                        {createPlanForm.audience === 'COLLEGE' && (
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Max Expert Contacts / mo (empty for unlimited)</label>
-                            <input type="number" value={createPlanForm.maxExpertContacts} onChange={e => setCreatePlanForm({ ...createPlanForm, maxExpertContacts: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-colors" />
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
+                            <input
+                              type="text"
+                              value="0 (Free Trial)"
+                              disabled
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600"
+                            />
                           </div>
                         )}
                       </div>
                       <div className="mt-4 flex justify-end space-x-2">
-                        <button onClick={() => setShowCreatePlan(false)} className="px-4 py-2 border border-blue-300 text-blue-600 hover:bg-blue-50 rounded-md">Cancel</button>
+                        <button onClick={() => {
+                          setShowCreatePlan(false);
+                          resetCreatePlanForm();
+                        }} className="px-4 py-2 border border-blue-300 text-blue-600 hover:bg-blue-50 rounded-md">Cancel</button>
                         <button onClick={async () => {
+                          console.log('Save button clicked, showCreatePlan:', showCreatePlan); // Debug log
                           if (String(showCreatePlan).startsWith('edit-')) {
                             const id = String(showCreatePlan).replace('edit-','');
                             try {
                               const payload = {
                                 ...createPlanForm,
                                 priceCents: Math.round((Number(createPlanForm.priceDisplay || '0')) * 100),
-                                maxRequirements: createPlanForm.maxRequirements === '' ? null : Number(createPlanForm.maxRequirements),
-                                maxExpertContacts: createPlanForm.maxExpertContacts === '' ? null : Number(createPlanForm.maxExpertContacts),
+                                maxRequirements: null, // Unlimited
+                                maxExpertContacts: null, // Unlimited
                               };
-                              if (payload.priceCents < 0) { alert('Please enter a valid price (0 or greater).'); return; }
-                              await apiService.adminUpdatePlan(id, payload);
+                              console.log('Updating plan with payload:', payload); // Debug log
+                              if (payload.priceCents < 0) { 
+                                showConfirmation(
+                                  'Invalid Price',
+                                  'Please enter a valid price (0 or greater).',
+                                  () => {},
+                                  'warning',
+                                  'OK'
+                                ); 
+                                return; 
+                              }
+                              const result = await apiService.adminUpdatePlan(id, payload);
+                              console.log('Update result:', result); // Debug log
                               setShowCreatePlan(false);
                               await loadPlans();
-                            } catch (e) { alert(e.message || 'Update failed'); }
+                            } catch (e) { 
+                              console.error('Update error:', e); // Debug log
+                              showConfirmation(
+                                'Update Failed',
+                                e.message || 'Update failed. Please try again.',
+                                () => {},
+                                'warning',
+                                'OK'
+                              ); 
+                            }
                           } else {
                             await handleCreatePlan();
                           }
@@ -1557,6 +1703,18 @@ const SuperAdminDashboard = () => {
           </div>
         </div>
       )}
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmationModal.isOpen}
+        onClose={hideConfirmation}
+        onConfirm={confirmationModal.onConfirm}
+        title={confirmationModal.title}
+        message={confirmationModal.message}
+        variant={confirmationModal.variant}
+        confirmText={confirmationModal.confirmText}
+        cancelText={confirmationModal.cancelText}
+      />
     </div>
   );
 };

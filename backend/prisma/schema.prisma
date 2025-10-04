@@ -147,8 +147,10 @@ model subscriptionplan {
   name             String                     @db.VarChar(100)
   description      String?                    @db.Text
   audience         subscription_audience      // COLLEGE or EXPERT
+  planType         subscription_plan_type     @default(PAID) // FREE or PAID
   billingPeriod    subscription_billingPeriod // MONTHLY, QUARTERLY, YEARLY
-  priceCents       Int                        // price stored in smallest currency unit
+  durationDays     Int                        @default(30) // Duration in days (30, 90, 365, etc.)
+  priceCents       Int                        // price stored in smallest currency unit (0 for free)
   currency         String                     @default("INR") @db.VarChar(10)
   // Limits (null means unlimited)
   maxRequirements  Int?
@@ -160,6 +162,7 @@ model subscriptionplan {
 
   @@index([audience], map: "SubscriptionPlan_audience_idx")
   @@index([isActive], map: "SubscriptionPlan_isActive_idx")
+  @@index([planType], map: "SubscriptionPlan_planType_idx")
 }
 
 model subscription {
@@ -212,9 +215,15 @@ enum subscription_audience {
   EXPERT
 }
 
+enum subscription_plan_type {
+  FREE
+  PAID
+}
+
 enum subscription_billingPeriod {
   MONTHLY
   QUARTERLY
+  SEMIANNUAL
   YEARLY
 }
 

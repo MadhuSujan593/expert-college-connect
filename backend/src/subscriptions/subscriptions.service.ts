@@ -5,6 +5,31 @@ import { PrismaService } from '../prisma/prisma.service';
 export class SubscriptionsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  // Calculate dynamic pricing based on billing period
+  calculateDynamicPrice(plan: any, billingPeriod: string): number {
+    if (plan.priceCents === 0) return 0; // Free plans
+    
+    const basePrice = plan.priceCents; // Monthly price from database
+    const multipliers = {
+      'MONTHLY': 1,
+      'QUARTERLY': 3,
+      'SEMIANNUAL': 6,
+      'YEARLY': 12
+    };
+    
+    const discounts = {
+      'MONTHLY': 0,
+      'QUARTERLY': 13,
+      'SEMIANNUAL': 23,
+      'YEARLY': 33
+    };
+    
+    const fullPrice = basePrice * multipliers[billingPeriod];
+    const discount = discounts[billingPeriod] || 0;
+    
+    return Math.round(fullPrice * (1 - discount / 100));
+  }
+
   async getActiveSubscriptionForUser(userId: string) {
     const now = new Date();
     console.log('Fetching subscription for user:', userId, 'at time:', now.toISOString());
@@ -54,6 +79,50 @@ export class SubscriptionsService {
     return this.prisma.subscriptionplan.findMany({
       where: {
         isActive: true,
+        ...(audience ? { audience } : {}),
+      },
+      orderBy: { priceCents: 'asc' },
+    });
+  }
+
+  // List active plans filtered by user's subscription history
+  async listActivePlansForUser(userId: string, audience?: 'COLLEGE' | 'EXPERT') {
+    // Check if user has any ACTIVE subscription
+    const activeSubscription = await this.prisma.subscription.findFirst({
+      where: { 
+        userId, 
+        status: 'ACTIVE',
+        OR: [
+          { endsAt: null },
+          { endsAt: { gt: new Date() } }
+        ]
+      },
+      include: { plan: true },
+    });
+
+    // Check if user has any subscription history (including expired ones)
+    const userSubscriptionHistory = await this.prisma.subscription.findFirst({
+      where: { userId },
+      include: { plan: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // If user has no subscription history at all, show all plans (including free)
+    if (!userSubscriptionHistory) {
+      return this.listActivePlans(audience);
+    }
+
+    // If user has an ACTIVE subscription, show all plans (they can upgrade/downgrade)
+    if (activeSubscription) {
+      return this.listActivePlans(audience);
+    }
+
+    // If user has subscription history but no active subscription (expired/cancelled),
+    // filter out free plans (they've already used their free trial)
+    return this.prisma.subscriptionplan.findMany({
+      where: {
+        isActive: true,
+        planType: 'PAID', // Only show paid plans
         ...(audience ? { audience } : {}),
       },
       orderBy: { priceCents: 'asc' },
@@ -203,7 +272,7 @@ export class SubscriptionsService {
     });
   }
 
-  async confirmPayment(userId: string, planId: string, paymentData: any) {
+  async confirmPayment(userId: string, planId: string, paymentData: any, billingPeriod: string = 'MONTHLY') {
     try {
       console.log('Starting payment confirmation:', { userId, planId, paymentData });
       
@@ -218,15 +287,17 @@ export class SubscriptionsService {
         throw new NotFoundException('Plan not found or inactive');
       }
 
-      // Calculate subscription end date based on billing period
+      // Calculate subscription end date based on selected billing period
       const now = new Date();
       let endsAt: Date;
       
-      if (plan.billingPeriod === 'MONTHLY') {
+      if (billingPeriod === 'MONTHLY') {
         endsAt = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
-      } else if (plan.billingPeriod === 'QUARTERLY') {
+      } else if (billingPeriod === 'QUARTERLY') {
         endsAt = new Date(now.getFullYear(), now.getMonth() + 3, now.getDate());
-      } else if (plan.billingPeriod === 'YEARLY') {
+      } else if (billingPeriod === 'SEMIANNUAL') {
+        endsAt = new Date(now.getFullYear(), now.getMonth() + 6, now.getDate());
+      } else if (billingPeriod === 'YEARLY') {
         endsAt = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
       } else {
         endsAt = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate()); // Default to monthly
@@ -266,19 +337,20 @@ export class SubscriptionsService {
 
       console.log('Subscription created:', subscription);
 
-      // Create payment record
+      // Create payment record with dynamic pricing
       const paymentId = `pay_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const dynamicPrice = this.calculateDynamicPrice(plan, billingPeriod);
       const payment = await this.prisma.payment.create({
         data: {
           id: paymentId,
           userId,
-          amount: plan.priceCents / 100, // Convert from cents to dollars
+          amount: dynamicPrice / 100, // Convert from cents to rupees
           currency: plan.currency || 'INR',
           paymentMethod: 'DIGITAL_WALLET',
           status: 'COMPLETED',
           transactionId: paymentData.razorpay_payment_id || paymentData.payment_id,
-          description: `Subscription payment for ${plan.name} plan`,
-          metadata: paymentData,
+          description: `Subscription payment for ${plan.name} plan (${billingPeriod})`,
+          metadata: { ...paymentData, billingPeriod },
           createdAt: now,
           updatedAt: now,
           completedAt: now
@@ -292,6 +364,123 @@ export class SubscriptionsService {
       console.error('Error confirming payment:', error);
       throw error;
     }
+  }
+
+  // Create free trial subscription for new users
+  async createFreeTrialSubscription(userId: string, audience: 'COLLEGE' | 'EXPERT') {
+    // Check if user already has any subscription
+    const existingSubscription = await this.prisma.subscription.findFirst({
+      where: { userId },
+    });
+    
+    if (existingSubscription) {
+      throw new ForbiddenException('User already has a subscription');
+    }
+
+    // Find the free plan for the audience
+    const freePlan = await this.prisma.subscriptionplan.findFirst({
+      where: {
+        audience,
+        planType: 'FREE',
+        isActive: true,
+      },
+    });
+
+    if (!freePlan) {
+      throw new NotFoundException('Free plan not found for this audience');
+    }
+
+    // Create subscription with duration in days
+    const now = new Date();
+    const endsAt = new Date(now.getTime() + (freePlan.durationDays * 24 * 60 * 60 * 1000));
+
+    return await this.prisma.subscription.create({
+      data: {
+        userId,
+        planId: freePlan.id,
+        status: 'ACTIVE',
+        startsAt: now,
+        endsAt,
+      },
+      include: {
+        plan: true,
+      },
+    });
+  }
+
+  // Extend free plan for specific user (admin function)
+  async extendFreePlan(userId: string, additionalDays: number) {
+    const subscription = await this.prisma.subscription.findFirst({
+      where: {
+        userId,
+        plan: { planType: 'FREE' },
+      },
+      include: { plan: true },
+    });
+
+    if (!subscription) {
+      throw new NotFoundException('No free subscription found for this user');
+    }
+
+    const currentEndDate = subscription.endsAt || new Date();
+    const newEndDate = new Date(currentEndDate.getTime() + (additionalDays * 24 * 60 * 60 * 1000));
+
+    return await this.prisma.subscription.update({
+      where: { id: subscription.id },
+      data: { endsAt: newEndDate },
+      include: { plan: true },
+    });
+  }
+
+  // Get all users with their subscription status (admin function)
+  async getAllUsersWithSubscriptions(page: number = 1, limit: number = 20) {
+    const skip = (page - 1) * limit;
+    
+    const users = await this.prisma.user.findMany({
+      skip,
+      take: limit,
+      include: {
+        subscriptions: {
+          include: {
+            plan: true,
+            usages: {
+              orderBy: { periodStart: 'desc' },
+              take: 1,
+            },
+          },
+        },
+        collegeprofile: true,
+        expertprofile: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const total = await this.prisma.user.count();
+
+    return {
+      users: users.map(user => ({
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        name: user.collegeprofile?.institutionName || `${user.expertprofile?.jobTitle} at ${user.expertprofile?.company}` || 'N/A',
+        subscription: user.subscriptions?.[0] ? {
+          id: user.subscriptions[0].id,
+          status: user.subscriptions[0].status,
+          planType: user.subscriptions[0].plan.planType,
+          planName: user.subscriptions[0].plan.name,
+          startsAt: user.subscriptions[0].startsAt,
+          endsAt: user.subscriptions[0].endsAt,
+          usage: user.subscriptions[0].usages?.[0] || null,
+        } : null,
+        createdAt: user.createdAt,
+      })),
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    };
   }
 }
 

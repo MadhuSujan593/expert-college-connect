@@ -15,6 +15,7 @@ const SubscriptionPlans = () => {
   const [mySubscription, setMySubscription] = useState(null);
   const [selectedPlanId, setSelectedPlanId] = useState(null);
   const [subsLoading, setSubsLoading] = useState(false);
+  const [selectedBillingPeriod, setSelectedBillingPeriod] = useState('MONTHLY');
 
   // Toast state
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
@@ -28,6 +29,43 @@ const SubscriptionPlans = () => {
 
   const hideToast = () => {
     setToast({ show: false, message: '', type: 'success' });
+  };
+
+  // Calculate dynamic pricing based on billing period
+  const calculatePrice = (plan, billingPeriod) => {
+    if (plan.priceCents === 0) return 0; // Free plans
+    
+    const basePrice = plan.priceCents; // Monthly price from database
+    const multipliers = {
+      'MONTHLY': 1,
+      'QUARTERLY': 3,
+      'SEMIANNUAL': 6,
+      'YEARLY': 12
+    };
+    
+    const fullPrice = basePrice * multipliers[billingPeriod];
+    const discount = billingPeriods.find(p => p.value === billingPeriod)?.discount || 0;
+    
+    return Math.round(fullPrice * (1 - discount / 100));
+  };
+
+  // Get billing period options
+  const billingPeriods = [
+    { value: 'MONTHLY', label: 'Monthly', discount: 0 },
+    { value: 'QUARTERLY', label: '3 Months', discount: 13 },
+    { value: 'SEMIANNUAL', label: '6 Months', discount: 23 },
+    { value: 'YEARLY', label: 'Yearly', discount: 33 }
+  ];
+
+  // Calculate duration days based on billing period
+  const getDurationDays = (billingPeriod) => {
+    const durationMap = {
+      'MONTHLY': 30,
+      'QUARTERLY': 90,
+      'SEMIANNUAL': 180,
+      'YEARLY': 365
+    };
+    return durationMap[billingPeriod];
   };
 
   useEffect(() => {
@@ -51,7 +89,8 @@ const SubscriptionPlans = () => {
       setLoadingPlans(true);
       // Determine audience based on user role
       const audience = user?.role === 'EXPERT' ? 'EXPERT' : 'COLLEGE';
-      const plans = await apiService.listActivePlans(audience);
+      // Use filtered plans that exclude free trial for users who already have subscription history
+      const plans = await apiService.listPlansForUser(audience);
       setAvailablePlans(plans || []);
     } catch (e) {
       console.error('Failed to load plans', e);
@@ -75,8 +114,8 @@ const SubscriptionPlans = () => {
   const subscribeToPlan = async (planId) => {
     try {
       setSubscribingPlanId(planId);
-      // Create order on backend
-      const response = await apiService.createRazorpayOrder(planId);
+      // Create order on backend with selected billing period
+      const response = await apiService.createRazorpayOrder(planId, selectedBillingPeriod);
       
       // Check if it's a free plan
       if (response.isFreePlan) {
@@ -126,7 +165,7 @@ const SubscriptionPlans = () => {
           showToast('success', 'Payment successful! Activating your plan...');
           
           // Confirm payment with backend
-          const confirmationResult = await apiService.confirmRazorpayPayment(planId, response);
+          const confirmationResult = await apiService.confirmRazorpayPayment(planId, response, selectedBillingPeriod);
           
           if (confirmationResult.success) {
             console.log('Payment confirmed successfully:', confirmationResult);
@@ -205,17 +244,17 @@ const SubscriptionPlans = () => {
           </div>
 
           {/* Hero Content */}
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 text-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <h1 className="text-2xl md:text-3xl font-bold text-white mb-3">
+              <h1 className="text-xl md:text-2xl font-bold text-white mb-2">
                 Choose Your
                 <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent"> Perfect Plan</span>
               </h1>
-              <p className="text-base text-white/80 mb-4 max-w-2xl mx-auto">
+              <p className="text-sm text-white/80 mb-2 max-w-2xl mx-auto">
                 {user?.role === 'EXPERT' 
                   ? 'Unlock the full potential of our platform with flexible plans designed for experts'
                   : 'Unlock the full potential of our platform with flexible plans designed for colleges of all sizes'
@@ -228,25 +267,51 @@ const SubscriptionPlans = () => {
       </div>
 
       {/* Plans Section */}
-      <div className="relative -mt-12 z-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="relative -mt-8 z-20">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+
+          {/* Billing Period Selector */}
+          <div className="text-center mb-6">
+            <h3 className="text-base font-semibold text-white mb-3">Choose Your Billing Period</h3>
+            <div className="flex justify-center">
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-1">
+                {billingPeriods.map((period) => (
+                  <button
+                    key={period.value}
+                    onClick={() => setSelectedBillingPeriod(period.value)}
+                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                      selectedBillingPeriod === period.value
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-white hover:bg-white/10'
+                    }`}
+                  >
+                    {period.label}
+                    {period.discount > 0 && (
+                      <span className="ml-1 text-xs text-green-400">-{period.discount}%</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
 
           {/* Plans Grid */}
           {loadingPlans ? (
-            <div className="text-center py-8">
-              <div className="w-8 h-8 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin mx-auto mb-3"></div>
+            <div className="text-center py-4">
+              <div className="w-6 h-6 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin mx-auto mb-2"></div>
               <p className="text-gray-600 text-sm">Loading plans...</p>
             </div>
           ) : availablePlans.length === 0 ? (
-            <div className="text-center py-8">
+            <div className="text-center py-4">
               <p className="text-gray-600 text-sm">No plans available.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-3xl mx-auto">
               {availablePlans.map((plan, index) => {
                 const isSelected = selectedPlanId === plan.id;
                 const isFree = plan.priceCents === 0;
                 const isCurrentPlan = getCurrentPlanId() === plan.id;
+                const isPopular = false; // Disable popular badge
                 
                 return (
                   <motion.div
@@ -255,83 +320,117 @@ const SubscriptionPlans = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
                     className={`relative group transition-all duration-300 ${
-                      isSelected ? 'lg:scale-110' : 'lg:scale-100'
+                      isSelected ? 'scale-[1.02]' : 'hover:scale-[1.01]'
                     }`}
                   >
-
-                    {/* Current Plan Badge */}
-                    {isCurrentPlan && (
-                      <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
-                        <div className="bg-gradient-to-r from-emerald-500 to-green-600 text-white px-6 py-2 rounded-full text-sm font-bold flex items-center space-x-2 shadow-lg">
-                          <Check className="w-4 h-4" />
-                          <span>Current Plan</span>
-                        </div>
-                      </div>
-                    )}
-
                     {/* Plan Card */}
-                    <div className={`relative bg-white rounded-2xl transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer select-none ${
-                      isSelected ? 'border-2 border-blue-500 shadow-2xl' : 'border border-gray-200 shadow-lg'
-                    } overflow-hidden`}
+                    <div className={`relative bg-white border transition-all duration-300 cursor-pointer select-none h-full flex flex-col ${
+                      isSelected 
+                        ? 'border-blue-500 shadow-lg ring-1 ring-blue-500/20' 
+                        : 'border-gray-200 shadow-sm hover:border-gray-300 hover:shadow-md'
+                    } rounded-xl overflow-hidden`}
                     onClick={() => setSelectedPlanId(plan.id)}>
-                      {/* Plan Header */}
-                      <div className={`p-4 ${isSelected ? 'bg-gradient-to-br from-blue-50 to-cyan-50' : isCurrentPlan ? 'bg-gradient-to-br from-green-50 to-emerald-50' : 'bg-gradient-to-br from-gray-50 to-slate-50'}`}>
-                        <div className="text-center">
-                          <h3 className="text-lg font-bold text-gray-900 mb-1">{plan.name}</h3>
-                          <div className="mb-2">
-                            <div className="flex items-baseline justify-center">
-                              <span className="text-2xl font-bold text-gray-900">
-                                {isFree ? 'Free' : `₹${(plan.priceCents/100).toFixed(0)}`}
-                              </span>
-                              {!isFree && (
-                                <span className="text-gray-600 ml-1 text-xs">/{plan.billingPeriod.toLowerCase()}</span>
-                              )}
-                            </div>
+                      
+                      {/* Popular Badge */}
+                      {isPopular && (
+                        <div className="absolute top-4 right-4 z-10">
+                          <div className="bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center space-x-1">
+                            <Star className="w-3 h-3 fill-current" />
+                            <span>Popular</span>
                           </div>
-                          <p className="text-xs text-gray-600 uppercase tracking-wider font-medium">
-                            {plan.billingPeriod}
-                          </p>
                         </div>
-                      </div>
+                      )}
 
-                      {/* Plan Features */}
-                      <div className="p-4">
-                        <div className="space-y-3 mb-4">
-                          <div className="flex items-center justify-between py-2">
-                            <div className="flex items-center space-x-3">
-                              <FileText className="w-4 h-4 text-gray-600" />
-                              <span className="text-gray-700 font-medium text-sm">
-                                {user?.role === 'EXPERT' ? 'Applications' : 'Requirements'}
-                              </span>
-                            </div>
-                            <span className="text-gray-900 font-semibold text-sm">
-                              {plan.maxRequirements ?? 'Unlimited'}
-                            </span>
+                      {/* Current Plan Badge */}
+                      {isCurrentPlan && (
+                        <div className="absolute top-4 right-4 z-10">
+                          <div className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center space-x-1">
+                            <Check className="w-3 h-3" />
+                            <span>Current</span>
                           </div>
-                          {user?.role !== 'EXPERT' && (
-                            <div className="flex items-center justify-between py-2">
-                              <div className="flex items-center space-x-3">
-                                <Users className="w-4 h-4 text-gray-600" />
-                                <span className="text-gray-700 font-medium text-sm">Expert Contacts</span>
+                        </div>
+                      )}
+
+                      <div className="p-4 flex flex-col flex-1">
+                        {/* Plan Header */}
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-3 mb-2">
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                                isSelected 
+                                  ? 'bg-blue-100 text-blue-600' 
+                                  : 'bg-gray-100 text-gray-600'
+                              }`}>
+                                {isFree ? (
+                                  <Star className="w-4 h-4" />
+                                ) : (
+                                  <BarChart3 className="w-4 h-4" />
+                                )}
                               </div>
-                              <span className="text-gray-900 font-semibold text-sm">
-                                {plan.maxExpertContacts ?? 'Unlimited'}
+                              <h3 className="text-xl font-semibold text-gray-900">{plan.name}</h3>
+                            </div>
+                            
+                            <div className="flex items-baseline space-x-2 mb-1">
+                              <span className={`text-3xl font-bold ${
+                                isSelected ? 'text-blue-600' : 'text-gray-900'
+                              }`}>
+                                {isFree ? 'Free' : `₹${(calculatePrice(plan, selectedBillingPeriod)/100).toFixed(0)}`}
                               </span>
                             </div>
-                          )}
-                          <div className="flex items-center justify-between py-2">
-                            <div className="flex items-center space-x-3">
-                              <Headphones className="w-4 h-4 text-gray-600" />
-                              <span className="text-gray-700 font-medium text-sm">Support</span>
-                            </div>
-                            <span className="text-gray-900 font-semibold text-sm">24/7</span>
+                            
+                            {/* Discount indicator */}
+                            {!isFree && selectedBillingPeriod !== 'MONTHLY' && (
+                              <div className="flex items-center space-x-2 mb-1">
+                                <span className="text-sm text-gray-500 line-through">
+                                  ₹{(plan.priceCents * (selectedBillingPeriod === 'QUARTERLY' ? 3 : selectedBillingPeriod === 'SEMIANNUAL' ? 6 : 12)/100).toFixed(0)}
+                                </span>
+                                <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">
+                                  Save {billingPeriods.find(p => p.value === selectedBillingPeriod)?.discount}%
+                                </span>
+                              </div>
+                            )}
+                            
+                            <p className="text-sm text-gray-500">
+                              {isFree ? 'Free Trial • 30 days' : `${selectedBillingPeriod} • ${getDurationDays(selectedBillingPeriod)} days`}
+                            </p>
                           </div>
-                          <div className="flex items-center justify-between py-2">
+                        </div>
+
+                        {/* Plan Features */}
+                        <div className="mb-4 flex-1">
+                          <h4 className="text-gray-700 text-sm mb-3 font-medium">
+                            The perfect way to start and get used to our tools
+                          </h4>
+                          <div className="space-y-2">
                             <div className="flex items-center space-x-3">
-                              <BarChart3 className="w-4 h-4 text-gray-600" />
-                              <span className="text-gray-700 font-medium text-sm">Analytics</span>
+                              <Check className="w-4 h-4 text-green-500" />
+                              <span className="text-gray-900 font-semibold text-base">
+                                {user?.role === 'EXPERT' ? 'Unlimited Applications' : 'Unlimited Requirements'}
+                              </span>
                             </div>
-                            <span className="text-gray-900 font-semibold text-sm">Advanced</span>
+                            
+                            {user?.role !== 'EXPERT' && (
+                              <div className="flex items-center space-x-3">
+                                <Check className="w-4 h-4 text-green-500" />
+                                <span className="text-gray-900 font-semibold text-base">
+                                  Unlimited Expert Contacts
+                                </span>
+                              </div>
+                            )}
+                            
+                            <div className="flex items-center space-x-3">
+                              <Check className="w-4 h-4 text-green-500" />
+                              <span className="text-gray-900 font-semibold text-base">
+                                24/7 Support
+                              </span>
+                            </div>
+                            
+                            <div className="flex items-center space-x-3">
+                              <Check className="w-4 h-4 text-green-500" />
+                              <span className="text-gray-900 font-semibold text-base">
+                                Advanced Analytics
+                              </span>
+                            </div>
                           </div>
                         </div>
 
@@ -339,30 +438,32 @@ const SubscriptionPlans = () => {
                         <button
                           onClick={() => subscribeToPlan(plan.id)}
                           disabled={subscribingPlanId === plan.id || isCurrentPlan}
-                          className={`w-full py-3 px-4 rounded-lg font-semibold text-sm transition-all duration-200 group ${
+                          className={`w-full py-3 px-4 rounded-lg font-medium text-sm transition-all duration-200 group ${
                             isCurrentPlan
-                              ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                              ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
                               : isSelected
-                              ? 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-md hover:shadow-lg'
-                              : 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-sm hover:shadow-md'
+                              ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md'
+                              : 'bg-gray-900 hover:bg-gray-800 text-white shadow-sm hover:shadow-md'
                           } disabled:opacity-50 disabled:cursor-not-allowed`}
                         >
-                          {subscribingPlanId === plan.id ? (
-                            <div className="flex items-center justify-center gap-2">
-                              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                              <span>Processing...</span>
-                            </div>
-                          ) : isCurrentPlan ? (
-                            <div className="flex items-center justify-center gap-2">
-                              <Check className="w-4 h-4" />
-                              <span>Current Plan</span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center justify-center gap-2">
-                              <span>{isFree ? 'Get Started Free' : 'Subscribe Now'}</span>
-                              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                            </div>
-                          )}
+                          <div className="flex items-center justify-center gap-2">
+                            {subscribingPlanId === plan.id ? (
+                              <>
+                                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                <span>Processing...</span>
+                              </>
+                            ) : isCurrentPlan ? (
+                              <>
+                                <Check className="w-4 h-4" />
+                                <span>Current Plan</span>
+                              </>
+                            ) : (
+                              <>
+                                <span>{isFree ? 'Get Started Free' : 'Subscribe Now'}</span>
+                                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                              </>
+                            )}
+                          </div>
                         </button>
                       </div>
                     </div>

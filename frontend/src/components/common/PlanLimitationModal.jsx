@@ -27,6 +27,11 @@ const PlanLimitationModal = ({ isOpen, onClose, onUpgrade, limitationType, curre
           title: 'Subscription Expired',
           description: `Your ${planName} subscription has expired. Renew to continue.`
         };
+      case 'no_subscription':
+        return {
+          title: 'No Active Subscription',
+          description: 'You need an active subscription to create requirements and access premium features.'
+        };
       default:
         return {
           title: 'Plan Limit Reached',
@@ -83,7 +88,7 @@ const PlanLimitationModal = ({ isOpen, onClose, onUpgrade, limitationType, curre
               </p>
 
               {/* Usage Info */}
-              {limitationType !== 'expired' && (
+              {limitationType !== 'expired' && limitationType !== 'no_subscription' && (
                 <div className="bg-gray-50 rounded-lg p-4 mb-6">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-gray-600">Usage</span>
@@ -104,7 +109,7 @@ const PlanLimitationModal = ({ isOpen, onClose, onUpgrade, limitationType, curre
                   onClick={onUpgrade}
                   className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white py-2.5 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
                 >
-                  <span>Upgrade Plan</span>
+                  <span>{limitationType === 'no_subscription' ? 'Choose a Plan' : 'Upgrade Plan'}</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
                 <button

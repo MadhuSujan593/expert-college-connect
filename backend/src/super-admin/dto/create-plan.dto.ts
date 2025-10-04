@@ -5,9 +5,15 @@ export enum AudienceEnum {
   EXPERT = 'EXPERT',
 }
 
+export enum PlanTypeEnum {
+  FREE = 'FREE',
+  PAID = 'PAID',
+}
+
 export enum BillingPeriodEnum {
   MONTHLY = 'MONTHLY',
   QUARTERLY = 'QUARTERLY',
+  SEMIANNUAL = 'SEMIANNUAL',
   YEARLY = 'YEARLY',
 }
 
@@ -24,8 +30,15 @@ export class CreatePlanDto {
   @IsEnum(AudienceEnum)
   audience: AudienceEnum;
 
+  @IsEnum(PlanTypeEnum)
+  planType: PlanTypeEnum;
+
   @IsEnum(BillingPeriodEnum)
   billingPeriod: BillingPeriodEnum;
+
+  @IsInt()
+  @IsPositive()
+  durationDays: number;
 
   @IsInt()
   @Min(0)

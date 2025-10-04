@@ -1014,6 +1014,57 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  // ===== Admin Plan Management =====
+  async adminListPlans() {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}/super-admin/plans`, { method: 'GET', headers });
+    return this.handleResponse(response);
+  }
+
+  async adminListActivePlans() {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}/super-admin/plans/active`, { method: 'GET', headers });
+    return this.handleResponse(response);
+  }
+
+  async adminCreatePlan(planData) {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}/super-admin/plans`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(planData),
+    });
+    return this.handleResponse(response);
+  }
+
+  async adminUpdatePlan(planId, planData) {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}/super-admin/plans/${planId}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(planData),
+    });
+    return this.handleResponse(response);
+  }
+
+  async adminTogglePlan(planId) {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}/super-admin/plans/${planId}/toggle`, {
+      method: 'PUT',
+      headers,
+    });
+    return this.handleResponse(response);
+  }
+
+  async adminDeletePlan(planId) {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}/super-admin/plans/${planId}`, {
+      method: 'DELETE',
+      headers,
+    });
+    return this.handleResponse(response);
+  }
+
   // ===== Self subscription & usage =====
   async getMySubscription() {
     const headers = await this.getAuthHeaders();
@@ -1026,6 +1077,13 @@ class ApiService {
   async listActivePlans(audience) {
     const headers = await this.getAuthHeaders();
     const url = audience ? `${this.baseURL}/subscriptions/plans?audience=${encodeURIComponent(audience)}` : `${this.baseURL}/subscriptions/plans`;
+    const response = await fetch(url, { method: 'GET', headers });
+    return this.handleResponse(response);
+  }
+
+  async listPlansForUser(audience) {
+    const headers = await this.getAuthHeaders();
+    const url = audience ? `${this.baseURL}/subscriptions/plans/for-user?audience=${encodeURIComponent(audience)}` : `${this.baseURL}/subscriptions/plans/for-user`;
     const response = await fetch(url, { method: 'GET', headers });
     return this.handleResponse(response);
   }
@@ -1057,22 +1115,22 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async createRazorpayOrder(planId) {
+  async createRazorpayOrder(planId, billingPeriod = 'MONTHLY') {
     const headers = await this.getAuthHeaders();
     const response = await fetch(`${this.baseURL}/subscriptions/create-order`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ planId }),
+      body: JSON.stringify({ planId, billingPeriod }),
     });
     return this.handleResponse(response);
   }
 
-  async confirmRazorpayPayment(planId, paymentData) {
+  async confirmRazorpayPayment(planId, paymentData, billingPeriod = 'MONTHLY') {
     const headers = await this.getAuthHeaders();
     const response = await fetch(`${this.baseURL}/subscriptions/confirm-payment`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ planId, paymentData }),
+      body: JSON.stringify({ planId, paymentData, billingPeriod }),
     });
     return this.handleResponse(response);
   }

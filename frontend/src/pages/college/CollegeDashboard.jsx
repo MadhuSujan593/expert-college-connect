@@ -18,6 +18,7 @@ import {
   MapPin,
   Calendar, 
   Clock,
+  Shield,
   CheckCircle, 
   Award, 
   TrendingUp, 
@@ -27,7 +28,7 @@ import {
   Menu,
   ChevronRight,
   AlertCircle,
-  Shield,
+  CreditCard,
   Mail,
   Phone,
   MessageCircle,
@@ -523,7 +524,14 @@ const CollegeDashboard = () => {
 
   // Get limitation details for modal
   const getLimitationDetails = () => {
-    if (!mySubscription?.plan) return null;
+    if (!mySubscription?.plan) {
+      return {
+        type: 'no_subscription',
+        currentUsage: 0,
+        planLimit: 0,
+        planName: 'No Plan'
+      };
+    }
     
     // Check if subscription is expired
     if (mySubscription.endsAt && new Date(mySubscription.endsAt) < new Date()) {
@@ -566,12 +574,14 @@ const CollegeDashboard = () => {
 
   // Handle requirement creation with plan validation
   const handleCreateRequirementClick = (onShowForm) => {
-    if (!canAccessRequirements()) {
+    // First check verification
+    if (!(user?.isEmailVerified || user?.isPhoneVerified)) {
       setVerificationFeatureName("Requirements Creation");
       setShowVerificationRequirement(true);
       return;
     }
     
+    // Then check subscription/plan limitations
     if (!canCreateRequirement()) {
       const limitation = getLimitationDetails();
       if (limitation) {
@@ -1713,63 +1723,78 @@ const CollegeDashboard = () => {
                       transition={{ duration: 0.4, delay: 0.6 }}
                       whileHover={{ scale: 1.01 }}
                     >
-                      <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-xl font-semibold text-gray-900">Subscription</h3>
-                          <button onClick={openPlansPage} className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 text-sm font-medium shadow-sm hover:shadow-md">Change Plan</button>
-                    </div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-semibold text-gray-900">Subscription</h3>
+                </div>
                     {subsLoading ? (
                       <p className="text-gray-600">Loading subscription...</p>
                     ) : mySubscription ? (
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-2">
-                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                              <span className="text-sm font-semibold text-gray-900">{mySubscription.plan.name}</span>
-                              <span className="text-sm text-gray-500">•</span>
-                              <span className="text-sm text-gray-500">₹{(mySubscription.plan.priceCents/100).toFixed(0)}/{mySubscription.plan.billingPeriod.toLowerCase()}</span>
-                        </div>
-                            <span className="text-xs text-gray-500">
-                              Due {mySubscription.endsAt 
-                                ? new Date(mySubscription.endsAt).toLocaleDateString()
-                                : 'N/A'
-                              }
-                            </span>
-                          </div>
+                        <div className="relative">
+                          {/* Background Pattern */}
+                          <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg opacity-50"></div>
                           
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-gray-600">Requirements</span>
-                              {mySubscription.plan.maxRequirements ? (
-                                <span className="text-sm font-medium text-gray-900">{(mySubscription.usages?.[0]?.usedRequirements || 0)}/{mySubscription.plan.maxRequirements}</span>
-                              ) : (
-                                <span className="text-sm font-medium text-green-600">Unlimited</span>
-                              )}
-                        </div>
-                            {mySubscription.plan.maxRequirements && (
-                            <div className="w-full bg-gray-200 rounded-full h-1.5">
-                                <div className="bg-blue-600 h-1.5 rounded-full" style={{ width: `${Math.min(100, Math.round(((mySubscription.usages?.[0]?.usedRequirements || 0) / mySubscription.plan.maxRequirements) * 100))}%` }}></div>
-                          </div>
-                            )}
+                          {/* Content */}
+                          <div className="relative p-6">
+                            {/* Header */}
+                            <div className="flex items-center justify-between mb-4">
+                              <div className="flex items-center space-x-3">
+                                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                                  <CreditCard className="w-5 h-5 text-white" />
+                                </div>
+                                <div>
+                                  <h4 className="text-lg font-semibold text-gray-900">{mySubscription.plan.name}</h4>
+                                  <p className="text-sm text-gray-600">
+                                    {mySubscription.endsAt 
+                                      ? `Expires ${new Date(mySubscription.endsAt).toLocaleDateString()}`
+                                      : 'Lifetime Access'
+                                    }
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 border border-green-200">
+                                <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                                Active
+                              </div>
+                            </div>
                             
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-gray-600">Expert Contacts</span>
-                              {mySubscription.plan.maxExpertContacts ? (
-                                <span className="text-sm font-medium text-gray-900">{(mySubscription.usages?.[0]?.usedExpertContacts || 0)}/{mySubscription.plan.maxExpertContacts}</span>
-                              ) : (
-                                <span className="text-sm font-medium text-green-600">Unlimited</span>
-                              )}
+                            {/* Features Grid */}
+                            <div className="grid grid-cols-2 gap-6">
+                              <div className="space-y-2">
+                                <div className="flex items-center space-x-2">
+                                  <FileText className="w-4 h-4 text-blue-600" />
+                                  <span className="text-sm font-medium text-gray-700">Requirements</span>
+                                </div>
+                                <div className="text-lg font-semibold text-gray-900">
+                                  {mySubscription.plan.maxRequirements ? `${mySubscription.usages?.[0]?.usedRequirements || 0}/${mySubscription.plan.maxRequirements}` : 'Unlimited'}
+                                </div>
+                              </div>
+                              
+                              <div className="space-y-2">
+                                <div className="flex items-center space-x-2">
+                                  <Users className="w-4 h-4 text-purple-600" />
+                                  <span className="text-sm font-medium text-gray-700">Expert Contacts</span>
+                                </div>
+                                <div className="text-lg font-semibold text-gray-900">
+                                  {mySubscription.plan.maxExpertContacts ? `${mySubscription.usages?.[0]?.usedExpertContacts || 0}/${mySubscription.plan.maxExpertContacts}` : 'Unlimited'}
+                                </div>
+                              </div>
                             </div>
-                            {mySubscription.plan.maxExpertContacts && (
-                            <div className="w-full bg-gray-200 rounded-full h-1.5">
-                                <div className="bg-purple-600 h-1.5 rounded-full" style={{ width: `${Math.min(100, Math.round(((mySubscription.usages?.[0]?.usedExpertContacts || 0) / mySubscription.plan.maxExpertContacts) * 100))}%` }}></div>
-                            </div>
-                            )}
+                            
+                          </div>
                         </div>
-                      </div>
                     ) : (
-                      <div className="flex items-center justify-between">
-                        <p className="text-gray-700">No active subscription. Choose a plan to unlock requirements and expert contacts.</p>
-                          <button onClick={openPlansPage} className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 shadow-sm hover:shadow-md">View Plans</button>
+                      <div className="text-center py-6">
+                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <CreditCard className="w-8 h-8 text-gray-400" />
+                        </div>
+                        <h4 className="text-lg font-semibold text-gray-900 mb-2">No Active Subscription</h4>
+                        <p className="text-gray-600 mb-4">Choose a plan to unlock requirements and expert contacts</p>
+                        <button 
+                          onClick={openPlansPage} 
+                          className="px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 shadow-sm hover:shadow-md font-medium"
+                        >
+                          Choose a Plan
+                        </button>
                       </div>
                     )}
                     </motion.div>
@@ -1785,7 +1810,7 @@ const CollegeDashboard = () => {
                       <h3 className="text-xl font-semibold text-gray-900 mb-3">Quick Actions</h3>
                       <div className="space-y-2">
                         <motion.button
-                        onClick={() => handleTabChange('requirements')}
+                        onClick={() => handleCreateRequirementClick(() => handleTabChange('requirements'))}
                           className="group w-full flex items-center space-x-3 p-3 bg-white hover:bg-blue-50 rounded-lg border border-gray-100 hover:border-blue-200 transition-all duration-200 hover:shadow-sm"
                           whileHover={{ scale: 1.01 }}
                           whileTap={{ scale: 0.99 }}
@@ -2054,7 +2079,14 @@ const CollegeDashboard = () => {
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: 0.3 }}
                   >
-                    <ExpertsTab user={user} key={`experts-${user?.id || 'no-user'}`} />
+                    <ExpertsTab 
+                      user={user} 
+                      mySubscription={mySubscription}
+                      showPlanLimitationModal={setShowPlanLimitationModal}
+                      setLimitationType={setLimitationType}
+                      getLimitationDetails={getLimitationDetails}
+                      key={`experts-${user?.id || 'no-user'}`} 
+                    />
                   </motion.div>
                 )}
                 </motion.div>
@@ -2255,7 +2287,6 @@ const CollegeDashboard = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <p className="text-sm text-gray-700 mb-2">Plan: <span className="font-semibold">{mySubscription.plan.name}</span> • {mySubscription.plan.billingPeriod.toLowerCase()}</p>
-                      <p className="text-sm text-gray-700 mb-2">Price: ₹{(mySubscription.plan.priceCents/100).toFixed(2)} / {mySubscription.plan.billingPeriod.toLowerCase()}</p>
                     </div>
                     <div className="grid grid-cols-1 gap-4">
                       <div>
@@ -4033,7 +4064,7 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
 };
 
 // Experts Tab Component
-const ExpertsTab = ({ user }) => {
+const ExpertsTab = ({ user, mySubscription, showPlanLimitationModal, setLimitationType, getLimitationDetails }) => {
   // Validate user prop
   if (!user) {
     console.error('ExpertsTab: user prop is undefined');
@@ -4280,6 +4311,17 @@ const ExpertsTab = ({ user }) => {
   // Handle contact expert
   const handleContactExpert = (expert) => {
     setSelectedExpert(expert);
+    
+    // Check if subscription is needed for contact revelation
+    if (!mySubscription?.plan && !revealedExpertIds.has(expert.id)) {
+      // User needs subscription to reveal contact
+      const limitation = getLimitationDetails();
+      if (limitation) {
+        setLimitationType(limitation.type);
+        showPlanLimitationModal(true);
+        return;
+      }
+    }
     
     // Check if this expert has been revealed in current session
     if (revealedExpertIds.has(expert.id)) {
@@ -4744,6 +4786,16 @@ const ExpertsTab = ({ user }) => {
                 <div className="pt-3">
                   <button
                     onClick={async () => {
+                      // Check subscription before revealing contact
+                      if (!mySubscription?.plan) {
+                        const limitation = getLimitationDetails();
+                        if (limitation) {
+                          setLimitationType(limitation.type);
+                          showPlanLimitationModal(true);
+                          return;
+                        }
+                      }
+                      
                       try {
                         const response = await apiService.revealExpertContact(selectedExpert.id);
                         if (response.success && response.contactDetails) {
@@ -4801,6 +4853,16 @@ const ExpertsTab = ({ user }) => {
                 </button>
                 <button
                   onClick={async () => {
+                    // Check subscription before revealing contact
+                    if (!mySubscription?.plan) {
+                      const limitation = getLimitationDetails();
+                      if (limitation) {
+                        setLimitationType(limitation.type);
+                        showPlanLimitationModal(true);
+                        return;
+                      }
+                    }
+                    
                     try {
                       const response = await apiService.revealExpertContact(selectedExpert.id);
                       if (response.success && response.contactDetails) {
@@ -5074,6 +5136,16 @@ const ExpertsTab = ({ user }) => {
                         {!revealedExpertIds.has(selectedExpert.id) && (
                           <button
                             onClick={async () => {
+                              // Check subscription before revealing contact
+                              if (!mySubscription?.plan) {
+                                const limitation = getLimitationDetails();
+                                if (limitation) {
+                                  setLimitationType(limitation.type);
+                                  showPlanLimitationModal(true);
+                                  return;
+                                }
+                              }
+                              
                               try {
                                 const response = await apiService.revealExpertContact(selectedExpert.id);
                                 if (response.success && response.contactDetails) {
