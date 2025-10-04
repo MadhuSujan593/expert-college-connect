@@ -8,7 +8,7 @@ import {
 
   Plus, Trash2, Save, X, CheckCircle, AlertCircle, TrendingUp, Calendar, MapPin,
 
-  Briefcase, Globe, Mail, Phone, Search, MessageCircle, Shield, Video,
+  Briefcase, Globe, Mail, Phone, Search, MessageCircle, Shield, Video, CreditCard,
 
   Users, Building2, Badge, Target, Clock, Activity, Filter, Upload, Download,
 
@@ -2004,19 +2004,12 @@ const ExpertDashboard = () => {
                     </motion.div>
                   </div>
 
-                  {/* Subscription Status */}
-                  <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/50 p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-xl font-semibold text-gray-900">Subscription Status</h3>
-                      {mySubscription?.plan && (
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          mySubscription.status === 'ACTIVE' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {mySubscription.status}
-                        </span>
-                      )}
+                  {/* Subscription and Quick Actions - Left Right Layout */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Subscription Status - Left */}
+                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/50 p-4">
+                    <div className="mb-3">
+                      <h3 className="text-lg font-semibold text-gray-900">Subscription</h3>
                     </div>
                     
                     {subsLoading ? (
@@ -2024,84 +2017,60 @@ const ExpertDashboard = () => {
                         <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-blue-600"></div>
                       </div>
                     ) : mySubscription?.plan ? (
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                          <div>
-                            <h4 className="font-semibold text-gray-900">{mySubscription.plan.name}</h4>
-                            <p className="text-sm text-gray-600">
-                              {mySubscription.plan.billingPeriod} • ₹{(mySubscription.plan.priceCents / 100).toFixed(0)}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm text-gray-600">Valid until</p>
-                            <p className="font-semibold text-gray-900">
-                              {mySubscription.endsAt ? new Date(mySubscription.endsAt).toLocaleDateString() : 'N/A'}
-                            </p>
-                          </div>
-                        </div>
+                      <div className="relative">
+                        {/* Background Pattern */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg opacity-50"></div>
                         
-                        {mySubscription.plan.maxRequirements && (
-                          <div className="p-4 bg-blue-50 rounded-lg">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-medium text-gray-700">Applications Used</span>
-                              <span className="text-sm font-semibold text-gray-900">
-                                {mySubscription.usages?.[0]?.usedRequirements || 0} / {mySubscription.plan.maxRequirements}
-                              </span>
+                        {/* Content */}
+                        <div className="relative p-4">
+                          {/* Header */}
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                                <CreditCard className="w-5 h-5 text-white" />
+
+                              </div>
+                              <div>
+                                <h4 className="text-lg font-semibold text-gray-900">{mySubscription.plan.name}</h4>
+                                <p className="text-sm text-gray-600">
+                                  {mySubscription.endsAt 
+                                    ? `Expires ${new Date(mySubscription.endsAt).toLocaleDateString()}`
+                                    : 'Lifetime Access'
+                                  }
+                                </p>
+                              </div>
                             </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div 
-                                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                                style={{ 
-                                  width: `${Math.min(
-                                    ((mySubscription.usages?.[0]?.usedRequirements || 0) / mySubscription.plan.maxRequirements) * 100, 
-                                    100
-                                  )}%` 
-                                }}
-                              ></div>
+                            <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 border border-green-200">
+                              <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                              Active
                             </div>
                           </div>
-                        )}
-                        
-                        <div className="flex space-x-3">
-                          <button
-                            onClick={() => navigate('/subscription-plans')}
-                            className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                          >
-                            Upgrade Plan
-                          </button>
-                          <button
-                            onClick={() => navigate('/subscription-plans')}
-                            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-                          >
-                            View Plans
-                          </button>
                         </div>
-                        
                       </div>
                     ) : (
-                      <div className="text-center py-8">
+                      <div className="text-center py-6">
                         <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <Shield className="w-8 h-8 text-gray-400" />
+                          <CreditCard className="w-8 h-8 text-gray-400" />
                         </div>
                         <h4 className="text-lg font-semibold text-gray-900 mb-2">No Active Subscription</h4>
                         <p className="text-gray-600 mb-4">Subscribe to a plan to start applying to jobs</p>
                         <button
                           onClick={() => navigate('/subscription-plans')}
-                          className="bg-blue-600 text-white py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                          className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-2 px-6 rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 shadow-sm hover:shadow-md font-medium"
                         >
                           Choose a Plan
                         </button>
                       </div>
                     )}
-                  </div>
+                    </div>
 
-                  {/* Classic Quick Actions */}
-                  <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/50 p-6">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {/* Quick Actions - Right */}
+                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/50 p-4">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Quick Actions</h3>
+                    <div className="space-y-2">
                       <button
                         onClick={() => handleTabChange('profile')}
-                        className="group flex items-center space-x-3 p-4 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 hover:border-blue-300 transition-all duration-200"
+                        className="group flex items-center space-x-3 p-3 hover:bg-blue-50 rounded-lg transition-all duration-200"
                       >
                         <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center group-hover:bg-blue-700 transition-colors">
                           <Edit3 className="h-5 w-5 text-white" />
@@ -2114,7 +2083,7 @@ const ExpertDashboard = () => {
 
                       <button
                         onClick={() => handleTabChange('colleges')}
-                        className="group flex items-center space-x-3 p-4 bg-green-50 hover:bg-green-100 rounded-lg border border-green-200 hover:border-green-300 transition-all duration-200"
+                        className="group flex items-center space-x-3 p-3 hover:bg-green-50 rounded-lg transition-all duration-200"
                       >
                         <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center group-hover:bg-green-700 transition-colors">
                           <Search className="h-5 w-5 text-white" />
@@ -2126,6 +2095,7 @@ const ExpertDashboard = () => {
                       </button>
                     </div>
                   </div>
+                </div> {/* End of left-right grid layout */}
 
 
 

@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { CheckCircle, MapPin, Calendar, IndianRupee, Clock, Building2, Star, Zap, Briefcase, Heart, Shield, AlertCircle } from 'lucide-react';
 import apiService from '../../utils/api';
 import ApplicationLimitModal from '../common/ApplicationLimitModal';
+import PlanLimitationModal from '../common/PlanLimitationModal';
 
 const RequirementDetails = () => {
   const { id: requirementId } = useParams();
@@ -23,6 +24,8 @@ const RequirementDetails = () => {
   const [mySubscription, setMySubscription] = useState(null);
   const [subsLoading, setSubsLoading] = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
+  const [showPlanLimitationModal, setShowPlanLimitationModal] = useState(false);
+  const [limitationType, setLimitationType] = useState(null);
 
   // Check if user has already applied and get status
   const checkIfApplied = async () => {
@@ -60,6 +63,17 @@ const RequirementDetails = () => {
     }
   };
 
+  // Handle plan limitation modal
+  const handlePlanLimitationUpgrade = () => {
+    setShowPlanLimitationModal(false);
+    navigate('/subscription-plans');
+  };
+
+  const handlePlanLimitationClose = () => {
+    setShowPlanLimitationModal(false);
+    setLimitationType(null);
+  };
+
   // Check if user can apply to jobs (subscription limits)
   const canApplyToJobs = () => {
     if (!mySubscription?.plan) return false;
@@ -78,6 +92,43 @@ const RequirementDetails = () => {
     }
     
     return true;
+  };
+
+  // Get limitation details for modal
+  const getLimitationDetails = () => {
+    if (!mySubscription?.plan) {
+      return {
+        type: 'no_subscription',
+        currentUsage: 0,
+        planLimit: 0,
+        planName: 'No Plan'
+      };
+    }
+    
+    // Check if subscription is expired
+    if (mySubscription.endsAt && new Date(mySubscription.endsAt) < new Date()) {
+      return {
+        type: 'expired',
+        currentUsage: 0,
+        planLimit: 0,
+        planName: mySubscription.plan.name
+      };
+    }
+    
+    // Check application limit
+    const usedApplications = mySubscription.usages?.[0]?.usedRequirements || 0;
+    const maxApplications = mySubscription.plan.maxRequirements;
+    
+    if (maxApplications && usedApplications >= maxApplications) {
+      return {
+        type: 'applications',
+        currentUsage: usedApplications,
+        planLimit: maxApplications,
+        planName: mySubscription.plan.name
+      };
+    }
+    
+    return null;
   };
 
   // Fetch requirement details
@@ -367,32 +418,24 @@ const RequirementDetails = () => {
                   <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-blue-600 mx-auto mb-3"></div>
                   <p className="text-sm text-gray-600">Checking subscription...</p>
                 </div>
-              ) : !mySubscription?.plan ? (
-                <div className="text-center mb-6">
-                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <Shield className="w-6 h-6 text-gray-400" />
-                  </div>
-                  <p className="text-sm text-gray-600 mb-3">No active subscription</p>
-                  <button
-                    onClick={() => navigate('/subscription-plans')}
-                    className="w-full bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Subscribe to Apply
-                  </button>
-                </div>
               ) : (
                 <button
                   onClick={() => {
-                    console.log('Apply Now clicked');
-                    const canApply = canApplyToJobs();
-                    console.log('Can apply jobs:', canApply);
-                    console.log('Subscription:', mySubscription);
+                    // Check subscription first
+                    if (!mySubscription?.plan) {
+                      const limitation = getLimitationDetails();
+                      if (limitation) {
+                        setLimitationType(limitation.type);
+                        setShowPlanLimitationModal(true);
+                        return;
+                      }
+                    }
                     
+                    // Check if can apply to jobs (limits)
+                    const canApply = canApplyToJobs();
                     if (!canApply) {
-                      console.log('Opening limit modal');
                       setShowLimitModal(true);
                     } else {
-                      console.log('Opening application modal');
                       setShowApplicationModal(true);
                     }
                   }}
@@ -503,6 +546,17 @@ const RequirementDetails = () => {
           navigate('/subscription-plans');
         }}
         subscription={mySubscription}
+      />
+
+      {/* Plan Limitation Modal */}
+      <PlanLimitationModal
+        isOpen={showPlanLimitationModal}
+        onClose={handlePlanLimitationClose}
+        onUpgrade={handlePlanLimitationUpgrade}
+        limitationType={limitationType}
+        currentUsage={mySubscription?.usages?.[0]?.usedRequirements || 0}
+        planLimit={mySubscription?.plan?.maxRequirements || 0}
+        planName={mySubscription?.plan?.name || 'No Plan'}
       />
     </div>
   );

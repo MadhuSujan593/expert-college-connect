@@ -1757,29 +1757,6 @@ const CollegeDashboard = () => {
                               </div>
                             </div>
                             
-                            {/* Features Grid */}
-                            <div className="grid grid-cols-2 gap-6">
-                              <div className="space-y-2">
-                                <div className="flex items-center space-x-2">
-                                  <FileText className="w-4 h-4 text-blue-600" />
-                                  <span className="text-sm font-medium text-gray-700">Requirements</span>
-                                </div>
-                                <div className="text-lg font-semibold text-gray-900">
-                                  {mySubscription.plan.maxRequirements ? `${mySubscription.usages?.[0]?.usedRequirements || 0}/${mySubscription.plan.maxRequirements}` : 'Unlimited'}
-                                </div>
-                              </div>
-                              
-                              <div className="space-y-2">
-                                <div className="flex items-center space-x-2">
-                                  <Users className="w-4 h-4 text-purple-600" />
-                                  <span className="text-sm font-medium text-gray-700">Expert Contacts</span>
-                                </div>
-                                <div className="text-lg font-semibold text-gray-900">
-                                  {mySubscription.plan.maxExpertContacts ? `${mySubscription.usages?.[0]?.usedExpertContacts || 0}/${mySubscription.plan.maxExpertContacts}` : 'Unlimited'}
-                                </div>
-                              </div>
-                            </div>
-                            
                           </div>
                         </div>
                     ) : (
