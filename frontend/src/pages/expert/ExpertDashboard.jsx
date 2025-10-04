@@ -1894,31 +1894,31 @@ const ExpertDashboard = () => {
 
                   {/* Classic Quick Actions */}
                   <div className="bg-white rounded-2xl shadow-sm p-6">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-6">Quick Actions</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <button
                         onClick={() => handleTabChange('profile')}
-                        className="group flex items-center space-x-4 p-6 bg-blue-50 hover:bg-blue-100 rounded-xl border border-blue-200 hover:border-blue-300 transition-all duration-200"
+                        className="group flex items-center space-x-3 p-4 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 hover:border-blue-300 transition-all duration-200"
                       >
-                        <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center group-hover:bg-blue-700 transition-colors">
-                          <Edit3 className="h-6 w-6 text-white" />
+                        <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center group-hover:bg-blue-700 transition-colors">
+                          <Edit3 className="h-5 w-5 text-white" />
                         </div>
                         <div className="text-left">
-                          <p className="font-semibold text-gray-900">Update Profile</p>
-                          <p className="text-sm text-gray-600">Keep information current</p>
+                          <p className="font-medium text-gray-900">Update Profile</p>
+                          <p className="text-xs text-gray-600">Keep information current</p>
                         </div>
                       </button>
 
                       <button
                         onClick={() => handleTabChange('colleges')}
-                        className="group flex items-center space-x-4 p-6 bg-green-50 hover:bg-green-100 rounded-xl border border-green-200 hover:border-green-300 transition-all duration-200"
+                        className="group flex items-center space-x-3 p-4 bg-green-50 hover:bg-green-100 rounded-lg border border-green-200 hover:border-green-300 transition-all duration-200"
                       >
-                        <div className="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center group-hover:bg-green-700 transition-colors">
-                          <Search className="h-6 w-6 text-white" />
+                        <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center group-hover:bg-green-700 transition-colors">
+                          <Search className="h-5 w-5 text-white" />
                         </div>
                         <div className="text-left">
-                          <p className="font-semibold text-gray-900">Find Opportunities</p>
-                          <p className="text-sm text-gray-600">Search college posts</p>
+                          <p className="font-medium text-gray-900">Find Opportunities</p>
+                          <p className="text-xs text-gray-600">Search college posts</p>
                         </div>
                       </button>
                     </div>
@@ -1926,41 +1926,6 @@ const ExpertDashboard = () => {
 
 
 
-                  {/* Classic Recent Activity */}
-                  <div className="bg-white rounded-2xl shadow-sm p-6">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-6">Recent Activity</h3>
-                    <div className="space-y-4">
-                      <div className="flex items-center space-x-4 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer group">
-                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
-                          <MessageCircle className="h-5 w-5 text-blue-600" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-semibold text-gray-900">New message from MIT College</p>
-                          <p className="text-xs text-gray-500">2 hours ago</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center space-x-4 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer group">
-                        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors">
-                          <Star className="h-5 w-5 text-green-600" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-semibold text-gray-900">Received 5-star rating</p>
-                          <p className="text-xs text-gray-500">1 day ago</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center space-x-4 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer group">
-                        <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors">
-                          <Eye className="h-5 w-5 text-purple-600" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-semibold text-gray-900">Profile viewed 15 times</p>
-                          <p className="text-xs text-gray-500">2 days ago</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
 
                 </motion.div>
 

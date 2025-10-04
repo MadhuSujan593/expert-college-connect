@@ -194,6 +194,15 @@ const CollegeDashboard = () => {
     setShowPlanLimitationModal(true);
   };
 
+  // Global function to refresh subscription data (accessible from anywhere)
+  window.refreshSubscriptionData = async () => {
+    try {
+      await loadMySubscription();
+    } catch (error) {
+      console.warn('Failed to refresh subscription data:', error);
+    }
+  };
+
   // Get current limitation details for modal
   const getCurrentLimitationDetails = () => {
     if (!mySubscription?.plan) return null;
@@ -1997,6 +2006,7 @@ const CollegeDashboard = () => {
                     hasMore={hasMore}
                     loadMoreRequirements={loadMoreRequirements}
                     onCreateRequirementClick={handleCreateRequirementClick}
+                    loadMySubscription={loadMySubscription}
                   />
 
 
@@ -3100,7 +3110,7 @@ const ProfileTab = ({
 };
 
 // Requirements Tab Component - Enhanced with form
-const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhone, onPostRequirement, showToast, setActiveTab, onView, onDelete, onRate, onToggleActive, requirements, setRequirements, refreshRequirements, totalRequirements, loading, loadingMore, hasMore, loadMoreRequirements, onCreateRequirementClick }) => {
+const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhone, onPostRequirement, showToast, setActiveTab, onView, onDelete, onRate, onToggleActive, requirements, setRequirements, refreshRequirements, totalRequirements, loading, loadingMore, hasMore, loadMoreRequirements, onCreateRequirementClick, loadMySubscription }) => {
   // Check if user can access requirements creation
   const canAccessRequirements = () => {
     return user?.isEmailVerified || user?.isPhoneVerified;
@@ -4756,7 +4766,9 @@ const ExpertsTab = ({ user }) => {
                           
                           // Contact details revealed successfully
                           // Refresh subscription data to show updated usage
-                          await loadMySubscription();
+                          if (window.refreshSubscriptionData) {
+                            await window.refreshSubscriptionData();
+                          }
                         }
                       } catch (e) {
                         console.error('Contact revelation error:', e);
@@ -5074,7 +5086,9 @@ const ExpertsTab = ({ user }) => {
                                   });
                                   
                                     // Refresh subscription data to show updated usage
-                                    await loadMySubscription();
+                                    if (window.refreshSubscriptionData) {
+                                      await window.refreshSubscriptionData();
+                                    }
                                 }
                               } catch (e) {
                                 console.error('Contact revelation error:', e);
