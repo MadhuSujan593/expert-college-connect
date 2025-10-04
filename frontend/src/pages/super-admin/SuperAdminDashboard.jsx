@@ -1029,14 +1029,24 @@ const SuperAdminDashboard = () => {
                             {/* Features */}
                             <div className="px-6 py-4">
                               <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-gray-600 font-medium">Requirements</span>
-                                  <span className="text-gray-900 font-semibold">{plan.maxRequirements ?? 'Unlimited'}</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                  <span className="text-gray-600 font-medium">Expert Contacts</span>
-                                  <span className="text-gray-900 font-semibold">{plan.maxExpertContacts ?? 'Unlimited'}</span>
-                                </div>
+                                {plan.audience === 'EXPERT' && (
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-gray-600 font-medium">Max Applications</span>
+                                    <span className="text-gray-900 font-semibold">{plan.maxRequirements ?? 'Unlimited'}</span>
+                                  </div>
+                                )}
+                                {plan.audience === 'COLLEGE' && (
+                                  <>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-gray-600 font-medium">Requirements</span>
+                                      <span className="text-gray-900 font-semibold">{plan.maxRequirements ?? 'Unlimited'}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-gray-600 font-medium">Expert Contacts</span>
+                                      <span className="text-gray-900 font-semibold">{plan.maxExpertContacts ?? 'Unlimited'}</span>
+                                    </div>
+                                  </>
+                                )}
                               </div>
                             </div>
 
@@ -1140,14 +1150,24 @@ const SuperAdminDashboard = () => {
                           <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                           <textarea rows={3} value={createPlanForm.description} onChange={e => setCreatePlanForm({ ...createPlanForm, description: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-colors" />
                         </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Max Requirements / mo (empty for unlimited)</label>
-                          <input type="number" value={createPlanForm.maxRequirements} onChange={e => setCreatePlanForm({ ...createPlanForm, maxRequirements: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-colors" />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Max Expert Contacts / mo (empty for unlimited)</label>
-                          <input type="number" value={createPlanForm.maxExpertContacts} onChange={e => setCreatePlanForm({ ...createPlanForm, maxExpertContacts: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-colors" />
-                        </div>
+                        {createPlanForm.audience === 'EXPERT' && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Max Requirements / mo (empty for unlimited)</label>
+                            <input type="number" value={createPlanForm.maxRequirements} onChange={e => setCreatePlanForm({ ...createPlanForm, maxRequirements: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-colors" />
+                          </div>
+                        )}
+                        {createPlanForm.audience === 'COLLEGE' && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Max Requirements / mo (empty for unlimited)</label>
+                            <input type="number" value={createPlanForm.maxRequirements} onChange={e => setCreatePlanForm({ ...createPlanForm, maxRequirements: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-colors" />
+                          </div>
+                        )}
+                        {createPlanForm.audience === 'COLLEGE' && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Max Expert Contacts / mo (empty for unlimited)</label>
+                            <input type="number" value={createPlanForm.maxExpertContacts} onChange={e => setCreatePlanForm({ ...createPlanForm, maxExpertContacts: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-colors" />
+                          </div>
+                        )}
                       </div>
                       <div className="mt-4 flex justify-end space-x-2">
                         <button onClick={() => setShowCreatePlan(false)} className="px-4 py-2 border border-blue-300 text-blue-600 hover:bg-blue-50 rounded-md">Cancel</button>

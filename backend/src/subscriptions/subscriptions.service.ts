@@ -174,6 +174,35 @@ export class SubscriptionsService {
     });
   }
 
+  async assertExpertCanApplyToJobs(userId: string) {
+    // Fetch active subscription and plan
+    const subscription = await this.getActiveSubscriptionForUser(userId);
+    if (!subscription) {
+      throw new ForbiddenException('No active subscription found');
+    }
+    if (subscription.plan.audience !== 'EXPERT') {
+      throw new ForbiddenException('Subscription not valid for expert actions');
+    }
+    // Check limit
+    if (subscription.plan.maxRequirements == null) {
+      return; // unlimited
+    }
+    const usage = await this.getOrCreateUsage(subscription.id);
+    if (usage.usedRequirements >= subscription.plan.maxRequirements) {
+      throw new ForbiddenException('Application limit reached for current period');
+    }
+  }
+
+  async incrementExpertApplicationUsage(userId: string) {
+    const subscription = await this.getActiveSubscriptionForUser(userId);
+    if (!subscription) return;
+    const usage = await this.getOrCreateUsage(subscription.id);
+    await this.prisma.subscriptionusage.update({
+      where: { id: usage.id },
+      data: { usedRequirements: { increment: 1 } },
+    });
+  }
+
   async confirmPayment(userId: string, planId: string, paymentData: any) {
     try {
       console.log('Starting payment confirmation:', { userId, planId, paymentData });

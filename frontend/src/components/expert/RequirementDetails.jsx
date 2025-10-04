@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { CheckCircle, MapPin, Calendar, IndianRupee, Clock, Building2, Star, Zap, Briefcase, Heart } from 'lucide-react';
+import { CheckCircle, MapPin, Calendar, IndianRupee, Clock, Building2, Star, Zap, Briefcase, Heart, Shield, AlertCircle } from 'lucide-react';
 import apiService from '../../utils/api';
+import ApplicationLimitModal from '../common/ApplicationLimitModal';
 
 const RequirementDetails = () => {
   const { id: requirementId } = useParams();
@@ -19,6 +20,9 @@ const RequirementDetails = () => {
   const [hasApplied, setHasApplied] = useState(false);
   const [applicationStatus, setApplicationStatus] = useState(null);
   const [reviewNotes, setReviewNotes] = useState(null);
+  const [mySubscription, setMySubscription] = useState(null);
+  const [subsLoading, setSubsLoading] = useState(false);
+  const [showLimitModal, setShowLimitModal] = useState(false);
 
   // Check if user has already applied and get status
   const checkIfApplied = async () => {
@@ -41,6 +45,39 @@ const RequirementDetails = () => {
     } catch (err) {
       console.error('Error checking application status:', err);
     }
+  };
+
+  // Load subscription data
+  const loadMySubscription = async () => {
+    try {
+      setSubsLoading(true);
+      const data = await apiService.getMySubscription();
+      setMySubscription(data);
+    } catch (e) {
+      console.error('Failed to load subscription', e);
+    } finally {
+      setSubsLoading(false);
+    }
+  };
+
+  // Check if user can apply to jobs (subscription limits)
+  const canApplyToJobs = () => {
+    if (!mySubscription?.plan) return false;
+    
+    // Check if subscription is expired
+    if (mySubscription.endsAt && new Date(mySubscription.endsAt) < new Date()) {
+      return false;
+    }
+    
+    // Check application limit
+    const usedApplications = mySubscription.usages?.[0]?.usedRequirements || 0;
+    const maxApplications = mySubscription.plan.maxRequirements;
+    
+    if (maxApplications && usedApplications >= maxApplications) {
+      return false;
+    }
+    
+    return true;
   };
 
   // Fetch requirement details
@@ -66,6 +103,7 @@ const RequirementDetails = () => {
     if (requirementId) {
       fetchRequirementDetails();
       checkIfApplied();
+      loadMySubscription();
     }
   }, [requirementId]);
 
@@ -84,6 +122,8 @@ const RequirementDetails = () => {
       if (response.success) {
         setShowApplicationModal(false);
         setApplicationForm({ coverLetter: '' });
+        // Refresh subscription data to update usage
+        await loadMySubscription();
         // Navigate back to dashboard or refresh the page
         navigate('/dashboard/expert');
       }
@@ -322,9 +362,40 @@ const RequirementDetails = () => {
                     Status: {applicationData?.applicationStatus || applicationStatus || 'Pending'}
                   </p>
                 </div>
+              ) : subsLoading ? (
+                <div className="text-center mb-6">
+                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-blue-600 mx-auto mb-3"></div>
+                  <p className="text-sm text-gray-600">Checking subscription...</p>
+                </div>
+              ) : !mySubscription?.plan ? (
+                <div className="text-center mb-6">
+                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Shield className="w-6 h-6 text-gray-400" />
+                  </div>
+                  <p className="text-sm text-gray-600 mb-3">No active subscription</p>
+                  <button
+                    onClick={() => navigate('/subscription-plans')}
+                    className="w-full bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Subscribe to Apply
+                  </button>
+                </div>
               ) : (
                 <button
-                  onClick={() => setShowApplicationModal(true)}
+                  onClick={() => {
+                    console.log('Apply Now clicked');
+                    const canApply = canApplyToJobs();
+                    console.log('Can apply jobs:', canApply);
+                    console.log('Subscription:', mySubscription);
+                    
+                    if (!canApply) {
+                      console.log('Opening limit modal');
+                      setShowLimitModal(true);
+                    } else {
+                      console.log('Opening application modal');
+                      setShowApplicationModal(true);
+                    }
+                  }}
                   className="w-full bg-primary-500 text-white font-semibold py-3 px-4 rounded-lg hover:bg-primary-600 transition-colors mb-6 shadow-sm"
                 >
                   Apply Now
@@ -363,7 +434,7 @@ const RequirementDetails = () => {
       </div>
 
              {/* Application Modal - Only show if not applied */}
-       {showApplicationModal && !hasApplied && (
+       {showApplicationModal && !hasApplied && canApplyToJobs() && (
          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
            <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
              {/* Header */}
@@ -422,6 +493,17 @@ const RequirementDetails = () => {
            </div>
          </div>
        )}
+
+      {/* Application Limit Modal */}
+      <ApplicationLimitModal
+        isOpen={showLimitModal}
+        onClose={() => setShowLimitModal(false)}
+        onUpgrade={() => {
+          setShowLimitModal(false);
+          navigate('/subscription-plans');
+        }}
+        subscription={mySubscription}
+      />
     </div>
   );
 };

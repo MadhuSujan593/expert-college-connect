@@ -2,40 +2,8 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Lock, ArrowRight } from 'lucide-react';
 
-const PlanLimitationModal = ({ isOpen, onClose, onUpgrade, limitationType, currentUsage, planLimit, planName }) => {
+const ApplicationLimitModal = ({ isOpen, onClose, onUpgrade, subscription }) => {
   if (!isOpen) return null;
-
-  const getLimitationDetails = () => {
-    switch (limitationType) {
-      case 'requirements':
-        return {
-          title: 'Requirements Limit Reached',
-          description: `You've reached the limit of ${planLimit} requirements on your ${planName} plan.`
-        };
-      case 'applications':
-        return {
-          title: 'Application Limit Reached',
-          description: `You've reached the limit of ${planLimit} applications on your ${planName} plan.`
-        };
-      case 'expert_contacts':
-        return {
-          title: 'Expert Contacts Limit Reached',
-          description: `You've reached the limit of ${planLimit} expert contacts on your ${planName} plan.`
-        };
-      case 'expired':
-        return {
-          title: 'Subscription Expired',
-          description: `Your ${planName} subscription has expired. Renew to continue.`
-        };
-      default:
-        return {
-          title: 'Plan Limit Reached',
-          description: 'You\'ve reached your current plan limit.'
-        };
-    }
-  };
-
-  const details = getLimitationDetails();
 
   return (
     <AnimatePresence>
@@ -65,7 +33,7 @@ const PlanLimitationModal = ({ isOpen, onClose, onUpgrade, limitationType, curre
                   <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
                     <Lock className="w-4 h-4 text-gray-600" />
                   </div>
-                  <h2 className="text-lg font-semibold text-gray-900">{details.title}</h2>
+                  <h2 className="text-lg font-semibold text-gray-900">Application Limit Reached</h2>
                 </div>
                 <button
                   onClick={onClose}
@@ -79,24 +47,26 @@ const PlanLimitationModal = ({ isOpen, onClose, onUpgrade, limitationType, curre
             {/* Content */}
             <div className="px-6 py-5">
               <p className="text-gray-600 mb-6 leading-relaxed">
-                {details.description}
+                You've reached the limit of {subscription?.plan?.maxRequirements || 'your applications'} applications on your {subscription?.plan?.name || 'current'} plan.
               </p>
 
               {/* Usage Info */}
-              {limitationType !== 'expired' && (
-                <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-gray-600">Usage</span>
-                    <span className="text-sm font-medium text-gray-900">{currentUsage || 0} / {planLimit || 0}</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-1.5">
-                    <div 
-                      className="bg-gradient-to-r from-blue-600 to-cyan-600 h-1.5 rounded-full transition-all duration-300"
-                      style={{ width: `${Math.min(100, ((currentUsage || 0) / (planLimit || 1)) * 100)}%` }}
-                    />
-                  </div>
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-gray-600">Usage</span>
+                  <span className="text-sm font-medium text-gray-900">
+                    {subscription?.usages?.[0]?.usedRequirements || 0} / {subscription?.plan?.maxRequirements || 0}
+                  </span>
                 </div>
-              )}
+                <div className="w-full bg-gray-200 rounded-full h-1.5">
+                  <div 
+                    className="bg-gradient-to-r from-blue-600 to-cyan-600 h-1.5 rounded-full transition-all duration-300"
+                    style={{ 
+                      width: `${Math.min(100, ((subscription?.usages?.[0]?.usedRequirements || 0) / (subscription?.plan?.maxRequirements || 1)) * 100)}%` 
+                    }}
+                  />
+                </div>
+              </div>
 
               {/* Action Buttons */}
               <div className="flex space-x-3">
@@ -122,4 +92,4 @@ const PlanLimitationModal = ({ isOpen, onClose, onUpgrade, limitationType, curre
   );
 };
 
-export default PlanLimitationModal;
+export default ApplicationLimitModal;

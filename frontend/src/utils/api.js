@@ -1030,6 +1030,13 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  async getAvailablePlans(audience) {
+    const headers = await this.getAuthHeaders();
+    const url = audience ? `${this.baseURL}/subscriptions/plans?audience=${encodeURIComponent(audience)}` : `${this.baseURL}/subscriptions/plans`;
+    const response = await fetch(url, { method: 'GET', headers });
+    return this.handleResponse(response);
+  }
+
   async revealExpertContact(expertId) {
     const headers = await this.getAuthHeaders();
     const response = await fetch(`${this.baseURL}/subscriptions/reveal-contact`, {

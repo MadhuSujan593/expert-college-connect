@@ -138,7 +138,7 @@ const AppContent = () => {
           <Route 
             path="/subscription-plans" 
             element={
-              <ProtectedRoute requiredRole="COLLEGE_ADMIN">
+              <ProtectedRoute>
                 <SubscriptionPlans />
               </ProtectedRoute>
             } 

@@ -1,12 +1,16 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { UpdateApplicationStatusDto } from './dto/update-application-status.dto';
 import { GetApplicationsDto } from './dto/get-applications.dto';
 
 @Injectable()
 export class ApplicationService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private subscriptionsService: SubscriptionsService
+  ) {}
 
   // Create a new application
   async createApplication(createApplicationDto: CreateApplicationDto, expertId: string) {
@@ -37,6 +41,9 @@ export class ApplicationService {
     if (existingApplication) {
       throw new BadRequestException('You have already applied for this requirement');
     }
+
+    // Check expert subscription limits
+    await this.subscriptionsService.assertExpertCanApplyToJobs(expertId);
 
     // Create application
     const application = await this.prisma.application.create({
@@ -76,6 +83,9 @@ export class ApplicationService {
         message: `A new expert has applied for your requirement: "${requirement.title}"`
       }
     });
+
+    // Increment expert application usage
+    await this.subscriptionsService.incrementExpertApplicationUsage(expertId);
 
     return application;
   }

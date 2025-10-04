@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { 
@@ -34,10 +34,11 @@ import {
   checkAvailability 
 } from '../../utils/verificationUtils';
 import VerificationRequirementModal from '../../components/common/VerificationRequirementModal';
+import PlanLimitationModal from '../../components/common/PlanLimitationModal';
 
 const ExpertDashboard = () => {
-
   const { user, logout, setUser } = useAuth();
+  const navigate = useNavigate();
 
   // Get active tab from URL or default to 'overview'
   const [activeTab, setActiveTab] = useState(() => {
@@ -77,6 +78,15 @@ const ExpertDashboard = () => {
     rejected: 0,
     accepted: 0
   });
+
+  // Subscription state
+  const [mySubscription, setMySubscription] = useState(null);
+  const [subsLoading, setSubsLoading] = useState(false);
+
+  // Plan limitation modal state
+  const [showPlanLimitationModal, setShowPlanLimitationModal] = useState(false);
+  const [limitationType, setLimitationType] = useState(null);
+
 
 
 
@@ -402,7 +412,10 @@ const ExpertDashboard = () => {
 
     fetchRatingRequests();
 
+    loadMySubscription();
+
   }, []);
+
 
 
 
@@ -565,6 +578,107 @@ const ExpertDashboard = () => {
       console.error('Error fetching application stats:', error);
     }
   };
+
+  // Load my subscription
+  const loadMySubscription = async () => {
+    try {
+      setSubsLoading(true);
+      const data = await api.getMySubscription();
+      console.log('Subscription data loaded:', data);
+      setMySubscription(data);
+    } catch (e) {
+      console.error('Failed to load subscription', e);
+    } finally {
+      setSubsLoading(false);
+    }
+  };
+
+  // Handle plan limitation modal
+  const handlePlanLimitationUpgrade = () => {
+    setShowPlanLimitationModal(false);
+    navigate('/subscription-plans');
+  };
+
+  const handlePlanLimitationClose = () => {
+    setShowPlanLimitationModal(false);
+    setLimitationType(null);
+  };
+
+
+  // Check if user can apply to jobs (subscription limits)
+  const canApplyToJobs = () => {
+    if (!mySubscription?.plan) return false;
+    
+    // Check if subscription is expired
+    if (mySubscription.endsAt && new Date(mySubscription.endsAt) < new Date()) {
+      return false;
+    }
+    
+    // Check application limit
+    const usedApplications = mySubscription.usages?.[0]?.usedRequirements || 0;
+    const maxApplications = mySubscription.plan.maxRequirements;
+    
+    if (maxApplications && usedApplications >= maxApplications) {
+      return false;
+    }
+    
+    return true;
+  };
+
+  // Get limitation details for modal
+  const getCurrentLimitationDetails = () => {
+    if (!mySubscription?.plan) return null;
+    
+    // Check if subscription is expired
+    if (mySubscription.endsAt && new Date(mySubscription.endsAt) < new Date()) {
+      return {
+        type: 'expired',
+        currentUsage: 0,
+        planLimit: 0,
+        planName: mySubscription.plan.name
+      };
+    }
+    
+    // Check application limit
+    const usedApplications = mySubscription.usages?.[0]?.usedRequirements || 0;
+    const maxApplications = mySubscription.plan.maxRequirements;
+    
+    if (maxApplications && usedApplications >= maxApplications) {
+      return {
+        type: 'applications',
+        currentUsage: usedApplications,
+        planLimit: maxApplications,
+        planName: mySubscription.plan.name
+      };
+    }
+    
+    return null;
+  };
+
+  // Handle application limit reached
+  const handleApplicationLimitReached = () => {
+    console.log('Modal function called');
+    const limitationDetails = getCurrentLimitationDetails();
+    console.log('Limitation details:', limitationDetails);
+    if (limitationDetails) {
+      setLimitationType(limitationDetails.type);
+      setShowPlanLimitationModal(true);
+    } else {
+      // Fallback: navigate to subscription plans
+      navigate('/subscription-plans');
+    }
+  };
+
+  // Expose function globally for RequirementDetails component
+  useEffect(() => {
+    window.handleApplicationLimitReached = handleApplicationLimitReached;
+    console.log('Modal function exposed globally');
+    console.log('Function available:', typeof window.handleApplicationLimitReached);
+    return () => {
+      delete window.handleApplicationLimitReached;
+    };
+  }, [mySubscription]);
+
 
 
 
@@ -1890,7 +2004,96 @@ const ExpertDashboard = () => {
                     </motion.div>
                   </div>
 
-
+                  {/* Subscription Status */}
+                  <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/50 p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-xl font-semibold text-gray-900">Subscription Status</h3>
+                      {mySubscription?.plan && (
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          mySubscription.status === 'ACTIVE' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {mySubscription.status}
+                        </span>
+                      )}
+                    </div>
+                    
+                    {subsLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-blue-600"></div>
+                      </div>
+                    ) : mySubscription?.plan ? (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                          <div>
+                            <h4 className="font-semibold text-gray-900">{mySubscription.plan.name}</h4>
+                            <p className="text-sm text-gray-600">
+                              {mySubscription.plan.billingPeriod} • ₹{(mySubscription.plan.priceCents / 100).toFixed(0)}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm text-gray-600">Valid until</p>
+                            <p className="font-semibold text-gray-900">
+                              {mySubscription.endsAt ? new Date(mySubscription.endsAt).toLocaleDateString() : 'N/A'}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        {mySubscription.plan.maxRequirements && (
+                          <div className="p-4 bg-blue-50 rounded-lg">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm font-medium text-gray-700">Applications Used</span>
+                              <span className="text-sm font-semibold text-gray-900">
+                                {mySubscription.usages?.[0]?.usedRequirements || 0} / {mySubscription.plan.maxRequirements}
+                              </span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div 
+                                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                style={{ 
+                                  width: `${Math.min(
+                                    ((mySubscription.usages?.[0]?.usedRequirements || 0) / mySubscription.plan.maxRequirements) * 100, 
+                                    100
+                                  )}%` 
+                                }}
+                              ></div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        <div className="flex space-x-3">
+                          <button
+                            onClick={() => navigate('/subscription-plans')}
+                            className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                          >
+                            Upgrade Plan
+                          </button>
+                          <button
+                            onClick={() => navigate('/subscription-plans')}
+                            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                          >
+                            View Plans
+                          </button>
+                        </div>
+                        
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Shield className="w-8 h-8 text-gray-400" />
+                        </div>
+                        <h4 className="text-lg font-semibold text-gray-900 mb-2">No Active Subscription</h4>
+                        <p className="text-gray-600 mb-4">Subscribe to a plan to start applying to jobs</p>
+                        <button
+                          onClick={() => navigate('/subscription-plans')}
+                          className="bg-blue-600 text-white py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                        >
+                          Choose a Plan
+                        </button>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Classic Quick Actions */}
                   <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/50 p-6">
@@ -4350,6 +4553,22 @@ const ExpertDashboard = () => {
           onRequestSubmitted={handleRatingRequestSubmitted}
         />
       )}
+
+      {/* Plan Limitation Modal */}
+      {(() => {
+        const limitationDetails = getCurrentLimitationDetails();
+        return (
+          <PlanLimitationModal
+            isOpen={showPlanLimitationModal}
+            onClose={handlePlanLimitationClose}
+            onUpgrade={handlePlanLimitationUpgrade}
+            limitationType={limitationType}
+            currentUsage={limitationDetails?.currentUsage || 0}
+            planLimit={limitationDetails?.planLimit || 0}
+            planName={limitationDetails?.planName || ''}
+          />
+        );
+      })()}
 
     </div>
 

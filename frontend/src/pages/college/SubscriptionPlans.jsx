@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Check, Star, FileText, Users, Headphones, BarChart3, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import apiService from '../../utils/api';
 import Toast from '../../components/common/Toast';
 
 const SubscriptionPlans = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [availablePlans, setAvailablePlans] = useState([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [subscribingPlanId, setSubscribingPlanId] = useState(null);
@@ -29,9 +31,11 @@ const SubscriptionPlans = () => {
   };
 
   useEffect(() => {
-    loadPlans();
-    loadMySubscription();
-  }, []);
+    if (user) {
+      loadPlans();
+      loadMySubscription();
+    }
+  }, [user]);
 
   // Set default selected plan when plans are loaded
   useEffect(() => {
@@ -45,7 +49,9 @@ const SubscriptionPlans = () => {
   const loadPlans = async () => {
     try {
       setLoadingPlans(true);
-      const plans = await apiService.listActivePlans('COLLEGE');
+      // Determine audience based on user role
+      const audience = user?.role === 'EXPERT' ? 'EXPERT' : 'COLLEGE';
+      const plans = await apiService.listActivePlans(audience);
       setAvailablePlans(plans || []);
     } catch (e) {
       console.error('Failed to load plans', e);
@@ -186,7 +192,10 @@ const SubscriptionPlans = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
             <div className="flex items-center justify-between">
               <button
-                onClick={() => navigate('/dashboard/college?tab=overview')}
+                onClick={() => {
+                  const dashboardRoute = user?.role === 'EXPERT' ? '/dashboard/expert?tab=overview' : '/dashboard/college?tab=overview';
+                  navigate(dashboardRoute);
+                }}
                 className="flex items-center space-x-2 text-white/80 hover:text-white transition-colors group"
               >
                 <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
@@ -207,7 +216,10 @@ const SubscriptionPlans = () => {
                 <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent"> Perfect Plan</span>
               </h1>
               <p className="text-base text-white/80 mb-4 max-w-2xl mx-auto">
-                Unlock the full potential of our platform with flexible plans designed for colleges of all sizes
+                {user?.role === 'EXPERT' 
+                  ? 'Unlock the full potential of our platform with flexible plans designed for experts'
+                  : 'Unlock the full potential of our platform with flexible plans designed for colleges of all sizes'
+                }
               </p>
               
             </motion.div>
@@ -288,21 +300,25 @@ const SubscriptionPlans = () => {
                           <div className="flex items-center justify-between py-2">
                             <div className="flex items-center space-x-3">
                               <FileText className="w-4 h-4 text-gray-600" />
-                              <span className="text-gray-700 font-medium text-sm">Requirements</span>
+                              <span className="text-gray-700 font-medium text-sm">
+                                {user?.role === 'EXPERT' ? 'Applications' : 'Requirements'}
+                              </span>
                             </div>
                             <span className="text-gray-900 font-semibold text-sm">
                               {plan.maxRequirements ?? 'Unlimited'}
                             </span>
                           </div>
-                          <div className="flex items-center justify-between py-2">
-                            <div className="flex items-center space-x-3">
-                              <Users className="w-4 h-4 text-gray-600" />
-                              <span className="text-gray-700 font-medium text-sm">Expert Contacts</span>
+                          {user?.role !== 'EXPERT' && (
+                            <div className="flex items-center justify-between py-2">
+                              <div className="flex items-center space-x-3">
+                                <Users className="w-4 h-4 text-gray-600" />
+                                <span className="text-gray-700 font-medium text-sm">Expert Contacts</span>
+                              </div>
+                              <span className="text-gray-900 font-semibold text-sm">
+                                {plan.maxExpertContacts ?? 'Unlimited'}
+                              </span>
                             </div>
-                            <span className="text-gray-900 font-semibold text-sm">
-                              {plan.maxExpertContacts ?? 'Unlimited'}
-                            </span>
-                          </div>
+                          )}
                           <div className="flex items-center justify-between py-2">
                             <div className="flex items-center space-x-3">
                               <Headphones className="w-4 h-4 text-gray-600" />

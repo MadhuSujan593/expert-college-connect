@@ -7,7 +7,18 @@ export const useAuth = () => {
   const context = useContext(AuthContext);
   
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    console.warn('useAuth called outside of AuthProvider - this may be a timing issue');
+    // Return a minimal context to prevent crashes during development
+    return {
+      user: null,
+      loading: true,
+      isAuthenticated: false,
+      login: () => {},
+      logout: () => {},
+      checkAuthStatus: () => {},
+      getDashboardRoute: () => '/dashboard',
+      setUser: () => {},
+    };
   }
   return context;
 };
@@ -206,14 +217,14 @@ export const AuthProvider = ({ children }) => {
 
   const value = useMemo(() => ({
     user,
-    loading,
+    loading: loading || !initialized,
     isAuthenticated,
     login,
     logout,
     checkAuthStatus,
     getDashboardRoute,
     setUser,
-  }), [user, loading, isAuthenticated, login, logout, checkAuthStatus, getDashboardRoute, setUser]);
+  }), [user, loading, initialized, isAuthenticated, login, logout, checkAuthStatus, getDashboardRoute, setUser]);
 
   return (
     <AuthContext.Provider value={value}>
