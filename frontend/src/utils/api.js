@@ -778,13 +778,54 @@ class ApiService {
   }
 
   setTokens(accessToken, refreshToken) {
-    localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
+    try {
+      // Add timestamp for token isolation between browser sessions
+      const tokenData = {
+        accessToken,
+        refreshToken,
+        timestamp: Date.now(),
+        sessionId: Math.random().toString(36).substr(2, 9)
+      };
+      
+      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
+      localStorage.setItem('authSessionId', tokenData.sessionId);
+      
+      console.log('🔑 Tokens stored successfully with session ID:', tokenData.sessionId);
+    } catch (error) {
+      console.error('Failed to store tokens:', error);
+    }
   }
 
   clearTokens() {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    try {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('authSessionId');
+      localStorage.removeItem('user');
+      console.log('🗑️ All auth data cleared');
+    } catch (error) {
+      console.error('Failed to clear tokens:', error);
+    }
+  }
+
+  // Check if current session is valid (prevent cross-session conflicts)
+  isValidSession() {
+    try {
+      const sessionId = localStorage.getItem('authSessionId');
+      const token = localStorage.getItem('accessToken');
+      
+      // If no session or no token, session is invalid
+      if (!sessionId || !token) {
+        return false;
+      }
+      
+      // Session is valid if both exist
+      return true;
+    } catch (error) {
+      console.error('Failed to validate session:', error);
+      return false;
+    }
   }
 
   // ============ SUPER ADMIN METHODS ============
@@ -1065,6 +1106,34 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  // ===== Subscribers Management =====
+  async adminGetAllSubscribers({ page = 1, limit = 20, audience, planId, search } = {}) {
+    const headers = await this.getAuthHeaders();
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+    });
+    if (audience) params.append('audience', audience);
+    if (planId) params.append('planId', planId);
+    if (search) params.append('search', search);
+    
+    const response = await fetch(`${this.baseURL}/super-admin/subscribers?${params.toString()}`, {
+      method: 'GET',
+      headers,
+    });
+    return this.handleResponse(response);
+  }
+
+  async adminUpdateSubscriptionExpiration(subscriptionId, expirationDate) {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}/super-admin/subscribers/${subscriptionId}/expiration`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ expirationDate }),
+    });
+    return this.handleResponse(response);
+  }
+
   // ===== Self subscription & usage =====
   async getMySubscription() {
     const headers = await this.getAuthHeaders();
@@ -1127,10 +1196,47 @@ class ApiService {
 
   async confirmRazorpayPayment(planId, paymentData, billingPeriod = 'MONTHLY') {
     const headers = await this.getAuthHeaders();
+
+
     const response = await fetch(`${this.baseURL}/subscriptions/confirm-payment`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ planId, paymentData, billingPeriod }),
+    });
+    return this.handleResponse(response);
+  }
+
+  // === RECOMMENDATIONS API ===
+  
+  async getRecommendedOpportunities(page = 1, limit = 10, minScore = 20) {
+    const queryParams = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      minScore: minScore.toString(),
+    });
+
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}/recommendations/opportunities?${queryParams}`, {
+      method: 'GET',
+      headers,
+    });
+    return this.handleResponse(response);
+  }
+
+  async getRecommendationStats() {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}/recommendations/stats`, {
+      method: 'GET',
+      headers,
+    });
+    return this.handleResponse(response);
+  }
+
+  async getCollegeRecommendations(page = 1, limit = 10, minScore = 10) {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}/recommendations/college?page=${page}&limit=${limit}&minScore=${minScore}`, {
+      method: 'GET',
+      headers,
     });
     return this.handleResponse(response);
   }

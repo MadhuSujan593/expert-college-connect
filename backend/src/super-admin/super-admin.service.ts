@@ -146,12 +146,14 @@ export class SuperAdminService {
             isPhoneVerified: true,
             lastLoginAt: true,
             createdAt: true,
+            profileImage: true,
             expertprofile: {
               select: {
                 id: true,
                 jobTitle: true,
                 company: true,
-                isVerified: true
+                isVerified: true,
+                profilePicture: true
               }
             },
             collegeprofile: {
@@ -820,5 +822,147 @@ export class SuperAdminService {
         totalRevenue: Number(revenueQuery._sum?.amount || 0),
       },
     };
+  }
+
+  /**
+   * Get all subscribers with active subscriptions
+   */
+  async getAllSubscribers(page: number, limit: number, audience?: string, planId?: string, search?: string) {
+    const skip = (page - 1) * limit;
+    
+    const whereConditions: any = {
+      status: 'ACTIVE',
+      OR: [
+        { endsAt: null },
+        { endsAt: { gt: new Date() } },
+      ],
+    };
+
+    if (planId) {
+      whereConditions.planId = planId;
+    }
+
+    const [items, total] = await Promise.all([
+      this.prisma.subscription.findMany({
+        where: whereConditions,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: { 
+            select: { 
+              id: true, 
+              email: true, 
+              fullName: true, 
+              role: true,
+              isActive: true,
+              profileImage: true,
+              expertprofile: {
+                select: {
+                  profilePicture: true
+                }
+              }
+            } 
+          },
+          plan: {
+            select: {
+              id: true,
+              name: true,
+              audience: true,
+              priceCents: true,
+              currency: true,
+              billingPeriod: true
+            }
+          },
+          usages: {
+            orderBy: { periodStart: 'desc' },
+            take: 1,
+          },
+        },
+      }),
+      this.prisma.subscription.count({ where: whereConditions }),
+    ]);
+
+    // Filter by audience and search if provided
+    let filteredItems = items;
+    if (audience) {
+      filteredItems = filteredItems.filter(item => item.plan.audience === audience);
+    }
+    
+    if (search) {
+      const searchLower = search.toLowerCase();
+      filteredItems = filteredItems.filter(item => 
+        item.user.fullName?.toLowerCase().includes(searchLower) ||
+        item.user.email?.toLowerCase().includes(searchLower) ||
+        item.plan.name?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    return {
+      items: filteredItems,
+      pagination: {
+        page,
+        limit,
+        total: filteredItems.length,
+        pages: Math.ceil(filteredItems.length / limit),
+      },
+    };
+  }
+
+  /**
+   * Update subscription expiration date
+   */
+  async updateSubscriptionExpiration(subscriptionId: string, newExpirationDate: string) {
+    try {
+      const parsedDate = new Date(newExpirationDate);
+      if (isNaN(parsedDate.getTime())) {
+        throw new BadRequestException('Invalid date format');
+      }
+
+      const subscription = await this.prisma.subscription.findUnique({
+        where: { id: subscriptionId },
+        include: { user: true, plan: true }
+      });
+
+      if (!subscription) {
+        throw new NotFoundException('Subscription not found');
+      }
+
+      const updatedSubscription = await this.prisma.subscription.update({
+        where: { id: subscriptionId },
+        data: {
+          endsAt: parsedDate,
+          updatedAt: new Date(),
+        },
+        include: {
+          user: { 
+            select: { 
+              id: true, 
+              email: true, 
+              fullName: true, 
+              role: true,
+              isActive: true
+            } 
+          },
+          plan: {
+            select: {
+              id: true,
+              name: true,
+              audience: true,
+              priceCents: true,
+              currency: true,
+              billingPeriod: true
+            }
+          },
+        },
+      });
+
+      return updatedSubscription;
+    } catch (error) {
+      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException('Failed to update subscription expiration');
+    }
   }
 }

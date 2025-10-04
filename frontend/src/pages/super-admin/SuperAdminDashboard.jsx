@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import apiService from '../../utils/api';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
+import toast from 'react-hot-toast';
 import { 
   Users, 
   Building2, 
@@ -30,7 +31,14 @@ import {
   Clock,
   Calendar,
   Target,
-  Zap
+  Zap,
+  UserCircle,
+  Mail,
+  CreditCard,
+  CalendarDays,
+  Edit3,
+  Save,
+  X as CloseIcon
 } from 'lucide-react';
 
 const SuperAdminDashboard = () => {
@@ -73,11 +81,26 @@ const SuperAdminDashboard = () => {
   const [invoiceStats, setInvoiceStats] = useState(null);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
 
+  // Subscribers state
+  const [subscribers, setSubscribers] = useState([]);
+  const [subscribersPagination, setSubscribersPagination] = useState({});
+  const [subscribersFilters, setSubscribersFilters] = useState({
+    audience: '',
+    planId: '',
+    search: '',
+    page: 1,
+    limit: 20
+  });
+  const [subscribersLoading, setSubscribersLoading] = useState(false);
+  const [editingSubscription, setEditingSubscription] = useState(null);
+  const [newExpirationDate, setNewExpirationDate] = useState('');
+
   // Navigation tabs
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Home },
     { id: 'users', label: 'User Management', icon: Users },
     { id: 'plans', label: 'Plans', icon: BadgeDollarSign },
+    { id: 'subscribers', label: 'Subscribers', icon: Users },
     { id: 'invoices', label: 'Invoice Details', icon: FileText },
   ];
 
@@ -96,7 +119,13 @@ const SuperAdminDashboard = () => {
       loadActivePlans(); // Load only active plans for dropdown
       loadInvoiceData();
     }
-  }, [filters, activeTab]);
+    if (activeTab === 'subscribers') {
+      loadSubscribers();
+      if (invoices.length === 0) {
+        loadActivePlans(); // Load plans for filter dropdown
+      }
+    }
+  }, [filters, activeTab, subscribersFilters]);
 
   // Effect for invoice filters (except search)
   useEffect(() => {
@@ -208,6 +237,9 @@ const SuperAdminDashboard = () => {
     confirmText: 'Confirm',
     cancelText: 'Cancel'
   });
+  
+  // Logout confirmation state (consistent with College dashboard)
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [createPlanForm, setCreatePlanForm] = useState({
     name: '',
     audience: 'COLLEGE',
@@ -462,6 +494,87 @@ const SuperAdminDashboard = () => {
     }
   };
 
+  // ===== SUBSCRIBERS FUNCTIONS =====
+  const loadSubscribers = async () => {
+    try {
+      setSubscribersLoading(true);
+      const params = new URLSearchParams({
+        page: String(subscribersFilters.page),
+        limit: String(subscribersFilters.limit),
+      });
+      if (subscribersFilters.audience) params.append('audience', subscribersFilters.audience);
+      if (subscribersFilters.planId) params.append('planId', subscribersFilters.planId);
+      if (subscribersFilters.search) params.append('search', subscribersFilters.search);
+      
+      const data = await apiService.adminGetAllSubscribers(subscribersFilters);
+      setSubscribers(data.items || []);
+      setSubscribersPagination(data.pagination || {});
+    } catch (e) {
+      console.error('Failed to load subscribers:', e);
+      toast.error('Failed to load subscribers');
+    } finally {
+      setSubscribersLoading(false);
+    }
+  };
+
+  const handleUpdateExpirationDate = async () => {
+    if (!editingSubscription || !newExpirationDate) return;
+    
+    try {
+      const response = await apiService.adminUpdateSubscriptionExpiration(
+        editingSubscription.id, 
+        newExpirationDate
+      );
+      
+      // Update the subscribers list
+      setSubscribers(prevSubs => 
+        prevSubs.map(sub => 
+          sub.id === editingSubscription.id 
+            ? { ...sub, endsAt: newExpirationDate }
+            : sub
+        )
+      );
+      
+      setEditingSubscription(null);
+      setNewExpirationDate('');
+      toast.success('Subscription expiration updated successfully');
+    } catch (error) {
+      console.error('Failed to update expiration:', error);
+      toast.error('Failed to update expiration date');
+    }
+  };
+
+  const startEditingExpiration = (subscription) => {
+    setEditingSubscription(subscription);
+    if (subscription.endsAt) {
+      // Create a new date object directly from the ISO string to avoid timezone issues
+      const date = new Date(subscription.endsAt);
+      // Format as YYYY-MM-DD for HTML date input
+      const formattedDate = date.getFullYear() + '-' + 
+        String(date.getMonth() + 1).padStart(2, '0') + '-' + 
+        String(date.getDate()).padStart(2, '0');
+      
+      // Debug logging to help identify the issue
+      console.log('Original endsAt:', subscription.endsAt);
+      console.log('Parsed date:', date);
+      console.log('Formatted for edit:', formattedDate);
+      console.log('Display format:', date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }));
+      
+      setNewExpirationDate(formattedDate);
+    } else {
+      setNewExpirationDate('');
+    }
+  };
+
+  const cancelEditingExpiration = () => {
+    setEditingSubscription(null);
+    setNewExpirationDate('');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -603,6 +716,19 @@ const SuperAdminDashboard = () => {
                 transition={{ duration: 0.3, delay: 0.25 }}
               >
                 <SidebarItem
+                  id="subscribers"
+                  label="Subscribers"
+                  icon={Users}
+                  isActive={activeTab === 'subscribers'}
+                  onClick={handleTabChange}
+                />
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: 0.3 }}
+              >
+                <SidebarItem
                   id="invoices"
                   label="Invoice Details"
                   icon={FileText}
@@ -621,7 +747,7 @@ const SuperAdminDashboard = () => {
             >
               <motion.button
                 onClick={() => setShowLogoutConfirm(true)}
-                className="group flex items-center space-x-3 w-full px-4 py-3 rounded-lg font-medium transition-all duration-200 text-gray-300 hover:text-blue-400 hover:bg-blue-900/20"
+                className="group flex items-center space-x-3 w-full px-4 py-3 rounded-lg font-medium transition-all duration-200 text-gray-300 hover:text-red-400 hover:bg-red-900/20"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
@@ -630,7 +756,7 @@ const SuperAdminDashboard = () => {
                   whileHover={{ rotate: 5 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <LogOut className="h-5 w-5 text-gray-400 group-hover:text-blue-400" />
+                  <LogOut className="h-5 w-5 text-gray-400 group-hover:text-red-400" />
                 </motion.div>
                 <span>Sign Out</span>
               </motion.button>
@@ -912,9 +1038,32 @@ const SuperAdminDashboard = () => {
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center">
                                 <div className="h-10 w-10 flex-shrink-0">
-                                  <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                                    <span className="text-sm font-medium text-gray-700">
-                                      {user.fullName.charAt(0)}
+                                  {(user.profileImage || user.expertprofile?.profilePicture) ? (
+                                    <img
+                                      src={user.profileImage || user.expertprofile?.profilePicture}
+                                      alt={`${user.fullName} profile`}
+                                      className="h-10 w-10 rounded-full object-cover border-2 border-gray-200"
+                                      onError={(e) => {
+                                        e.target.style.display = 'none';
+                                        e.target.nextSibling.style.display = 'flex';
+                                      }}
+                                    />
+                                  ) : null}
+                                  <div 
+                                    className={`h-10 w-10 rounded-full flex items-center justify-center bg-gradient-to-br border-2 border-gray-200 ${
+                                      !(user.profileImage || user.expertprofile?.profilePicture)
+                                        ? 'flex' 
+                                        : 'hidden'
+                                    } ${
+                                      user.role === 'EXPERT'
+                                        ? 'from-green-400 to-green-600'
+                                        : user.role === 'COLLEGE_ADMIN'
+                                        ? 'from-blue-400 to-blue-600'
+                                        : 'from-gray-400 to-gray-600'
+                                    }`}
+                                  >
+                                    <span className="text-white font-semibold text-sm">
+                                      {(user.fullName || user.email || 'U').charAt(0).toUpperCase()}
                                     </span>
                                   </div>
                                 </div>
@@ -1619,6 +1768,267 @@ const SuperAdminDashboard = () => {
               </motion.div>
             )}
 
+            {activeTab === 'subscribers' && (
+              <motion.div
+                key="subscribers"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                {/* Subscribers Table */}
+                <div className="bg-white shadow rounded-lg">
+                  {/* Header */}
+                  <div className="px-6 py-4 border-b border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-lg font-semibold text-gray-900">All Subscribers</h2>
+                      <div className="flex items-center space-x-4">
+                        {/* Filters */}
+                        <select
+                          value={subscribersFilters.audience}
+                          onChange={(e) => setSubscribersFilters(prev => ({ ...prev, audience: e.target.value, page: 1 }))}
+                          className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                          <option value="">All Audiences</option>
+                          <option value="COLLEGE">College Plans</option>
+                          <option value="EXPERT">Expert Plans</option>
+                        </select>
+                        
+                        <select
+                          value={subscribersFilters.planId}
+                          onChange={(e) => setSubscribersFilters(prev => ({ ...prev, planId: e.target.value, page: 1 }))}
+                          className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                          <option value="">All Plans</option>
+                          {plans.filter(plan => plan.isActive).map(plan => (
+                            <option key={plan.id} value={plan.id}>{plan.name}</option>
+                          ))}
+                        </select>
+                        
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                          <input
+                            type="text"
+                            placeholder="Search subscribers..."
+                            value={subscribersFilters.search}
+                            onChange={(e) => setSubscribersFilters(prev => ({ ...prev, search: e.target.value, page: 1 }))}
+                            className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
+                          />
+                        </div>
+                        
+                        <button
+                          onClick={loadSubscribers}
+                          disabled={subscribersLoading}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                        >
+                          <RefreshCw className={`w-4 h-4 ${subscribersLoading ? 'animate-spin' : ''}`} />
+                          <span>Refresh</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Table */}
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Audience</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Date</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expiration Date</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {subscribersLoading ? (
+                          <tr>
+                            <td colSpan="7" className="px-6 py-8 text-center">
+                              <div className="flex items-center justify-center">
+                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                                <span className="ml-3 text-gray-600">Loading subscribers...</span>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : subscribers.length === 0 ? (
+                          <tr>
+                            <td colSpan="7" className="px-6 py-8 text-center text-gray-500">
+                              No subscribers found matching your criteria.
+                            </td>
+                          </tr>
+                        ) : (
+                          subscribers.map((subscription) => {
+                            const isExpired = subscription.endsAt && new Date(subscription.endsAt) < new Date();
+                            return (
+                              <tr key={subscription.id} className="hover:bg-gray-50">
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="flex items-center">
+                                    <div className="flex-shrink-0 h-10 w-10">
+                                      {(subscription.user?.profileImage || subscription.user?.expertprofile?.profilePicture) ? (
+                                        <img
+                                          src={subscription.user?.profileImage || subscription.user?.expertprofile?.profilePicture}
+                                          alt={`${subscription.user?.fullName || 'User'} profile`}
+                                          className="h-10 w-10 rounded-full object-cover border-2 border-gray-200"
+                                          onError={(e) => {
+                                            e.target.style.display = 'none';
+                                            e.target.nextSibling.style.display = 'flex';
+                                          }}
+                                        />
+                                      ) : null}
+                                      <div 
+                                        className={`h-10 w-10 rounded-full flex items-center justify-center bg-gradient-to-br border-2 border-gray-200 ${
+                                          !(subscription.user?.profileImage || subscription.user?.expertprofile?.profilePicture)
+                                            ? 'flex' 
+                                            : 'hidden'
+                                        } ${
+                                          subscription.user?.role === 'EXPERT'
+                                            ? 'from-green-400 to-green-600'
+                                            : subscription.user?.role === 'COLLEGE_ADMIN'
+                                            ? 'from-blue-400 to-blue-600'
+                                            : 'from-gray-400 to-gray-600'
+                                        }`}
+                                      >
+                                        <span className="text-white font-semibold text-sm">
+                                          {(subscription.user?.fullName || subscription.user?.email || 'U').charAt(0).toUpperCase()}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <div className="ml-3">
+                                      <div className="text-sm font-medium text-gray-900">
+                                        {subscription.user?.fullName || 'No Name'}
+                                      </div>
+                                      <div className="text-sm text-gray-500 capitalize">
+                                        {subscription.user?.role?.toLowerCase()}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="flex items-center">
+                                    <Mail className="h-4 w-4 text-gray-400 mr-2" />
+                                    <span className="text-sm text-gray-900">{subscription.user?.email || 'No Email'}</span>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="flex items-center">
+                                    <CreditCard className="h-4 w-4 text-blue-600 mr-2" />
+                                    <span className="text-sm font-medium text-gray-900">{subscription.plan?.name}</span>
+                                    <span className="text-sm text-gray-500 ml-1">
+                                      (₹{(subscription.plan?.priceCents || 0)/100})
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                    subscription.plan?.audience === 'COLLEGE' 
+                                      ? 'bg-blue-100 text-blue-800' 
+                                      : 'bg-green-100 text-green-800'
+                                  }`}>
+                                    {subscription.plan?.audience}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                  {subscription.createdAt ? new Date(subscription.createdAt).toLocaleDateString() : 'N/A'}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="flex items-center">
+                                    <CalendarDays className="h-4 w-4 text-gray-400 mr-2" />
+                                    <span className={`text-sm ${isExpired ? 'text-red-600 font-medium' : 'text-gray-900'}`}>
+                                      {subscription.endsAt 
+                                        ? new Date(subscription.endsAt).toLocaleDateString('en-US', {
+                                            year: 'numeric',
+                                            month: '2-digit',
+                                            day: '2-digit'
+                                          })
+                                        : 'Lifetime'
+                                      }
+                                    </span>
+                                    {isExpired && (
+                                      <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                        Expired
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                  {editingSubscription?.id === subscription.id ? (
+                                    <div className="flex items-center space-x-2">
+                                      <input
+                                        type="date"
+                                        value={newExpirationDate}
+                                        onChange={(e) => setNewExpirationDate(e.target.value)}
+                                        className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      />
+                                      <button
+                                        onClick={handleUpdateExpirationDate}
+                                        className="text-green-600 hover:text-green-900"
+                                        title="Save changes"
+                                      >
+                                        <Save className="h-4 w-4" />
+                                      </button>
+                                      <button
+                                        onClick={cancelEditingExpiration}
+                                        className="text-gray-600 hover:text-gray-900"
+                                        title="Cancel"
+                                      >
+                                        <CloseIcon className="h-4 w-4" />
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      onClick={() => startEditingExpiration(subscription)}
+                                      className="text-blue-600 hover:text-blue-900 flex items-center space-x-1"
+                                      title="Edit expiration date"
+                                    >
+                                      <Edit3 className="h-4 w-4" />
+                                      <span>Edit</span>
+                                    </button>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Pagination */}
+                  {subscribersPagination.pages > 1 && (
+                    <div className="px-6 py-3 bg-white border-t border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-700">
+                          Showing <span className="font-medium">{((subscribersPagination.page - 1) * subscribersPagination.limit) + 1}</span> to{' '}
+                          <span className="font-medium">
+                            {Math.min(subscribersPagination.page * subscribersPagination.limit, subscribersPagination.total || 0)}
+                          </span> of{' '}
+                          <span className="font-medium">{subscribersPagination.total || 0}</span> results
+                        </span>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => setSubscribersFilters(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
+                            disabled={subscribersPagination.page <= 1}
+                            className="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Previous
+                          </button>
+                          <button
+                            onClick={() => setSubscribersFilters(prev => ({ ...prev, page: Math.min(subscribersPagination.pages, prev.page + 1) }))}
+                            disabled={subscribersPagination.page >= subscribersPagination.pages}
+                            className="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Next
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
           </AnimatePresence>
             </div>
         </main>
@@ -1715,6 +2125,56 @@ const SuperAdminDashboard = () => {
         confirmText={confirmationModal.confirmText}
         cancelText={confirmationModal.cancelText}
       />
+
+      {/* Logout Confirmation Modal - Consistent with College Dashboard */}
+      <AnimatePresence>
+        {showLogoutConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl"
+            >
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="p-2 bg-red-100 rounded-xl">
+                  <LogOut className="h-5 w-5 text-red-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900">Sign Out</h3>
+              </div>
+              <p className="text-slate-600 mb-6">
+                Are you sure you want to sign out of your account?
+              </p>
+              <div className="flex items-center space-x-3">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setShowLogoutConfirm(false)}
+                  className="flex-1 px-4 py-2 rounded-xl font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors"
+                >
+                  Cancel
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    setShowLogoutConfirm(false);
+                    handleLogout();
+                  }}
+                  className="flex-1 px-4 py-2 rounded-xl font-medium text-white bg-red-600 hover:bg-red-700 transition-colors"
+                >
+                  Sign Out
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

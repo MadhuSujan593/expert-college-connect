@@ -48,6 +48,7 @@ import ExpertRatingDisplay from '../../components/college/ExpertRatingDisplay';
 import RatingRequestsList from '../../components/college/RatingRequestsList';
 import VerificationRequirementModal from '../../components/common/VerificationRequirementModal';
 import RequirementCard from '../../components/common/RequirementCard';
+import CollegeRecommendationsSection from '../../components/college/CollegeRecommendationsSection';
 import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
 import ApplicationManagement from '../../components/college/ApplicationManagement';
 import PlanLimitationModal from '../../components/common/PlanLimitationModal';
@@ -1558,6 +1559,19 @@ const CollegeDashboard = () => {
                 transition={{ duration: 0.3, delay: 0.35 }}
               >
               <SidebarItem
+                id="recommendations"
+                label="Expert Recommendations"
+                icon={Sparkles}
+                isActive={activeTab === 'recommendations'}
+                onClick={() => setActiveTab('recommendations')}
+              />
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: 0.4 }}
+              >
+              <SidebarItem
                 id="rating-requests"
                 label="Rating Requests"
                 icon={MessageCircle}
@@ -1723,9 +1737,9 @@ const CollegeDashboard = () => {
                       transition={{ duration: 0.4, delay: 0.6 }}
                       whileHover={{ scale: 1.01 }}
                     >
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-semibold text-gray-900">Subscription</h3>
-                </div>
+                      <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-xl font-semibold text-gray-900">Subscription</h3>
+                    </div>
                     {subsLoading ? (
                       <p className="text-gray-600">Loading subscription...</p>
                     ) : mySubscription ? (
@@ -1740,7 +1754,7 @@ const CollegeDashboard = () => {
                               <div className="flex items-center space-x-3">
                                 <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
                                   <CreditCard className="w-5 h-5 text-white" />
-                                </div>
+                        </div>
                                 <div>
                                   <h4 className="text-lg font-semibold text-gray-900">{mySubscription.plan.name}</h4>
                                   <p className="text-sm text-gray-600">
@@ -1749,16 +1763,16 @@ const CollegeDashboard = () => {
                                       : 'Lifetime Access'
                                     }
                                   </p>
-                                </div>
-                              </div>
+                          </div>
+                        </div>
                               <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 border border-green-200">
                                 <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
                                 Active
-                              </div>
+                          </div>
                             </div>
                             
-                          </div>
                         </div>
+                      </div>
                     ) : (
                       <div className="text-center py-6">
                         <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -2087,6 +2101,19 @@ const CollegeDashboard = () => {
                     <RatingsTab user={user} key={`ratings-${user?.id || 'no-user'}`} />
                   </motion.div>
                 )}
+                </motion.div>
+              )}
+
+              {activeTab === 'recommendations' && (
+                <motion.div
+                  key="recommendations"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-6"
+                >
+                  <CollegeRecommendationsSection />
                 </motion.div>
               )}
 

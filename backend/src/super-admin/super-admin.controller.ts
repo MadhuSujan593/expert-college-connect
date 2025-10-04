@@ -210,4 +210,23 @@ export class SuperAdminController {
   ) {
     return this.superAdminService.getInvoiceDetails(page, limit, status, planId, search, paymentStatus);
   }
+
+  @Get('subscribers')
+  async getAllSubscribers(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+    @Query('audience') audience?: string,
+    @Query('planId') planId?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.superAdminService.getAllSubscribers(page, limit, audience, planId, search);
+  }
+
+  @Put('subscribers/:id/expiration')
+  async updateSubscriptionExpiration(
+    @Param('id') subscriptionId: string,
+    @Body() body: { expirationDate: string },
+  ) {
+    return this.superAdminService.updateSubscriptionExpiration(subscriptionId, body.expirationDate);
+  }
 }

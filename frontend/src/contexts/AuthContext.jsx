@@ -7,18 +7,29 @@ export const useAuth = () => {
   const context = useContext(AuthContext);
   
   if (!context) {
-    console.warn('useAuth called outside of AuthProvider - this may be a timing issue');
-    // Return a minimal context to prevent crashes during development
-    return {
+    console.error('🚨 useAuth called outside of AuthProvider - this is a critical error');
+    console.error('🚨 This usually happens due to timing issues or AuthProvider not wrapping components properly');
+    
+    // Return a more robust fallback context
+    const fallbackContext = {
       user: null,
-      loading: true,
+      loading: false,
       isAuthenticated: false,
-      login: () => {},
-      logout: () => {},
-      checkAuthStatus: () => {},
+      login: async () => {
+        console.error('AuthProvider not available - redirecting to login');
+        window.location.href = '/login';
+      },
+      logout: () => {
+        // Clear localStorage and redirect
+        localStorage.clear();
+        window.location.href = '/login';
+      },
+      checkAuthStatus: () => Promise.resolve(),
       getDashboardRoute: () => '/dashboard',
       setUser: () => {},
     };
+    
+    return fallbackContext;
   }
   return context;
 };
@@ -29,10 +40,50 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(false);
+  const [loadingStartTime, setLoadingStartTime] = useState(Date.now());
 
   const handleAuthFailure = useCallback(() => {
-    // Don't automatically logout on auth failures - let user decide
-    console.warn('🚨 Auth failure detected - user remains logged in');
+    // Clear loading state on auth failure to prevent infinite loading
+    console.warn('🚨 Auth failure detected - clearing auth state');
+    setLoading(false);
+    setCheckingAuth(false);
+    setIsAuthenticated(false);
+    setUser(null);
+    localStorage.removeItem('user');
+    apiService.clearTokens();
+  }, []);
+
+  // Clear any stale authentication state on component mount
+  useEffect(() => {
+    const clearStaleAuth = () => {
+      try {
+        // Check if session is valid
+        if (!apiService.isValidSession()) {
+          console.log('🧹 Invalid session detected, clearing auth state');
+          localStorage.removeItem('user');
+          setLoading(false);
+          setCheckingAuth(false);
+          setIsAuthenticated(false);
+          setUser(null);
+        } else {
+          console.log('✅ Valid session detected, keeping auth state');
+        }
+      } catch (error) {
+        console.error('Error clearing sticky auth:', error);
+        // Only clear auth-related items, not everything
+        localStorage.removeItem('user');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('authSessionId');
+        setLoading(false);
+        setCheckingAuth(false);
+        setIsAuthenticated(false);
+        setUser(null);
+      }
+    };
+
+    // Clear stale state immediately
+    clearStaleAuth();
   }, []);
 
   const checkAuthStatus = useCallback(async () => {
@@ -43,39 +94,65 @@ export const AuthProvider = ({ children }) => {
     try {
       setCheckingAuth(true);
       setLoading(true);
+      setLoadingStartTime(Date.now());
       
-      // Check if we have a valid token (this will trigger refresh if needed)
-      const token = await apiService.getValidToken();
-      const isAuth = !!token;
+      // Add timeout protection to prevent infinite loading
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Authentication check timeout')), 10000); // 10 second timeout
+      });
       
-      if (!isAuth) {
-        setUser(null);
-        setIsAuthenticated(false);
-        return;
-      }
+      const authPromise = (async () => {
+        // Check if we have a valid token (this will trigger refresh if needed)
+        const token = await apiService.getValidToken();
+        const isAuth = !!token;
+        
+        if (!isAuth) {
+          setUser(null);
+          setIsAuthenticated(false);
+          return;
+        }
 
-      // Verify token by fetching user profile
-      const userProfile = await apiService.getProfile();
+        // Verify token by fetching user profile
+        const userProfile = await apiService.getProfile();
+        
+        // Also check localStorage for updated user data (e.g., after email verification)
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const localUser = JSON.parse(storedUser);
+          // Merge localStorage user data with API response, prioritizing API data
+          const mergedUser = { ...localUser, ...userProfile };
+          setUser(mergedUser);
+          // Update localStorage with merged data
+          localStorage.setItem('user', JSON.stringify(mergedUser));
+        } else {
+          setUser(userProfile);
+          // Store user data in localStorage
+          localStorage.setItem('user', JSON.stringify(userProfile));
+        }
+        
+        setIsAuthenticated(true);
+      })();
+
+      // Race between auth check and timeout
+      await Promise.race([authPromise, timeoutPromise]);
       
-      // Also check localStorage for updated user data (e.g., after email verification)
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        const localUser = JSON.parse(storedUser);
-        // Merge localStorage user data with API response, prioritizing API data
-        const mergedUser = { ...localUser, ...userProfile };
-        setUser(mergedUser);
-        // Update localStorage with merged data
-        localStorage.setItem('user', JSON.stringify(mergedUser));
-      } else {
-        setUser(userProfile);
-        // Store user data in localStorage
-        localStorage.setItem('user', JSON.stringify(userProfile));
-      }
-      
-      setIsAuthenticated(true);
     } catch (error) {
       // Token might be expired or invalid
-      handleAuthFailure();
+      console.error('Auth check failed:', error);
+      
+      // Only clear auth state for authentication-related errors
+      // Don't logout on network errors or other temporary issues
+      if (error.message?.includes('Authentication expired') || 
+          error.message?.includes('Invalid token') ||
+          error.message?.includes('Unauthorized')) {
+        console.warn('🚨 Auth failure - clearing auth state');
+        handleAuthFailure();
+      } else {
+        // For other errors, just stop loading without logging out
+        console.warn('⚠️ Non-auth error during check:', error.message);
+        setLoading(false);
+        setCheckingAuth(false);
+      }
     } finally {
       setLoading(false);
       setCheckingAuth(false);
@@ -93,7 +170,18 @@ export const AuthProvider = ({ children }) => {
       // This will automatically refresh the token if needed
       await apiService.getProfile();
     } catch (error) {
-      handleAuthFailure();
+      // Only clear auth state for authentication-related errors
+      // Don't logout on network errors or API issues
+      if (error.message?.includes('Authentication expired') || 
+          error.message?.includes('Invalid token') ||
+          error.message?.includes('Unauthorized') ||
+          error.message?.includes('No valid token')) {
+        console.warn('🚨 Token validation failed - clearing auth state');
+        handleAuthFailure();
+      } else {
+        // For other errors, just log without logging out
+        console.warn('⚠️ Non-auth error during validation:', error.message);
+      }
     } finally {
       setCheckingAuth(false);
     }
@@ -106,10 +194,17 @@ export const AuthProvider = ({ children }) => {
       const response = await apiService.login(credentials);
       console.log('✅ Login API response:', response);
       
+      // Validate response structure
+      if (!response || !response.user) {
+        throw new Error('Invalid login response received from server');
+      }
+      
       // Store tokens
       if (response.tokens) {
         console.log('🔑 Storing tokens...');
         apiService.setTokens(response.tokens.accessToken, response.tokens.refreshToken);
+      } else {
+        console.warn('⚠️ No tokens received in login response');
       }
 
       // Set user state
@@ -136,7 +231,9 @@ export const AuthProvider = ({ children }) => {
       return response;
     } catch (error) {
       console.error('❌ Login failed:', error);
-      throw error;
+      // Provide a more helpful error message if error is undefined
+      const errorMessage = error?.message || error?.toString() || 'Login failed. Please try again.';
+      throw new Error(errorMessage);
     }
   }, []);
 
@@ -206,6 +303,30 @@ export const AuthProvider = ({ children }) => {
 
     return () => clearInterval(interval);
   }, [initialized, checkingAuth, isAuthenticated, user, checkAuthStatus, validateToken]); // Include memoized functions
+
+  // Reset initialization state when navigating between pages to force fresh auth check
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      console.log('🔄 Page unloading, preparing for fresh auth check on reload');
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
+
+  // Safety check to prevent infinite loading
+  useEffect(() => {
+    if (loading && !checkingAuth) {
+      const loadDuration = Date.now() - loadingStartTime;
+      if (loadDuration > 15000) { // If loading for more than 15 seconds
+        console.warn('⚠️ Loading timeout detected, clearing loading state');
+        setLoading(false);
+        setCheckingAuth(false);
+        setIsAuthenticated(false);
+        setUser(null);
+      }
+    }
+  }, [loading, checkingAuth, loadingStartTime]);
 
   // Auto-logout on inactivity (disabled for better UX)
   // Removed inactivity logout - refresh token expiration (7 days) provides sufficient security
