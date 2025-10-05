@@ -30,7 +30,6 @@ import ExpertOpportunities from '../../components/expert/ExpertOpportunities';
 import ApplicationTracking from '../../components/expert/ApplicationTracking';
 import RatingRequestModal from '../../components/expert/RatingRequestModal';
 import ExpertRatingRequestsList from '../../components/expert/ExpertRatingRequestsList';
-import RecommendationsSection from '../../components/expert/RecommendationsSection';
 import { 
   checkAvailability 
 } from '../../utils/verificationUtils';
@@ -1748,19 +1747,6 @@ const ExpertDashboard = () => {
 
 
 
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3, delay: 0.25 }}
-              >
-                <SidebarItem
-                  id="recommendations"
-                  label="Recommendations"
-                  icon={Target}
-                  isActive={activeTab === 'recommendations'}
-                  onClick={() => handleFeatureAccess("Recommendations", 'recommendations')}
-                />
-              </motion.div>
 
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
@@ -1876,7 +1862,6 @@ const ExpertDashboard = () => {
                     {activeTab === 'overview' && 'Expert Dashboard'}
                     {activeTab === 'profile' && 'Profile Management'}
                     {activeTab === 'experience' && 'Work Experience'}
-                    {activeTab === 'recommendations' && 'Recommended Opportunities'}
                     {activeTab === 'colleges' && 'Opportunities'}
                     {activeTab === 'applications' && 'Applications'}
                     {activeTab === 'ratings' && 'Reviews & Ratings'}
@@ -1886,7 +1871,6 @@ const ExpertDashboard = () => {
                     {activeTab === 'overview' && 'Manage your expert profile and track your opportunities'}
                     {activeTab === 'profile' && 'Manage your professional profile'}
                     {activeTab === 'experience' && 'Manage your work experience and skills'}
-                    {activeTab === 'recommendations' && 'Personalized opportunities based on your skills'}
                     {activeTab === 'colleges' && 'Browse and apply to opportunities'}
                     {activeTab === 'applications' && 'Track your application status'}
                     {activeTab === 'ratings' && 'View reviews and ratings from colleges'}
@@ -4023,51 +4007,6 @@ const ExpertDashboard = () => {
 
 
 
-              {/* Recommendations Tab */}
-
-              {activeTab === 'recommendations' && (
-                canAccessFeatures() ? (
-                  <motion.div
-                    key="recommendations"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.3 }}
-                    className="space-y-6"
-                  >
-
-
-                    {/* Recommendations Component */}
-                    <RecommendationsSection />
-
-                  </motion.div>
-                ) : (
-                  <div className="bg-white rounded-2xl border border-slate-200/60 p-6">
-                    <div className="text-center py-8">
-                      <Target className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                      <p className="text-gray-500 mb-3">Verification required to access Recommendations</p>
-                      <div className="space-y-2">
-                        {!user?.isEmailVerified && (
-                          <button
-                            onClick={() => setShowEmailVerification(true)}
-                            className="w-full px-4 py-2 bg-primaryBlue text-white rounded-lg hover:bg-primaryHover transition-all duration-200 text-sm font-medium"
-                          >
-                            Verify Email
-                          </button>
-                        )}
-                        {!user?.isPhoneVerified && (
-                          <button
-                            onClick={() => setShowPhoneVerification(true)}
-                            className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 text-sm font-medium"
-                          >
-                            Verify Phone
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )
-              )}
 
               {/* Colleges Tab */}
 

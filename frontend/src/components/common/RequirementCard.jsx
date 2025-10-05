@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   MapPin, 
   IndianRupee,
@@ -8,7 +8,11 @@ import {
   Trash2,
   ToggleLeft,
   ToggleRight,
-  Eye
+  Eye,
+  Users,
+  X,
+  Target,
+  User
 } from 'lucide-react';
 import { formatCurrency } from '../../utils/currency';
 
@@ -25,6 +29,42 @@ const RequirementCard = ({
   applicationStatus = null,
   applicationData = null
 }) => {
+  // Simple state for expert modal
+  const [showExpertModal, setShowExpertModal] = useState(false);
+  const [experts, setExperts] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Simple function to show experts
+  const handleViewExperts = async (e) => {
+    e.stopPropagation();
+    
+    if (experts.length > 0) {
+      setShowExpertModal(true);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/recommendations/college?page=1&limit=100&minScore=10`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const matchingRequirement = data.requirements?.find(req => req.requirement.id === requirement.id);
+        if (matchingRequirement) {
+          setExperts(matchingRequirement.matchedExperts || []);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch experts:', error);
+    } finally {
+      setLoading(false);
+      setShowExpertModal(true);
+    }
+  };
   // Debug: Log the budget value to see what's causing double currency
   if (requirement.budget && requirement.budget.toString().includes('₹')) {
     console.log('🚨 Double currency detected:', {
@@ -99,8 +139,9 @@ const RequirementCard = ({
   };
 
   return (
-    <div 
-      className={`bg-white border border-gray-200 hover:border-gray-300 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 rounded-xl cursor-pointer group shadow-sm ${className}`}
+    <>
+      <div
+        className={`bg-white border border-gray-200 hover:border-gray-300 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 rounded-xl cursor-pointer group shadow-sm ${className}`}
       onClick={onClick}
     >
       <div className="p-4">
@@ -196,7 +237,7 @@ const RequirementCard = ({
                 >
                   <span className="text-white font-bold text-lg">
                     {(collegeData.name || 'C')[0].toUpperCase()}
-                  </span>
+          </span>
                 </div>
               </div>
             )}
@@ -206,15 +247,15 @@ const RequirementCard = ({
               {requirement.isUrgent && (
                 <span className="px-3 py-1 bg-red-50 text-red-600 text-xs font-medium rounded-md border border-red-100">
                   Urgent
-                </span>
-              )}
-              
+            </span>
+          )}
+          
               {/* Match Score for Expert variant */}
               {matchScore && (
                 <span className={`px-3 py-1 text-xs font-medium rounded-md ${getScoreColor(matchScore)}`}>
                   {matchScore}% Match
-                </span>
-              )}
+            </span>
+          )}
 
               {/* Application Status for Application variant */}
               {variant === 'application' && applicationStatus && (
@@ -310,8 +351,171 @@ const RequirementCard = ({
             </div>
           </div>
         </div>
-      </div>
+
+        {/* Recommended Experts Section for College variant */}
+        {variant === 'college' && (
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Users className="w-3 h-3 text-blue-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-700">Recommended Experts</span>
+              </div>
+              <button
+                onClick={handleViewExperts}
+                disabled={loading}
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {loading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-3 w-3 border border-blue-600 border-t-transparent"></div>
+                    <span>Loading...</span>
+                  </>
+                ) : (
+                  <>
+                    <Eye className="w-3 h-3" />
+                    <span>View Experts</span>
+                  </>
+                )}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
     </div>
+
+    {/* Expert Modal */}
+    {showExpertModal && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+          {/* Header */}
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">{requirement.title}</h2>
+                <p className="text-gray-600 text-sm mt-1">
+                  {experts.length} experts found
+                </p>
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowExpertModal(false);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+          </div>
+
+          {/* Expert List */}
+          <div className="p-6 overflow-y-auto max-h-[60vh]">
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <span className="ml-3 text-gray-600">Loading experts...</span>
+              </div>
+            ) : experts.length === 0 ? (
+              <div className="text-center py-8">
+                <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600">No experts found matching this requirement</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {experts.map((expertMatch, index) => (
+                  <div 
+                    key={index} 
+                    className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                    onClick={() => {
+                      // Navigate to expert profile page
+                      window.open(`/expert/${expertMatch.expert.id}`, '_blank');
+                    }}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start space-x-4">
+                        <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+                          {expertMatch.expert.profileImage ? (
+                            <img
+                              src={expertMatch.expert.profileImage}
+                              alt={expertMatch.expert.name}
+                              className="w-12 h-12 rounded-full object-cover"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.nextSibling.style.display = 'flex';
+                              }}
+                            />
+                          ) : (
+                            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                              <span className="text-white font-bold text-lg">
+                                {(expertMatch.expert.name || 'E')[0].toUpperCase()}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-gray-900">{expertMatch.expert.name}</h3>
+                          <p className="text-sm text-gray-600">{expertMatch.expert.email}</p>
+                          
+                          {/* Skills */}
+                          <div className="mt-2">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <Target className="h-4 w-4 text-blue-600" />
+                              <span className="text-sm font-medium text-gray-700">Skills:</span>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {expertMatch.expert.skills?.map((skill, skillIndex) => (
+                                <span
+                                  key={skillIndex}
+                                  className={`px-2 py-1 text-xs rounded-full ${
+                                    expertMatch.recommendation?.matchedSkills?.some(ms => {
+                                      const matchedSkill = ms.skill.toLowerCase().trim();
+                                      const expertSkill = skill.name.toLowerCase().trim();
+                                      
+                                      if (matchedSkill === expertSkill) return true;
+                                      if (matchedSkill.includes(expertSkill) || expertSkill.includes(matchedSkill)) return true;
+                                      
+                                      const matchedSingular = matchedSkill.replace(/s$/, '');
+                                      const expertSingular = expertSkill.replace(/s$/, '');
+                                      if (matchedSingular === expertSingular && matchedSingular.length > 2) return true;
+                                      
+                                      return false;
+                                    })
+                                      ? 'bg-green-100 text-green-800' 
+                                      : 'bg-gray-100 text-gray-600'
+                                  }`}
+                                >
+                                  {skill.name}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          expertMatch.recommendation?.score >= 80 ? 'text-green-600 bg-green-100' :
+                          expertMatch.recommendation?.score >= 60 ? 'text-blue-600 bg-blue-100' :
+                          expertMatch.recommendation?.score >= 40 ? 'text-orange-600 bg-orange-100' :
+                          'text-red-600 bg-red-100'
+                        }`}>
+                          {expertMatch.recommendation?.score || 0}% Match
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {expertMatch.recommendation?.matchedSkills?.length || 0} skills matched
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+          </div>
+        )}
+      </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 };
 

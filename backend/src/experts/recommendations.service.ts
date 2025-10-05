@@ -436,7 +436,6 @@ export class RecommendationsService {
             id: true,
             fullName: true,
             email: true,
-            profileImage: true,
           },
         },
         expertskill: {
@@ -562,7 +561,7 @@ export class RecommendationsService {
           id: expert.user.id,
           name: expert.user.fullName,
           email: expert.user.email,
-          profileImage: expert.user.profileImage,
+          profileImage: expert.profilePicture,
           skills: expertSkills,
         },
         recommendation: {
