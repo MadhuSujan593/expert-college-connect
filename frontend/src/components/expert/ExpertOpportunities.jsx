@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Search, MapPin, Clock, Users, Briefcase, Calendar, Star, Eye, FileText, IndianRupee, Building2, Calendar as CalendarIcon, Building as BuildingOfficeIcon, Clock as ClockIcon, IndianRupee as CurrencyRupeeIcon } from 'lucide-react';
+import { Search, MapPin, Clock, Users, Briefcase, Calendar, Star, Eye, FileText, IndianRupee, Building2, Calendar as CalendarIcon, Building as BuildingOfficeIcon, Clock as ClockIcon, IndianRupee as CurrencyRupeeIcon, Sparkles } from 'lucide-react';
 import apiService from '../../utils/api';
 import RequirementCard from '../common/RequirementCard';
 
@@ -12,7 +12,7 @@ const ExpertOpportunities = () => {
   const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
     page: 1,
-    limit: 6, // Smaller limit for better infinite scroll
+    limit: 10,
     search: ''
   });
   const [hasMore, setHasMore] = useState(true);
@@ -43,51 +43,52 @@ const ExpertOpportunities = () => {
     if (node) observer.current.observe(node);
   }, [loading, hasMore, isLoadingMore, requirements.length, totalRequirements]);
 
-  // Fetch requirements
+  // Fetch requirements with recommendations
   const fetchRequirements = useCallback(async (isLoadMore = false) => {
     try {
       setLoading(!isLoadMore);
       setError(null);
       
-      const queryParams = new URLSearchParams();
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value !== '' && value !== false) {
-          queryParams.append(key, value);
-        }
-      });
-
-      console.log('🔍 Fetching requirements with params:', queryParams.toString());
-      const response = await apiService.get(`/requirements?${queryParams.toString()}`);
+      console.log('🔍 Fetching requirements with recommendations...');
+      const response = await apiService.getRecommendedOpportunities(filters.page, filters.limit, 0); // Get all with minScore = 0
       
       console.log('📡 API Response:', response);
-      console.log('📋 Requirements data:', response.data);
+      console.log('📋 Requirements data:', response.opportunities);
+      
+      // Sort by recommendation score (highest first), then by date
+      const sortedRequirements = (response.opportunities || []).sort((a, b) => {
+        const scoreA = a.recommendation?.score || 0;
+        const scoreB = b.recommendation?.score || 0;
+        
+        // First sort by recommendation score (descending)
+        if (scoreA !== scoreB) {
+          return scoreB - scoreA;
+        }
+        
+        // Then sort by date (newest first)
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
       
       if (isLoadMore) {
-        console.log('📥 Adding to existing requirements:', response.requirements?.length || 0);
+        console.log('📥 Adding to existing requirements:', sortedRequirements.length);
         setRequirements(prev => {
-          const newList = [...prev, ...(response.requirements || [])];
+          const newList = [...prev, ...sortedRequirements];
           console.log('📋 Total requirements after adding:', newList.length);
           return newList;
         });
       } else {
-        console.log('🔄 Setting initial requirements:', response.requirements?.length || 0);
-        setRequirements(response.requirements || []);
+        console.log('🔄 Setting initial requirements:', sortedRequirements.length);
+        setRequirements(sortedRequirements);
       }
       
-      setTotalRequirements(response.total || 0);
-      // Fix pagination logic: hasMore should be true if current page is less than total pages
-      const currentPage = response.page || 1;
-      const totalPages = response.totalPages || 1;
-      const hasResults = (response.requirements || []).length > 0;
+      setTotalRequirements(response.pagination?.totalCount || 0);
+      const currentPage = response.pagination?.currentPage || 1;
+      const totalPages = response.pagination?.totalPages || 1;
       const shouldHaveMore = currentPage < totalPages;
       
-      console.log('📊 Pagination check:', { currentPage, totalPages, hasResults, shouldHaveMore });
+      console.log('📊 Pagination check:', { currentPage, totalPages, shouldHaveMore });
       setHasMore(shouldHaveMore);
       
-      console.log('✅ Requirements set:', response.requirements?.length || 0);
-      console.log('📊 Total:', response.total);
-      console.log('📄 Page:', response.page);
-      console.log('📚 Total Pages:', response.totalPages);
     } catch (err) {
       console.error('❌ Error fetching requirements:', err);
       setError('Failed to load requirements. Please try again.');
@@ -222,35 +223,86 @@ const ExpertOpportunities = () => {
       </div>
 
 
-       {/* Requirements List - Two Column Grid */}
-       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-         {requirements.map((requirement, index) => (
-           <motion.div
-             key={requirement.id}
-             initial={{ opacity: 0, y: 20 }}
-             animate={{ opacity: 1, y: 0 }}
-             transition={{ delay: index * 0.05 }}
-             ref={index === requirements.length - 1 ? lastRequirementRef : null}
-           >
-             <RequirementCard
-               requirement={requirement}
-               variant="default"
-               onClick={() => showRequirementDetails(requirement.id)}
-               applicationStatus={appliedRequirements.has(requirement.id) ? applicationStatuses.get(requirement.id) : null}
-             />
-           </motion.div>
-         ))}
-        
-        {/* Loading More Indicator */}
-        {isLoadingMore && (
-          <div className="flex items-center justify-center py-8">
-            <div className="flex items-center gap-3 text-gray-600">
-              <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-600 border-t-transparent"></div>
-              <span>Loading more opportunities...</span>
-            </div>
-          </div>
-        )}
-      </div>
+       {/* Recommended Section */}
+       {requirements.filter(req => req.recommendation?.score >= 20).length > 0 && (
+         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
+           <div className="flex items-center gap-3 mb-4">
+             <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+               <Sparkles className="w-5 h-5 text-blue-600" />
+             </div>
+             <div>
+               <h2 className="text-lg font-semibold text-gray-900">Recommended for you</h2>
+               <p className="text-sm text-gray-600">Jobs matched to your profile and experience</p>
+             </div>
+           </div>
+           
+           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+             {requirements
+               .filter(req => req.recommendation?.score >= 20)
+               .map((requirement, index) => (
+                 <motion.div
+                   key={requirement.id}
+                   initial={{ opacity: 0, y: 20 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   transition={{ delay: index * 0.05 }}
+                 >
+                   <RequirementCard
+                     requirement={requirement}
+                     variant="expert"
+                     onClick={() => showRequirementDetails(requirement.id)}
+                     applicationStatus={appliedRequirements.has(requirement.id) ? applicationStatuses.get(requirement.id) : null}
+                   />
+                 </motion.div>
+               ))}
+           </div>
+         </div>
+       )}
+
+       {/* Other Opportunities Section */}
+       {requirements.filter(req => req.recommendation?.score < 20).length > 0 && (
+         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+           <div className="flex items-center gap-3 mb-4">
+             <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+               <Briefcase className="w-5 h-5 text-gray-600" />
+             </div>
+             <div>
+               <h2 className="text-lg font-semibold text-gray-900">Other Opportunities</h2>
+               <p className="text-sm text-gray-600">Explore all available requirements</p>
+             </div>
+           </div>
+           
+           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+             {requirements
+               .filter(req => req.recommendation?.score < 20)
+               .map((requirement, index) => (
+                 <motion.div
+                   key={requirement.id}
+                   initial={{ opacity: 0, y: 20 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   transition={{ delay: index * 0.05 }}
+                   ref={index === requirements.filter(req => req.recommendation?.score < 20).length - 1 ? lastRequirementRef : null}
+                 >
+                   <RequirementCard
+                     requirement={requirement}
+                     variant="expert"
+                     onClick={() => showRequirementDetails(requirement.id)}
+                     applicationStatus={appliedRequirements.has(requirement.id) ? applicationStatuses.get(requirement.id) : null}
+                   />
+                 </motion.div>
+               ))}
+           </div>
+         </div>
+       )}
+
+       {/* Loading More Indicator */}
+       {isLoadingMore && (
+         <div className="flex items-center justify-center py-8">
+           <div className="flex items-center gap-3 text-gray-600">
+             <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-600 border-t-transparent"></div>
+             <span>Loading more opportunities...</span>
+           </div>
+         </div>
+       )}
 
        {/* Load More */}
        {hasMore && (
@@ -290,9 +342,9 @@ const ExpertOpportunities = () => {
            <p className="text-gray-500 text-center">Try adjusting your filters or search terms.</p>
          </div>
        )}
-        </div>
-      </div>
-    </div>
+         </div>
+       </div>
+     </div>
   );
 };
 
