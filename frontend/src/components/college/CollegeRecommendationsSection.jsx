@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import apiService from '../../utils/api';
 import { toast } from 'react-hot-toast';
+import RequirementCard from '../common/RequirementCard';
+import { formatCurrency } from '../../utils/currency';
 
 const CollegeRecommendationsSection = () => {
   const [recommendations, setRecommendations] = useState([]);
@@ -60,11 +62,6 @@ const CollegeRecommendationsSection = () => {
     if (score >= 60) return 'Great Match';
     if (score >= 40) return 'Good Match';
     return 'Fair Match';
-  };
-
-  const formatCurrency = (amount) => {
-    if (!amount) return 'Budget not specified';
-    return `₹${amount.toLocaleString()}`;
   };
 
   const formatDate = (dateString) => {
@@ -148,89 +145,12 @@ const CollegeRecommendationsSection = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {recommendations.map((item) => (
-            <div key={item.requirement.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-              {/* Header with Title and Match Count */}
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <h3 className="text-lg font-bold text-gray-900 mb-1 line-clamp-2">
-                    {item.requirement.title}
-                  </h3>
-                  <div className="flex items-center space-x-4 text-sm text-gray-600">
-                    <div className="flex items-center space-x-1">
-                      <Award className="h-4 w-4" />
-                      <span>{item.requirement.category}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Users className="h-4 w-4" />
-                      <span>{item.totalMatches} experts</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="text-sm text-gray-500">
-                    {item.requirement.applicationsCount} applied
-                  </div>
-                </div>
-              </div>
-
-              {/* Description */}
-              <p className="text-gray-700 text-sm mb-4 line-clamp-3">
-                {item.requirement.description}
-              </p>
-
-              {/* Details */}
-              <div className="space-y-3 mb-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Budget:</span>
-                  <span className="font-medium">{formatCurrency(item.requirement.budget)}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Experience:</span>
-                  <span className="font-medium">{item.requirement.experience || 'Not specified'}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Deadline:</span>
-                  <span className="font-medium">{formatDate(item.requirement.deadline) || 'Flexible'}</span>
-                </div>
-              </div>
-
-              {/* Required Skills */}
-              {item.requirement.requiredSkills && (
-                <div className="mb-4">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <Target className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm font-medium text-gray-700">Required Skills:</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {item.requirement.requiredSkills.split(',').map((skill, index) => (
-                      <span
-                        key={index}
-                        className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
-                      >
-                        {skill.trim()}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Actions */}
-              <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                <div className="flex items-center space-x-4 text-sm text-gray-600">
-                  <div className="flex items-center space-x-1">
-                    <Calendar className="h-4 w-4" />
-                    <span>{formatDate(item.requirement.createdAt)}</span>
-                  </div>
-                </div>
-                <button
-                  onClick={() => handleViewExperts(item)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center space-x-2"
-                >
-                  <Eye className="h-4 w-4" />
-                  <span>View Experts ({item.totalMatches})</span>
-                </button>
-              </div>
-            </div>
+            <RequirementCard
+              key={item.requirement.id}
+              requirement={item.requirement}
+              variant="college"
+              onClick={() => handleViewExperts(item)}
+            />
           ))}
         </div>
       )}

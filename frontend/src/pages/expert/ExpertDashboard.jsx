@@ -2034,34 +2034,34 @@ const ExpertDashboard = () => {
                         <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-blue-600"></div>
                       </div>
                     ) : mySubscription?.plan ? (
-                      <div className="relative">
-                        {/* Background Pattern */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg opacity-50"></div>
-                        
-                        {/* Content */}
-                        <div className="relative p-4">
-                          {/* Header */}
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center space-x-3">
-                              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-                                <CreditCard className="w-5 h-5 text-white" />
-
-                              </div>
-                              <div>
-                                <h4 className="text-lg font-semibold text-gray-900">{mySubscription.plan.name}</h4>
-                                <p className="text-sm text-gray-600">
-                                  {mySubscription.endsAt 
-                                    ? `Expires ${new Date(mySubscription.endsAt).toLocaleDateString()}`
-                                    : 'Lifetime Access'
-                                  }
-                                </p>
-                              </div>
-                            </div>
-                            <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 border border-green-200">
-                              <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                              Active
-                            </div>
+                      <div className="bg-gray-50 rounded-xl p-4">
+                        {/* Top: Icon + Plan name (bold, large) */}
+                        <div className="flex items-center space-x-3 mb-3">
+                          <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                            <CreditCard className="w-5 h-5 text-white" />
                           </div>
+                          <div>
+                            <h4 className="text-lg font-bold text-gray-900 mb-0.5">Your current plan</h4>
+                            <p className="text-base font-medium text-gray-800">{mySubscription.plan.name}</p>
+                          </div>
+                        </div>
+                        
+                        {/* Middle: Status (with colored badge or dot) */}
+                        <div className="flex justify-end mb-3">
+                          <div className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <div className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5"></div>
+                            Active
+                          </div>
+                        </div>
+                        
+                        {/* Bottom: Renewal/expiration info */}
+                        <div>
+                          <p className="text-xs text-gray-600 font-normal">
+                            {mySubscription.endsAt 
+                              ? `Expires ${new Date(mySubscription.endsAt).toLocaleDateString()}`
+                              : 'Lifetime Access'
+                            }
+                          </p>
                         </div>
                       </div>
                     ) : (

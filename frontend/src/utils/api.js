@@ -571,11 +571,12 @@ class ApiService {
 
   async getCollegeRecentRequirements(limit = 5) {
     const headers = await this.getAuthHeaders();
-    const response = await fetch(`${this.baseURL}/college-profiles/requirements/recent?limit=${limit}`, {
+    const response = await fetch(`${this.baseURL}/requirements/college?page=1&limit=${limit}`, {
       method: 'GET',
       headers,
     });
-    return this.handleResponse(response);
+    const data = await this.handleResponse(response);
+    return data.requirements || [];
   }
 
   async getCollegeRequirementsSummary() {

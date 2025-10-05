@@ -165,6 +165,8 @@ export class RecommendationsService {
             name: collegeProfile.institutionName,
             contactName: collegeProfile.user.fullName,
             email: collegeProfile.user.email,
+            logoUrl: collegeProfile.logoUrl,
+            city: collegeProfile.city,
           },
           recommendation: {
             score: rec.score,

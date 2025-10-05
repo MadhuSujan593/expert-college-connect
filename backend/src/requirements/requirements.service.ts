@@ -71,8 +71,20 @@ export class RequirementsService {
       };
       // College admins can see ALL their requirements (active + inactive)
     } else {
-      // For experts, only show active requirements
+      // For experts, only show active requirements and exclude shortlisted/rejected applications
       where.isActive = true;
+      
+      // Exclude requirements where expert has been shortlisted or rejected
+      where.NOT = {
+        applications: {
+          some: {
+            expertId: userId,
+            status: {
+              in: ['SHORTLISTED', 'REJECTED']
+            }
+          }
+        }
+      };
     }
     
     if (category && category !== 'All Categories') {
@@ -112,11 +124,13 @@ export class RequirementsService {
               city: true,
               state: true,
               country: true,
+              logoUrl: true,
               user: {
                 select: {
                   id: true,
                   fullName: true,
-                  email: true
+                  email: true,
+                  profileImage: true
                 }
               }
             }
@@ -133,7 +147,10 @@ export class RequirementsService {
     ]);
 
     return {
-      requirements,
+      requirements: requirements.map(req => ({
+        ...req,
+        budget: req.budget ? req.budget.toNumber() : null
+      })),
       total,
       page,
       limit,
@@ -280,7 +297,9 @@ export class RequirementsService {
 
   // Get recent requirements for dashboard
   async getRecentRequirements(userId: string, limit: number = 5) {
-    return await this.prisma.requirement.findMany({
+    console.log('🔍 Getting recent requirements for userId:', userId);
+    
+    const requirements = await this.prisma.requirement.findMany({
       where: { 
         collegeprofile: {
           userId
@@ -288,14 +307,41 @@ export class RequirementsService {
         // Remove isActive filter so college admins can see ALL their requirements
       },
       include: {
-        collegeprofile: {
-          include: {
-            user: true
-          }
-        }
+        _count: {
+          select: {
+            applications: true,
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
       take: limit
     });
+
+    console.log('🔍 Raw requirements from DB:', JSON.stringify(requirements, null, 2));
+    
+    // Fetch college profile data separately since include might not be working
+    const requirementsWithCollegeData = await Promise.all(requirements.map(async (req) => {
+      const collegeProfile = await this.prisma.collegeprofile.findUnique({
+        where: { id: req.collegeProfileId },
+        include: {
+          user: {
+            select: {
+              fullName: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      return {
+        ...req,
+        collegeprofile: collegeProfile,
+        budget: req.budget ? req.budget.toNumber() : null
+      };
+    }));
+    
+    console.log('🔍 Requirements with college data:', JSON.stringify(requirementsWithCollegeData, null, 2));
+    
+    return requirementsWithCollegeData;
   }
 }

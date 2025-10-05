@@ -1223,8 +1223,8 @@ const SuperAdminDashboard = () => {
                         {/* Table Body */}
                         <div className="divide-y divide-gray-200">
                           {plans.map((plan, index) => (
-                            <motion.div
-                              key={plan.id}
+                          <motion.div 
+                            key={plan.id} 
                               initial={{ opacity: 0, y: 10 }}
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: index * 0.05 }}
@@ -1240,7 +1240,7 @@ const SuperAdminDashboard = () => {
                                 {/* Audience */}
                                 <div>
                                   <span className="text-gray-700">{plan.audience}</span>
-                                </div>
+                                  </div>
 
                                 {/* Type */}
                                 <div>
@@ -1251,21 +1251,21 @@ const SuperAdminDashboard = () => {
                                   }`}>
                                     {plan.planType || 'PAID'}
                                   </span>
-                                </div>
+                            </div>
 
                                 {/* Duration */}
                                 <div>
                                   <span className="text-gray-900 font-medium">{plan.durationDays} days</span>
-                                </div>
+                              </div>
 
                                 {/* Price */}
                                 <div>
                                   <span className="text-gray-900 font-medium">
                                     {plan.priceCents === 0 ? 'Free' : `₹${(plan.priceCents / 100).toFixed(0)}`}
                                   </span>
-                                </div>
+                            </div>
 
-                                {/* Actions */}
+                            {/* Actions */}
                                 <div className="flex items-center justify-center space-x-2">
                                   <button 
                                     onClick={() => handleTogglePlan(plan.id)} 
@@ -1318,10 +1318,10 @@ const SuperAdminDashboard = () => {
                                   >
                                     Delete
                                   </button>
-                                </div>
                               </div>
-                            </motion.div>
-                          ))}
+                            </div>
+                          </motion.div>
+                        ))}
                         </div>
                       </div>
                     )}
@@ -1413,23 +1413,23 @@ const SuperAdminDashboard = () => {
                           />
                         </div>
                         {createPlanForm.planType === 'PAID' && (
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
-                            <input
-                              type="number"
-                              inputMode="decimal"
-                              step="0.01"
-                              min="0.01"
-                              placeholder="0"
-                              value={createPlanForm.priceDisplay}
-                              onFocus={(e) => { if (e.target.value === '0') { e.target.value = ''; } }}
-                              onChange={e => setCreatePlanForm({ ...createPlanForm, priceDisplay: e.target.value })}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-colors"
-                            />
-                          </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            step="0.01"
+                            min="0.01"
+                            placeholder="0"
+                            value={createPlanForm.priceDisplay}
+                            onFocus={(e) => { if (e.target.value === '0') { e.target.value = ''; } }}
+                            onChange={e => setCreatePlanForm({ ...createPlanForm, priceDisplay: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-colors"
+                          />
+                        </div>
                         )}
                         {createPlanForm.planType === 'FREE' && (
-                          <div>
+                        <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
                             <input
                               type="text"
@@ -1437,7 +1437,7 @@ const SuperAdminDashboard = () => {
                               disabled
                               className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600"
                             />
-                          </div>
+                        </div>
                         )}
                       </div>
                       <div className="mt-4 flex justify-end space-x-2">

@@ -1,235 +1,317 @@
 import React from 'react';
-import { motion } from 'framer-motion';
-import { Eye, Edit3, Trash2 } from 'lucide-react';
+import { 
+  MapPin, 
+  IndianRupee,
+  Briefcase,
+  FileText,
+  Edit3,
+  Trash2,
+  ToggleLeft,
+  ToggleRight,
+  Eye
+} from 'lucide-react';
+import { formatCurrency } from '../../utils/currency';
 
 const RequirementCard = ({ 
   requirement, 
-  index, 
-  showActions = true, 
-  compact = false,
-  onClick = null,
-  onView = null,
-  onEdit = null,
-  onDelete = null,
-  onRate = null,
-  showRateButton = false,
-  onToggleActive = null
+  variant = 'default', // 'default', 'college', 'expert', 'application'
+  showActions = false,
+  onEdit,
+  onDelete,
+  onToggle,
+  onView,
+  onClick,
+  className = '',
+  applicationStatus = null,
+  applicationData = null
 }) => {
-  const formatDate = (dateString) => {
-    if (!dateString) return 'No deadline';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
+  // Debug: Log the budget value to see what's causing double currency
+  if (requirement.budget && requirement.budget.toString().includes('₹')) {
+    console.log('🚨 Double currency detected:', {
+      title: requirement.title,
+      budget: requirement.budget,
+      budgetType: typeof requirement.budget
     });
+  }
+  // Format skills
+  const formatSkills = (skills) => {
+    if (!skills || skills.length === 0) return 'Not specified';
+    if (typeof skills === 'string') {
+      return skills.split(',').slice(0, 8).join(' · ');
+    }
+    return skills.slice(0, 8).map(skill => 
+      typeof skill === 'string' ? skill : skill.skill
+    ).join(' · ');
   };
 
-  const formatBudget = (budget) => {
-    if (!budget || budget === 0) return 'Not specified';
-    return `₹${parseInt(budget).toLocaleString()}`;
+  // Get college data based on variant
+  const getCollegeData = () => {
+    switch (variant) {
+      case 'college':
+        return {
+          name: requirement.collegeprofile?.institutionName || 'Not specified',
+          logoUrl: requirement.collegeprofile?.logoUrl,
+          city: requirement.collegeprofile?.city || 'Not specified'
+        };
+      case 'expert':
+        return {
+          name: requirement.college?.name || 'Not specified',
+          logoUrl: requirement.college?.logoUrl,
+          city: requirement.college?.city || 'Not specified'
+        };
+      default:
+        return {
+          name: requirement.collegeprofile?.institutionName || requirement.college?.name || 'Not specified',
+          logoUrl: requirement.collegeprofile?.logoUrl || requirement.college?.logoUrl,
+          city: requirement.collegeprofile?.city || requirement.college?.city || 'Not specified'
+        };
+    }
   };
 
-  const getCategoryColor = (category) => {
-    const colors = {
-      'DATA_SCIENCE_AI': 'from-violet-500 to-purple-600',
-      'CYBERSECURITY': 'from-red-500 to-pink-600',
-      'SOFTWARE_DEVELOPMENT': 'from-blue-500 to-indigo-600',
-      'INNOVATION': 'from-emerald-500 to-teal-600',
-      'DIGITAL_MARKETING': 'from-amber-500 to-orange-600',
-      'BUSINESS_STRATEGY': 'from-indigo-500 to-blue-600',
-      'FINANCE': 'from-emerald-500 to-green-600',
-      'CONSULTING': 'from-orange-500 to-red-600',
-      'EDUCATION': 'from-teal-500 to-cyan-600',
-      'RESEARCH': 'from-pink-500 to-rose-600',
-      'WORKSHOP': 'from-cyan-500 to-blue-600',
-      'GUEST_LECTURE': 'from-violet-500 to-purple-600',
-      'MENTORING': 'from-rose-500 to-pink-600',
-      'CURRICULUM_REVIEW': 'from-sky-500 to-blue-600',
-      'INDUSTRY_PROJECT': 'from-lime-500 to-green-600',
-      'QUESTION_PAPER_SETTING': 'from-amber-500 to-yellow-600',
-      'QUESTION_PAPER_EVALUATION': 'from-fuchsia-500 to-purple-600',
-      'TRAINING': 'from-stone-500 to-gray-600',
-      'PUBLIC_SPEAKING': 'from-slate-500 to-gray-600',
-      'LEADERSHIP': 'from-neutral-500 to-gray-600',
-      'HEALTHCARE': 'from-red-500 to-pink-600',
-      'ENGINEERING': 'from-blue-500 to-indigo-600',
-      'SUSTAINABILITY': 'from-green-500 to-emerald-600'
-    };
-    return colors[category] || 'from-gray-500 to-gray-600';
+  const collegeData = getCollegeData();
+
+  // Get skills based on variant
+  const getSkills = () => {
+    if (variant === 'expert' && requirement.recommendation?.matchedSkills) {
+      return requirement.recommendation.matchedSkills;
+    }
+    return requirement.requiredSkills;
   };
 
-  const getCategoryLabel = (category) => {
-    const labels = {
-      'DATA_SCIENCE_AI': 'Data Science & AI',
-      'CYBERSECURITY': 'Cybersecurity',
-      'SOFTWARE_DEVELOPMENT': 'Software Development',
-      'INNOVATION': 'Innovation & Design',
-      'DIGITAL_MARKETING': 'Digital Marketing',
-      'BUSINESS_STRATEGY': 'Business Strategy',
-      'FINANCE': 'Finance',
-      'CONSULTING': 'Consulting',
-      'EDUCATION': 'Education',
-      'RESEARCH': 'Research Collaboration',
-      'WORKSHOP': 'Workshop',
-      'GUEST_LECTURE': 'Guest Lecture',
-      'MENTORING': 'Mentoring',
-      'CURRICULUM_REVIEW': 'Curriculum Review',
-      'INDUSTRY_PROJECT': 'Industry Project',
-      'QUESTION_PAPER_SETTING': 'Question Paper Setting',
-      'QUESTION_PAPER_EVALUATION': 'Question Paper Evaluation',
-      'TRAINING': 'Training & Development',
-      'PUBLIC_SPEAKING': 'Public Speaking',
-      'LEADERSHIP': 'Leadership Development',
-      'HEALTHCARE': 'Healthcare',
-      'ENGINEERING': 'Engineering',
-      'SUSTAINABILITY': 'Sustainability'
-    };
-    return labels[category] || category;
+  const skills = getSkills();
+
+  // Get match score for expert variant
+  const getMatchScore = () => {
+    if (variant === 'expert' && requirement.recommendation?.score) {
+      return requirement.recommendation.score;
+    }
+    return null;
   };
 
-  const cardClasses = compact 
-    ? "group relative bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md hover:border-gray-300 transition-all duration-200 cursor-pointer"
-    : "group relative bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md hover:border-gray-300 transition-all duration-200";
+  const matchScore = getMatchScore();
+
+  // Get score color
+  const getScoreColor = (score) => {
+    if (score >= 80) return 'text-green-600 bg-green-100';
+    if (score >= 60) return 'text-blue-600 bg-blue-100';
+    if (score >= 40) return 'text-orange-600 bg-orange-100';
+    return 'text-red-600 bg-red-100';
+  };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
-      className={cardClasses}
+    <div 
+      className={`bg-white border border-gray-200 hover:border-gray-300 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 rounded-xl cursor-pointer group shadow-sm ${className}`}
       onClick={onClick}
     >
-      <div className="flex flex-col h-full">
-        {/* Title Row */}
-        <div className="flex items-start justify-between gap-3 mb-2">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <h3 className={`font-semibold text-gray-900 line-clamp-1 ${
-              compact ? 'text-base' : 'text-lg'
-            } ${!requirement.isActive ? 'opacity-60' : ''}`}>
+      <div className="p-4">
+        <div className="flex items-start justify-between">
+          {/* Left Side - Main Content */}
+          <div className="flex-1 min-w-0">
+            {/* Top Section - Job Title & Company */}
+            <div className="mb-3">
+              <h3 className="text-lg font-bold text-gray-900 group-hover:text-gray-900 transition-colors mb-1 line-clamp-1">
               {requirement.title}
             </h3>
-            {!requirement.isActive && (
-              <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-md flex-shrink-0">
-                Inactive
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {requirement.isUrgent && (
-              <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-md">
-                Urgent
-              </span>
-            )}
-          </div>
-        </div>
-        
-        
-        {/* Tags Section */}
-        <div className="flex flex-wrap items-center gap-2 mb-2">
-          <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-md">
-            {getCategoryLabel(requirement.category)}
-          </span>
-          
-          {requirement.budget && (
-            <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-md">
-              {formatBudget(requirement.budget)}
-            </span>
-          )}
-          
-          {requirement.deadline && (
-            <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs font-medium rounded-md">
-              {formatDate(requirement.deadline)}
-            </span>
-          )}
-        </div>
-        
-        {/* Footer - Only show if not compact or if actions are enabled */}
-        {(!compact || showActions) && (
-          <div className="mt-auto pt-2 border-t border-gray-200/60">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
-              <div className="text-xs text-gray-500">
-                Posted {formatDate(requirement.createdAt)}
+              <p className="text-gray-900 text-sm mb-1">
+                {collegeData.name}
+              </p>
+            </div>
+
+            {/* Middle Section - Job Details in ONE ROW */}
+            <div className="mb-3">
+              <div className="flex items-center gap-6 text-sm text-gray-900">
+                <span className="flex items-center gap-1 min-w-0">
+                  <Briefcase className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <span className="truncate">{requirement.experience || 'Not specified'}</span>
+                </span>
+                <span className="flex items-center gap-1 min-w-0">
+                  <IndianRupee className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <span className="truncate">{formatCurrency(requirement.budget)}</span>
+                </span>
+                <span className="flex items-center gap-1 min-w-0">
+                  <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <span className="truncate">{collegeData.city}</span>
+                </span>
               </div>
+            </div>
+
+            {/* Description - Separate Line */}
+            <div className="mb-3">
+              <div className="flex items-center gap-2 text-sm text-gray-900">
+                <FileText className="w-4 h-4 text-gray-400" />
+                <span className="line-clamp-1">
+                  {requirement.description ? 
+                    (requirement.description.length > 60 ? 
+                      requirement.description.substring(0, 60) + '...' : 
+                      requirement.description
+                    ) : 
+                    'Not specified'
+                  }
+              </span>
+              </div>
+          </div>
+
+            {/* Skills - Separate Line */}
+            <div className="mb-3">
+              <div className="flex flex-wrap gap-1">
+                {skills && skills.length > 0 ? (
+                  <span className="text-sm text-gray-900">
+                    {formatSkills(skills)}
+              </span>
+                ) : (
+                  <span className="text-sm text-gray-500">Not specified</span>
+            )}
+          </div>
+        </div>
+        
+            {/* Time Posted */}
+            <div className="text-sm text-gray-500">
+              {(() => {
+                const daysAgo = Math.floor((new Date() - new Date(requirement.createdAt)) / (1000 * 60 * 60 * 24));
+                return daysAgo === 0 ? 'Today' : daysAgo === 1 ? '1 day ago' : `${daysAgo} days ago`;
+              })()}
+            </div>
+        </div>
+        
+          {/* Right Side - Logo & Status */}
+          <div className="flex flex-col items-end gap-3 ml-4">
+            {/* Company Logo */}
+            {/* College Logo - Hide for college variant */}
+            {variant !== 'college' && (
+              <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden bg-blue-50">
+                {collegeData.logoUrl ? (
+                  <img 
+                    src={collegeData.logoUrl} 
+                    alt={collegeData.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                <div 
+                  className={`w-full h-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center ${collegeData.logoUrl ? 'hidden' : 'flex'}`}
+                  style={{ display: collegeData.logoUrl ? 'none' : 'flex' }}
+                >
+                  <span className="text-white font-bold text-lg">
+                    {(collegeData.name || 'C')[0].toUpperCase()}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Status Badges */}
+            <div className="flex flex-col gap-1">
+              {requirement.isUrgent && (
+                <span className="px-3 py-1 bg-red-50 text-red-600 text-xs font-medium rounded-md border border-red-100">
+                  Urgent
+                </span>
+              )}
               
-              {showActions && (
-                <div className="flex items-center gap-3">
-                  {/* Active/Inactive Toggle */}
-                  {onToggleActive && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500">
-                        {requirement.isActive ? 'Active' : 'Inactive'}
+              {/* Match Score for Expert variant */}
+              {matchScore && (
+                <span className={`px-3 py-1 text-xs font-medium rounded-md ${getScoreColor(matchScore)}`}>
+                  {matchScore}% Match
+                </span>
+              )}
+
+              {/* Application Status for Application variant */}
+              {variant === 'application' && applicationStatus && (
+                (() => {
+                  const getStatusStyle = (status) => {
+                    switch (status?.toUpperCase()) {
+                      case 'PENDING':
+                        return 'px-3 py-1 bg-yellow-50 text-yellow-600 text-xs font-medium rounded-md border border-yellow-100';
+                      case 'SHORTLISTED':
+                        return 'px-3 py-1 bg-green-50 text-green-600 text-xs font-medium rounded-md border border-green-100';
+                      case 'REJECTED':
+                        return 'px-3 py-1 bg-red-50 text-red-600 text-xs font-medium rounded-md border border-red-100';
+                      case 'ACCEPTED':
+                        return 'px-3 py-1 bg-blue-50 text-blue-600 text-xs font-medium rounded-md border border-blue-100';
+                      default:
+                        return 'px-3 py-1 bg-gray-50 text-gray-600 text-xs font-medium rounded-md border border-gray-100';
+                    }
+                  };
+                  const getStatusText = (status) => {
+                    switch (status?.toUpperCase()) {
+                      case 'PENDING': return 'Under Review';
+                      case 'SHORTLISTED': return 'Shortlisted';
+                      case 'REJECTED': return 'Not Selected';
+                      case 'ACCEPTED': return 'Selected';
+                      default: return 'Applied';
+                    }
+                  };
+                  return (
+                    <span className={getStatusStyle(applicationStatus)}>
+                      {getStatusText(applicationStatus)}
                       </span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onToggleActive();
-                        }}
-                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${
-                          requirement.isActive ? 'bg-blue-600' : 'bg-gray-300'
-                        }`}
-                        title={`${requirement.isActive ? 'Disable' : 'Enable'} requirement`}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            requirement.isActive ? 'translate-x-4' : 'translate-x-0.5'
-                          }`}
-                        />
-                      </button>
-                    </div>
-                  )}
-                  
-                  {/* Action Buttons */}
-                  <div className="flex items-center gap-1.5">
+                  );
+                })()
+              )}
+
+              {/* Action Buttons for College variant */}
+              {showActions && variant === 'college' && (
+                <div className="flex gap-1">
+                  {onView && (
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        onView && onView();
+                        onView(requirement);
                       }}
-                      className="text-blue-600 hover:text-blue-800 hover:underline"
-                      title="View"
+                      className="p-1 text-gray-500 hover:text-blue-600 transition-colors"
+                      title="View Details"
                     >
                       <Eye className="w-4 h-4" />
                     </button>
+                  )}
+                  {onEdit && (
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        onEdit && onEdit();
+                        onEdit(requirement);
                       }}
-                      className="text-blue-600 hover:text-blue-800 hover:underline"
+                      className="p-1 text-gray-500 hover:text-green-600 transition-colors"
                       title="Edit"
                     >
                       <Edit3 className="w-4 h-4" />
                     </button>
-                    {showRateButton && (
+                  )}
+                  {onToggle && (
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
-                          onRate && onRate();
-                        }}
-                        className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
-                      >
-                        Rate
+                        onToggle(requirement);
+                      }}
+                      className="p-1 text-gray-500 hover:text-orange-600 transition-colors"
+                      title={requirement.isActive ? 'Deactivate' : 'Activate'}
+                    >
+                      {requirement.isActive ? (
+                        <ToggleRight className="w-4 h-4" />
+                      ) : (
+                        <ToggleLeft className="w-4 h-4" />
+                      )}
                       </button>
                     )}
+                  {onDelete && (
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        onDelete && onDelete();
+                        onDelete(requirement);
                       }}
-                      className="text-red-600 hover:text-red-800 hover:underline"
+                      className="p-1 text-gray-500 hover:text-red-600 transition-colors"
                       title="Delete"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
-                  </div>
+                  )}
                 </div>
               )}
             </div>
           </div>
-        )}
+        </div>
       </div>
-    </motion.div>
+    </div>
   );
 };
 

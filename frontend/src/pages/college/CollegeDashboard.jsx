@@ -52,6 +52,7 @@ import CollegeRecommendationsSection from '../../components/college/CollegeRecom
 import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
 import ApplicationManagement from '../../components/college/ApplicationManagement';
 import PlanLimitationModal from '../../components/common/PlanLimitationModal';
+import { formatCurrency } from '../../utils/currency';
 
 const CollegeDashboard = () => {
   const { user, logout, setUser } = useAuth();
@@ -1089,17 +1090,18 @@ const CollegeDashboard = () => {
   const fetchRequirements = async () => {
     try {
       console.log('🔄 fetchRequirements called - fetching recent requirements...');
-      // Fetch only recent requirements for dashboard stats
-      const recentResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/requirements/recent`, {
+      // Use the same API as requirements tab but limit to 3
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/requirements/college?page=1&limit=3`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
         }
       });
 
-      console.log('📡 Recent requirements response status:', recentResponse.status);
+      console.log('📡 Recent requirements response status:', response.status);
 
-      if (recentResponse.ok) {
-        const recentRequirements = await recentResponse.json();
+      if (response.ok) {
+        const data = await response.json();
+        const recentRequirements = data.requirements || [];
         
         console.log('📊 Recent requirements fetched:', recentRequirements);
         console.log('📊 Recent requirements count:', recentRequirements.length);
@@ -1107,10 +1109,10 @@ const CollegeDashboard = () => {
         setRecentRequirements(recentRequirements);
         setStats(prev => ({
           ...prev,
-          totalRequirements: recentRequirements.length
+          totalRequirements: data.pagination?.totalCount || recentRequirements.length
         }));
       } else {
-        console.error('❌ Failed to fetch recent requirements:', recentResponse.status);
+        console.error('❌ Failed to fetch recent requirements:', response.status);
       }
     } catch (error) {
       console.error('❌ Error fetching requirements:', error);
@@ -1560,7 +1562,7 @@ const CollegeDashboard = () => {
               >
               <SidebarItem
                 id="recommendations"
-                label="Expert Recommendations"
+                label="Recommendations"
                 icon={Sparkles}
                 isActive={activeTab === 'recommendations'}
                 onClick={() => setActiveTab('recommendations')}
@@ -1743,34 +1745,34 @@ const CollegeDashboard = () => {
                     {subsLoading ? (
                       <p className="text-gray-600">Loading subscription...</p>
                     ) : mySubscription ? (
-                        <div className="relative">
-                          {/* Background Pattern */}
-                          <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg opacity-50"></div>
+                      <div className="bg-gray-50 rounded-2xl p-6">
+                        {/* Top: Icon + Plan name (bold, large) */}
+                        <div className="flex items-center space-x-3 mb-5">
+                          <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
+                            <CreditCard className="w-6 h-6 text-white" />
+                        </div>
+                          <div>
+                            <h4 className="text-2xl font-bold text-gray-900 mb-1">Your current plan</h4>
+                            <p className="text-lg font-medium text-gray-800">{mySubscription.plan.name}</p>
+                          </div>
+                          </div>
                           
-                          {/* Content */}
-                          <div className="relative p-6">
-                            {/* Header */}
-                            <div className="flex items-center justify-between mb-4">
-                              <div className="flex items-center space-x-3">
-                                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-                                  <CreditCard className="w-5 h-5 text-white" />
+                        {/* Middle: Status (with colored badge or dot) */}
+                        <div className="flex justify-end mb-4">
+                          <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                            <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                            Active
                         </div>
-                                <div>
-                                  <h4 className="text-lg font-semibold text-gray-900">{mySubscription.plan.name}</h4>
-                                  <p className="text-sm text-gray-600">
-                                    {mySubscription.endsAt 
-                                      ? `Expires ${new Date(mySubscription.endsAt).toLocaleDateString()}`
-                                      : 'Lifetime Access'
-                                    }
-                                  </p>
                           </div>
-                        </div>
-                              <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 border border-green-200">
-                                <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                                Active
-                          </div>
-                            </div>
-                            
+                        
+                        {/* Bottom: Renewal/expiration info */}
+                        <div>
+                          <p className="text-sm text-gray-600 font-normal">
+                            {mySubscription.endsAt 
+                              ? `Expires ${new Date(mySubscription.endsAt).toLocaleDateString()}`
+                              : 'Lifetime Access'
+                            }
+                          </p>
                         </div>
                       </div>
                     ) : (
@@ -1900,43 +1902,15 @@ const CollegeDashboard = () => {
                       ) : (
                         <div className="space-y-3">
                           {recentRequirements.slice(0, 3).map((req) => (
-                            <div key={req.id} className="group p-4 bg-white border border-gray-200 rounded-lg hover:shadow-sm hover:border-gray-300 transition-all duration-200">
-                              <div className="flex items-center justify-between">
-                                <div className="flex-1 min-w-0">
-                                  <p className="font-semibold text-gray-900 truncate group-hover:text-blue-600 transition-colors">{req.title}</p>
-                                  <div className="flex items-center gap-4 mt-2">
-                                    <div className="flex items-center gap-1 text-xs text-gray-500">
-                                      <Calendar className="w-3 h-3" />
-                                      <span>Posted: {req.createdAt ? new Date(req.createdAt).toLocaleDateString('en-US', {
-                                        month: 'short',
-                                        day: 'numeric',
-                                        year: 'numeric'
-                                      }) : 'N/A'}</span>
-                              </div>
-                                    {req.department && (
-                                      <div className="flex items-center gap-1 text-xs text-gray-500">
-                                        <Briefcase className="w-3 h-3" />
-                                        <span>{req.department}</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-3 ml-4">
-                                  <span className={`px-3 py-1 text-xs font-medium rounded-full border ${
-                                req.status === 'ACTIVE' 
-                                      ? 'bg-green-50 text-green-700 border-green-200' 
-                                      : 'bg-gray-50 text-gray-700 border-gray-200'
-                              }`}>
-                                {req.status}
-                              </span>
-                                  <div className="w-6 h-6 rounded-full bg-gray-100 group-hover:bg-blue-100 flex items-center justify-center transition-colors">
-                                    <ChevronRight className="w-3 h-3 text-gray-400 group-hover:text-blue-600" />
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
+                            <RequirementCard
+                              key={req.id}
+                              requirement={req}
+                              variant="college"
+                              onClick={() => handleView(req)}
+                              className="hover:shadow-sm"
+                            />
                           ))}
-                            </div>
+                        </div>
                           )}
                   </div>
                   </motion.div>
@@ -2324,8 +2298,8 @@ const CollegeDashboard = () => {
               
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Budget (₹)</label>
-                <p className="text-gray-900">{viewingRequirement.budget ? `₹${parseInt(viewingRequirement.budget).toLocaleString()}` : 'Not specified'}</p>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Budget</label>
+                <p className="text-gray-900">{viewingRequirement.budget ? formatCurrency(viewingRequirement.budget) : 'Not specified'}</p>
               </div>
               
               <div>
@@ -3176,7 +3150,7 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
   const loadRecentRequirements = async () => {
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/requirements/recent`,
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/requirements/college?page=1&limit=3`,
         {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
@@ -3186,7 +3160,7 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
 
       if (response.ok) {
         const data = await response.json();
-        setRecentRequirements(data);
+        setRecentRequirements(data.requirements || []);
       }
     } catch (error) {
       console.error('Error loading recent requirements:', error);
@@ -3926,13 +3900,12 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
                   <RequirementCard
                     key={requirement.id}
                     requirement={requirement}
-                    index={index}
+                    variant="college"
                     showActions={true}
-                    compact={false}
                     onView={() => handleView(requirement)}
                     onEdit={() => handleEdit(requirement)}
                     onDelete={() => onDelete(requirement.id)}
-                    onToggleActive={() => onToggleActive(requirement)}
+                    onToggle={() => onToggleActive(requirement)}
                   />
                 ))
               )}
@@ -4001,8 +3974,8 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
                 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Budget (₹)</label>
-                  <p className="text-gray-900">{viewingRequirement.budget ? `₹${parseInt(viewingRequirement.budget).toLocaleString()}` : 'Not specified'}</p>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Budget</label>
+                  <p className="text-gray-900">{viewingRequirement.budget ? formatCurrency(viewingRequirement.budget) : 'Not specified'}</p>
                 </div>
                 
                 <div>

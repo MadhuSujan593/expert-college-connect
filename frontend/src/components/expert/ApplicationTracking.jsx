@@ -12,6 +12,7 @@ import {
   IndianRupee
 } from 'lucide-react';
 import apiService from '../../utils/api';
+import RequirementCard from '../common/RequirementCard';
 
 const ApplicationTracking = ({ onRequestRating, ratingRequests = [] }) => {
   const navigate = useNavigate();
@@ -193,122 +194,31 @@ const ApplicationTracking = ({ onRequestRating, ratingRequests = [] }) => {
               key={application.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-lg hover:border-gray-300 transition-all duration-200 cursor-pointer group"
-                             onClick={() => {
-                 // Navigate to requirement details with application status
-                 console.log('Navigating to requirement details for:', application.requirement?.title || 'Unknown Requirement');
-                 
-                 // Navigate to requirement details page with application context
-                 if (application.requirement?.id) {
-                   navigate(`/requirement/${application.requirement.id}`, {
-                     state: {
-                       applicationId: application.id,
-                       applicationStatus: application.status,
-                       fromApplications: true,
-                       requirementId: application.requirement.id,
-                       requirementTitle: application.requirement.title,
-                       reviewNotes: application.reviewNotes
-                     }
-                   });
-                 } else {
-                   console.error('Requirement ID not found for application:', application);
-                 }
-               }}
             >
-              <div className="flex items-start justify-between gap-4">
-                {/* Left Side - Application Details */}
-                <div className="flex-1">
-                  {/* Job Title and Company */}
-                  <div className="flex items-start gap-3 mb-3">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {application.requirement.title}
-                    </h3>
-                    <div className="flex items-center gap-2">
-                      <Building2 className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm text-gray-600">
-                        {application.requirement.collegeprofile.institutionName}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Status Badge - Modern Professional Design */}
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border ${statusInfo.bgColor} ${statusInfo.color} ${statusInfo.borderColor}`}>
-                      <div className={`w-2 h-2 rounded-full ${statusInfo.dotColor}`}></div>
-                      <span className="font-semibold">{statusInfo.label}</span>
-                    </div>
-                    {application.reviewedAt && (
-                      <span className="text-sm text-slate-500 font-medium">
-                        Updated {formatDate(application.reviewedAt)}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Application Details */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 mb-3">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      <span>Applied {formatDate(application.createdAt)}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <IndianRupee className="w-4 h-4" />
-                      <span>Budget: {formatBudget(application.requirement.budget, application.requirement.budgetType)}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4" />
-                      <span>Timeline: {application.requirement.deadline ? new Date(application.requirement.deadline).toLocaleDateString() : 'Not specified'}</span>
-                    </div>
-                  </div>
-
-                  {/* Cover Letter Preview */}
-                  {application.coverLetter && (
-                    <div className="mb-3">
-                      <p className="text-sm text-gray-600 line-clamp-2">
-                        <strong>Cover Letter:</strong> {application.coverLetter}
-                      </p>
-                    </div>
-                  )}
-
-                                     {/* Review Notes (if any) */}
-                   {application.reviewNotes && (
-                     <div className="bg-gray-50 rounded-lg p-3">
-                       <p className="text-sm text-gray-700">
-                         <strong>Feedback:</strong> {application.reviewNotes}
-                       </p>
-                     </div>
-                   )}
-
-                   {/* Rating Request Button for Selected/Shortlisted Applications */}
-                   {(application.status === 'ACCEPTED' || application.status === 'SHORTLISTED') && onRequestRating && !hasRatingRequest(application) && (
-                     <div className="mt-4 pt-4 border-t border-gray-200">
-                       <button
-                         onClick={(e) => {
-                           e.stopPropagation();
-                           onRequestRating(application.requirement, application);
-                         }}
-                         className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                       >
-                         <Star className="w-4 h-4" />
-                         Request Rating
-                       </button>
-                     </div>
-                   )}
-
-                   {/* Show status if rating request already exists */}
-                   {(application.status === 'ACCEPTED' || application.status === 'SHORTLISTED') && hasRatingRequest(application) && (
-                     <div className="mt-4 pt-4 border-t border-gray-200">
-                       <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium">
-                         <Star className="w-4 h-4" />
-                         Rating Requested
-                       </div>
-                     </div>
-                   )}
-                   
-
-                 </div>
-
-
-              </div>
+              <RequirementCard
+                requirement={application.requirement}
+                variant="application"
+                onClick={() => {
+                  console.log('Navigating to requirement details for:', application.requirement?.title || 'Unknown Requirement');
+                  
+                  if (application.requirement?.id) {
+                    navigate(`/requirement/${application.requirement.id}`, {
+                      state: {
+                        applicationId: application.id,
+                        applicationStatus: application.status,
+                        fromApplications: true,
+                        requirementId: application.requirement.id,
+                        requirementTitle: application.requirement.title,
+                        reviewNotes: application.reviewNotes
+                      }
+                    });
+                  } else {
+                    console.error('Requirement ID not found for application:', application);
+                  }
+                }}
+                applicationStatus={application.status}
+                applicationData={application}
+              />
             </motion.div>
           );
         })}
