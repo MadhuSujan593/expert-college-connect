@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   MapPin, 
   IndianRupee,
@@ -15,6 +15,7 @@ import {
   User
 } from 'lucide-react';
 import { formatCurrency } from '../../utils/currency';
+import ExpertProfileModal from './ExpertProfileModal';
 
 const RequirementCard = ({ 
   requirement, 
@@ -33,6 +34,42 @@ const RequirementCard = ({
   const [showExpertModal, setShowExpertModal] = useState(false);
   const [experts, setExperts] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [expertCount, setExpertCount] = useState(null);
+  
+  // Expert profile modal state
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [selectedExpert, setSelectedExpert] = useState(null);
+
+  // Fetch expert count when component mounts for college variant
+  useEffect(() => {
+    if (variant === 'college') {
+      fetchExpertCount();
+    }
+  }, [variant, requirement.id]);
+
+  // Function to fetch expert count
+  const fetchExpertCount = async () => {
+    if (expertCount !== null) return; // Already fetched
+    
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/recommendations/college?page=1&limit=100&minScore=10`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const matchingRequirement = data.requirements?.find(req => req.requirement.id === requirement.id);
+        if (matchingRequirement) {
+          setExpertCount(matchingRequirement.totalMatches || 0);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch expert count:', error);
+      setExpertCount(0);
+    }
+  };
 
   // Simple function to show experts
   const handleViewExperts = async (e) => {
@@ -56,6 +93,7 @@ const RequirementCard = ({
         const matchingRequirement = data.requirements?.find(req => req.requirement.id === requirement.id);
         if (matchingRequirement) {
           setExperts(matchingRequirement.matchedExperts || []);
+          setExpertCount(matchingRequirement.totalMatches || 0);
         }
       }
     } catch (error) {
@@ -65,6 +103,92 @@ const RequirementCard = ({
       setShowExpertModal(true);
     }
   };
+
+  // Handle view expert profile
+  const handleViewProfile = async (expertMatch) => {
+    try {
+      // Fetch complete expert profile data
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/expert-profiles/${expertMatch.expert.id}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        }
+      });
+      
+      if (response.ok) {
+        const completeExpertData = await response.json();
+        setSelectedExpert(completeExpertData);
+        setShowProfileModal(true);
+      } else {
+        // Fallback to basic data if API call fails
+        const transformedExpert = {
+          id: expertMatch.expert.id,
+          user: {
+            fullName: expertMatch.expert.name,
+            email: expertMatch.expert.email,
+            phone: null,
+          },
+          profilePicture: expertMatch.expert.profileImage,
+          jobTitle: 'Expert',
+          company: null,
+          experience: null,
+          location: null,
+          hourlyRate: null,
+          bio: null,
+          primaryExpertise: null,
+          expertskill: expertMatch.expert.skills?.map(skill => ({
+            id: skill.name,
+            skillName: skill.name,
+            skillLevel: skill.level,
+          })) || [],
+          availableFor: [],
+          preferredMode: null,
+          workexperience: [],
+          resumeUrl: null,
+          website: null,
+        };
+        setSelectedExpert(transformedExpert);
+        setShowProfileModal(true);
+      }
+    } catch (error) {
+      console.error('Failed to fetch expert profile:', error);
+      // Fallback to basic data
+      const transformedExpert = {
+        id: expertMatch.expert.id,
+        user: {
+          fullName: expertMatch.expert.name,
+          email: expertMatch.expert.email,
+          phone: null,
+        },
+        profilePicture: expertMatch.expert.profileImage,
+        jobTitle: 'Expert',
+        company: null,
+        experience: null,
+        location: null,
+        hourlyRate: null,
+        bio: null,
+        primaryExpertise: null,
+        expertskill: expertMatch.expert.skills?.map(skill => ({
+          id: skill.name,
+          skillName: skill.name,
+          skillLevel: skill.level,
+        })) || [],
+        availableFor: [],
+        preferredMode: null,
+        workexperience: [],
+        resumeUrl: null,
+        website: null,
+      };
+      setSelectedExpert(transformedExpert);
+      setShowProfileModal(true);
+    }
+  };
+
+  // Close profile modal
+  const closeProfileModal = () => {
+    setShowProfileModal(false);
+    setSelectedExpert(null);
+  };
+
   // Debug: Log the budget value to see what's causing double currency
   if (requirement.budget && requirement.budget.toString().includes('₹')) {
     console.log('🚨 Double currency detected:', {
@@ -360,7 +484,14 @@ const RequirementCard = ({
                 <div className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center">
                   <Users className="w-3 h-3 text-blue-600" />
                 </div>
-                <span className="text-sm font-medium text-gray-700">Recommended Experts</span>
+                <span className="text-sm font-medium text-gray-700">
+                  Recommended Experts
+                  {expertCount !== null && (
+                    <span className="ml-2 text-xs text-gray-500">
+                      ({expertCount === 0 ? 'No experts found' : `${expertCount} expert${expertCount === 1 ? '' : 's'} found`})
+                    </span>
+                  )}
+                </span>
               </div>
               <button
                 onClick={handleViewExperts}
@@ -428,10 +559,7 @@ const RequirementCard = ({
                   <div 
                     key={index} 
                     className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors"
-                    onClick={() => {
-                      // Navigate to expert profile page
-                      window.open(`/expert/${expertMatch.expert.id}`, '_blank');
-                    }}
+                    onClick={() => handleViewProfile(expertMatch)}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-start space-x-4">
@@ -515,6 +643,28 @@ const RequirementCard = ({
         </div>
       </div>
     )}
+
+    {/* Expert Profile Modal */}
+    <ExpertProfileModal
+      isOpen={showProfileModal}
+      expert={selectedExpert}
+      onClose={closeProfileModal}
+      onContactExpert={() => {
+        if (selectedExpert?.user?.email) {
+          const subject = `Expert Inquiry - ${selectedExpert.user.fullName}`;
+          const body = `Dear ${selectedExpert.user.fullName},\n\nI hope this email finds you well. I am reaching out regarding your expertise.\n\nBest regards,`;
+          const mailtoLink = `mailto:${selectedExpert.user.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+          window.open(mailtoLink);
+          closeProfileModal();
+        }
+      }}
+      revealedExpertIds={new Set([selectedExpert?.id].filter(Boolean))} // Assume contact is revealed for RequirementCard
+      onRevealContact={() => {}}
+      mySubscription={null}
+      getLimitationDetails={() => null}
+      showPlanLimitationModal={() => {}}
+      apiService={null}
+    />
     </>
   );
 };
