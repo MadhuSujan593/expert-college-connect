@@ -171,7 +171,7 @@ export class ExpertProfileController {
     }
     
     // Create URL for the uploaded file using static file serving
-    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+    const baseUrl = process.env.BASE_URL;
     const fileUrl = `${baseUrl}/uploads/profile-pics/${file.filename}`;
     
     console.log('File URL:', fileUrl);
@@ -253,7 +253,7 @@ export class ExpertProfileController {
     }
     
     // Create URL for the uploaded file
-    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+    const baseUrl = process.env.BASE_URL;
     const fileUrl = `${baseUrl}/uploads/resumes/${file.filename}`;
     
     // Update expert profile with resume URL

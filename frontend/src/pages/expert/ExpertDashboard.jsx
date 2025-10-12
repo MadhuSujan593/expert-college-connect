@@ -880,7 +880,7 @@ const ExpertDashboard = () => {
       }
       
       // Call the send-email-otp endpoint for profile updates
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/auth/send-email-otp`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/send-email-otp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -915,7 +915,7 @@ const ExpertDashboard = () => {
       setIsEmailVerifying(true);
       
       // Call the verify-email endpoint for profile updates
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/auth/verify-email`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/verify-email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -963,7 +963,7 @@ const ExpertDashboard = () => {
       setIsPhoneSending(true);
       
       // Call the send-phone-otp endpoint for profile updates
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/auth/send-phone-otp`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/send-phone-otp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -998,7 +998,7 @@ const ExpertDashboard = () => {
       setIsPhoneVerifying(true);
       
       // Call the verify-phone endpoint for profile updates
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/auth/verify-phone`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/verify-phone`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1539,7 +1539,7 @@ const ExpertDashboard = () => {
 
     }
 
-    const baseUrl = 'http://localhost:3000';
+    const baseUrl = import.meta.env.VITE_BASE_URL;
 
     return `${baseUrl}/${profilePictureUrl}`;
 

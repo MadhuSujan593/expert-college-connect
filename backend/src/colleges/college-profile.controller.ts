@@ -96,7 +96,7 @@ export class CollegeProfileController {
     }
     
     // Create the full logo URL with base URL
-    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+    const baseUrl = process.env.BASE_URL;
     const logoUrl = `${baseUrl}/uploads/profile-pics/${logo.filename}`;
     
     console.log('Logo uploaded for user:', userId);

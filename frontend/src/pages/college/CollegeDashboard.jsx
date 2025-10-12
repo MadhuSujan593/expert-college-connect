@@ -385,7 +385,7 @@ const CollegeDashboard = () => {
     try {
       console.log('🗑️ Deleting requirement:', requirementToDelete.id);
       console.log('🔑 Using token:', localStorage.getItem('accessToken') ? 'Token exists' : 'No token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/requirements/${requirementToDelete.id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/requirements/${requirementToDelete.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
@@ -493,7 +493,7 @@ const CollegeDashboard = () => {
       return logoUrl;
     }
     // Convert relative path to full URL
-    const baseUrl = 'http://localhost:3000';
+    const baseUrl = import.meta.env.VITE_BASE_URL;
     return `${baseUrl}/${logoUrl}`;
   };
 
@@ -649,7 +649,7 @@ const CollegeDashboard = () => {
       setIsEmailVerifying(true);
       
       // Verify the OTP and update email in one call
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/auth/verify-email`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/verify-email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -735,7 +735,7 @@ const CollegeDashboard = () => {
       
       try {
         // Call the backend API directly for dashboard email verification
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/auth/send-email-otp`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/send-email-otp`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -786,7 +786,7 @@ const CollegeDashboard = () => {
       
       console.log('🔄 Sending phone verification request:', requestBody);
       
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/auth/verify-phone`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/verify-phone`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -871,7 +871,7 @@ const CollegeDashboard = () => {
       
       try {
         // Call the backend API directly for dashboard phone verification
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/auth/send-phone-otp`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/send-phone-otp`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1092,7 +1092,7 @@ const CollegeDashboard = () => {
     try {
       console.log('🔄 fetchRequirements called - fetching recent requirements...');
       // Use the same API as requirements tab but limit to 3
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/requirements/college?page=1&limit=3`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/requirements/college?page=1&limit=3`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
         }
@@ -1124,7 +1124,7 @@ const CollegeDashboard = () => {
   const fetchRequirementsPage = async (pageNum = 1, append = false) => {
     try {
       setLoadingMore(true);
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/requirements/college?page=${pageNum}&limit=20`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/requirements/college?page=${pageNum}&limit=20`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
         }
@@ -3151,7 +3151,7 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
   const loadRecentRequirements = async () => {
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/requirements/college?page=1&limit=3`,
+        `${import.meta.env.VITE_API_URL}/requirements/college?page=1&limit=3`,
         {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
@@ -3251,7 +3251,7 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
         formData.deadline = undefined;
       }
       
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/requirements`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/requirements`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -3379,7 +3379,7 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
         formData.deadline = undefined;
       }
       
-      const apiUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/requirements/${editingRequirement.id}`;
+      const apiUrl = `${import.meta.env.VITE_API_URL}/requirements/${editingRequirement.id}`;
       console.log('🔍 [FRONTEND] About to send PATCH request');
       console.log('🔍 [FRONTEND] API URL:', apiUrl);
       console.log('🔍 [FRONTEND] Request data:', formData);

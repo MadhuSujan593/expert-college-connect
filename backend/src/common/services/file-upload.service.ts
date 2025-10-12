@@ -96,7 +96,7 @@ export class FileUploadService {
       throw new BadRequestException('No file uploaded');
     }
 
-    const baseUrl = this.configService.get('BASE_URL', 'http://localhost:3000');
+    const baseUrl = this.configService.get('BASE_URL');
     const url = `${baseUrl}/uploads/profile-pics/${file.filename}`;
 
     return {
@@ -113,7 +113,7 @@ export class FileUploadService {
       throw new BadRequestException('No file uploaded');
     }
 
-    const baseUrl = this.configService.get('BASE_URL', 'http://localhost:3000');
+    const baseUrl = this.configService.get('BASE_URL');
     const url = `${baseUrl}/uploads/resumes/${file.filename}`;
 
     return {

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 // Shared verification utilities for registration forms
 
 // API Base URL - update this to match your backend
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 // Check if we're in development mode
 const isDevelopment = import.meta.env.DEV;

@@ -52,7 +52,7 @@ const RequirementCard = ({
     if (expertCount !== null) return; // Already fetched
     
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/recommendations/college?page=1&limit=100&minScore=10`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/recommendations/college?page=1&limit=100&minScore=10`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
         }
@@ -82,7 +82,7 @@ const RequirementCard = ({
 
     try {
       setLoading(true);
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/recommendations/college?page=1&limit=100&minScore=10`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/recommendations/college?page=1&limit=100&minScore=10`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
         }
@@ -108,7 +108,7 @@ const RequirementCard = ({
   const handleViewProfile = async (expertMatch) => {
     try {
       // Fetch complete expert profile data
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/expert-profiles/${expertMatch.expert.id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/expert-profiles/${expertMatch.expert.id}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
         }
