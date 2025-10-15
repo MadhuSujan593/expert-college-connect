@@ -35,7 +35,6 @@ import {
   MessageCircle,
   Briefcase,
   UserCheck,
-  Sparkles,
   RefreshCw
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -49,7 +48,6 @@ import ExpertRatingDisplay from '../../components/college/ExpertRatingDisplay';
 import RatingRequestsList from '../../components/college/RatingRequestsList';
 import VerificationRequirementModal from '../../components/common/VerificationRequirementModal';
 import RequirementCard from '../../components/common/RequirementCard';
-import CollegeRecommendationsSection from '../../components/college/CollegeRecommendationsSection';
 import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
 import ApplicationManagement from '../../components/college/ApplicationManagement';
 import PlanLimitationModal from '../../components/common/PlanLimitationModal';
@@ -137,6 +135,9 @@ const CollegeDashboard = () => {
   const [subsLoading, setSubsLoading] = useState(false);
   const [subscribingPlanId, setSubscribingPlanId] = useState(null);
 
+  // Expert contact revelation state
+  const [revealedExpertIds, setRevealedExpertIds] = useState(new Set());
+
   // Plan limitation modal state
   const [showPlanLimitationModal, setShowPlanLimitationModal] = useState(false);
   const [limitationType, setLimitationType] = useState(null);
@@ -160,6 +161,17 @@ const CollegeDashboard = () => {
       console.log('Subscription data loaded:', data);
       console.log('Current time:', new Date().toISOString());
       setMySubscription(data);
+      
+      // Load revealed expert IDs from backend subscription data
+      console.log('Raw subscription data:', JSON.stringify(data, null, 2));
+      
+      if (data?.usages?.[0]?.revealedExpertIds) {
+        console.log('Found revealedExpertIds:', data.usages[0].revealedExpertIds);
+        setRevealedExpertIds(new Set(data.usages[0].revealedExpertIds));
+      } else {
+        console.log('No revealedExpertIds found in subscription data');
+        setRevealedExpertIds(new Set());
+      }
     } catch (e) {
       console.error('Failed to load subscription', e);
     } finally {
@@ -327,8 +339,13 @@ const CollegeDashboard = () => {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [activeTab]);
 
+  // Load subscription data when component mounts and when switching to relevant tabs
   useEffect(() => {
-    if (activeTab === 'overview' || activeTab === 'requirements') {
+    loadMySubscription();
+  }, []); // Load on mount
+
+  useEffect(() => {
+    if (activeTab === 'overview' || activeTab === 'requirements' || activeTab === 'experts') {
       loadMySubscription();
     }
   }, [activeTab]);
@@ -1559,19 +1576,6 @@ const CollegeDashboard = () => {
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3, delay: 0.35 }}
-              >
-              <SidebarItem
-                id="recommendations"
-                label="Recommendations"
-                icon={Sparkles}
-                isActive={activeTab === 'recommendations'}
-                onClick={() => setActiveTab('recommendations')}
-              />
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3, delay: 0.4 }}
               >
               <SidebarItem
@@ -1998,6 +2002,14 @@ const CollegeDashboard = () => {
                     loadMoreRequirements={loadMoreRequirements}
                     onCreateRequirementClick={handleCreateRequirementClick}
                     loadMySubscription={loadMySubscription}
+                    mySubscription={mySubscription}
+                    subsLoading={subsLoading}
+                    getLimitationDetails={getLimitationDetails}
+                    showPlanLimitationModal={setShowPlanLimitationModal}
+                    setLimitationType={setLimitationType}
+                    apiService={apiService}
+                    revealedExpertIds={revealedExpertIds}
+                    setRevealedExpertIds={setRevealedExpertIds}
                   />
 
 
@@ -2051,6 +2063,9 @@ const CollegeDashboard = () => {
                       showPlanLimitationModal={setShowPlanLimitationModal}
                       setLimitationType={setLimitationType}
                       getLimitationDetails={getLimitationDetails}
+                      subsLoading={subsLoading}
+                      revealedExpertIds={revealedExpertIds}
+                      setRevealedExpertIds={setRevealedExpertIds}
                       key={`experts-${user?.id || 'no-user'}`} 
                     />
                   </motion.div>
@@ -2079,18 +2094,6 @@ const CollegeDashboard = () => {
                 </motion.div>
               )}
 
-              {activeTab === 'recommendations' && (
-                <motion.div
-                  key="recommendations"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.3 }}
-                  className="space-y-6"
-                >
-                  <CollegeRecommendationsSection />
-                </motion.div>
-              )}
 
               {activeTab === 'rating-requests' && (
                 <motion.div
@@ -3120,7 +3123,7 @@ const ProfileTab = ({
 };
 
 // Requirements Tab Component - Enhanced with form
-const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhone, onPostRequirement, showToast, setActiveTab, onView, onDelete, onRate, onToggleActive, requirements, setRequirements, refreshRequirements, totalRequirements, loading, loadingMore, hasMore, loadMoreRequirements, onCreateRequirementClick, loadMySubscription }) => {
+const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhone, onPostRequirement, showToast, setActiveTab, onView, onDelete, onRate, onToggleActive, requirements, setRequirements, refreshRequirements, totalRequirements, loading, loadingMore, hasMore, loadMoreRequirements, onCreateRequirementClick, loadMySubscription, mySubscription, subsLoading, getLimitationDetails, showPlanLimitationModal, setLimitationType, apiService, revealedExpertIds, setRevealedExpertIds }) => {
   // Check if user can access requirements creation
   const canAccessRequirements = () => {
     return user?.isEmailVerified || user?.isPhoneVerified;
@@ -3907,6 +3910,14 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
                     onEdit={() => handleEdit(requirement)}
                     onDelete={() => onDelete(requirement.id)}
                     onToggle={() => onToggleActive(requirement)}
+                    mySubscription={mySubscription}
+                    subsLoading={subsLoading}
+                    getLimitationDetails={getLimitationDetails}
+                    showPlanLimitationModal={showPlanLimitationModal}
+                    setLimitationType={setLimitationType}
+                    apiService={apiService}
+                    revealedExpertIds={revealedExpertIds}
+                    setRevealedExpertIds={setRevealedExpertIds}
                   />
                 ))
               )}
@@ -4042,7 +4053,7 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
 };
 
 // Experts Tab Component
-const ExpertsTab = ({ user, mySubscription, showPlanLimitationModal, setLimitationType, getLimitationDetails }) => {
+const ExpertsTab = ({ user, mySubscription, showPlanLimitationModal, setLimitationType, getLimitationDetails, subsLoading, revealedExpertIds, setRevealedExpertIds }) => {
   // Validate user prop
   if (!user) {
     console.error('ExpertsTab: user prop is undefined');
@@ -4277,11 +4288,6 @@ const ExpertsTab = ({ user, mySubscription, showPlanLimitationModal, setLimitati
   const [showContactModal, setShowContactModal] = useState(false);
   const [selectedExpert, setSelectedExpert] = useState(null);
   const [revealedContactDetails, setRevealedContactDetails] = useState(null);
-  const [revealedExpertIds, setRevealedExpertIds] = useState(() => {
-    // Load revealed expert IDs from localStorage on component mount
-    const saved = localStorage.getItem('revealedExpertIds');
-    return saved ? new Set(JSON.parse(saved)) : new Set();
-  });
   
   // Profile modal state
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -4789,8 +4795,6 @@ const ExpertsTab = ({ user, mySubscription, showPlanLimitationModal, setLimitati
                           // Add expert ID to revealed set
                           setRevealedExpertIds(prev => {
                             const newSet = new Set([...prev, selectedExpert.id]);
-                            // Save to localStorage
-                            localStorage.setItem('revealedExpertIds', JSON.stringify([...newSet]));
                             return newSet;
                           });
                           
@@ -4856,8 +4860,6 @@ const ExpertsTab = ({ user, mySubscription, showPlanLimitationModal, setLimitati
                         // Add expert ID to revealed set
                         setRevealedExpertIds(prev => {
                           const newSet = new Set([...prev, selectedExpert.id]);
-                          // Save to localStorage
-                          localStorage.setItem('revealedExpertIds', JSON.stringify([...newSet]));
                           return newSet;
                         });
                         
@@ -4903,7 +4905,6 @@ const ExpertsTab = ({ user, mySubscription, showPlanLimitationModal, setLimitati
           onRevealContact={(expertId) => {
             setRevealedExpertIds(prev => {
               const newSet = new Set([...prev, expertId]);
-              localStorage.setItem('revealedExpertIds', JSON.stringify([...newSet]));
               return newSet;
             });
             if (window.refreshSubscriptionData) {
@@ -4913,7 +4914,9 @@ const ExpertsTab = ({ user, mySubscription, showPlanLimitationModal, setLimitati
           mySubscription={mySubscription}
           getLimitationDetails={getLimitationDetails}
           showPlanLimitationModal={showPlanLimitationModal}
+          setLimitationType={setLimitationType}
           apiService={apiService}
+          subsLoading={subsLoading}
         />
       </div>
     </div>

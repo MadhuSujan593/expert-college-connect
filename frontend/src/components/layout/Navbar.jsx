@@ -24,11 +24,11 @@ const Navbar = () => {
 
   const isActive = (path) => location.pathname === path;
 
-  const navItems = [
-    { name: 'Home', path: '/' },
-    { name: 'Find Experts', path: '/search/experts' },
-    { name: 'Find Requirements', path: '/search/requirements' },
-  ];
+  // const navItems = [
+  //   { name: 'Home', path: '/' },
+  //   { name: 'Find Experts', path: '/search/experts' },
+  //   { name: 'Find Requirements', path: '/search/requirements' },
+  // ];
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
@@ -45,7 +45,7 @@ const Navbar = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-1">
+          {/* <div className="hidden md:flex items-center space-x-1">
             {navItems.map((item) => (
               <Link
                 key={item.name}
@@ -62,7 +62,7 @@ const Navbar = () => {
                 <span className="relative z-10">{item.name}</span>
               </Link>
             ))}
-          </div>
+          </div> */}
 
           {/* Desktop Auth Buttons / User Menu */}
           <div className="hidden md:flex items-center space-x-4">
@@ -195,7 +195,7 @@ const Navbar = () => {
             className="md:hidden border-t border-gray-100 bg-white/90 backdrop-blur-xl"
           >
             <div className="px-4 pt-4 pb-3 space-y-2">
-              {navItems.map((item) => (
+              {/* {navItems.map((item) => (
                 <Link
                   key={item.name}
                   to={item.path}
@@ -208,7 +208,7 @@ const Navbar = () => {
                 >
                   {item.name}
                 </Link>
-              ))}
+              ))} */}
               
               <div className="pt-4 pb-2 border-t border-gray-100 space-y-3">
                 {isAuthenticated ? (

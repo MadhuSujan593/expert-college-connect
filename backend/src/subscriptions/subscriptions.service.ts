@@ -48,11 +48,22 @@ export class SubscriptionsService {
         usages: {
           orderBy: { periodStart: 'desc' },
           take: 1,
+          select: {
+            id: true,
+            periodStart: true,
+            periodEnd: true,
+            usedRequirements: true,
+            usedExpertContacts: true,
+            revealedExpertIds: true,
+            createdAt: true,
+            updatedAt: true,
+          },
         },
       },
     });
     
     console.log('Found subscription:', subscription);
+    console.log('Subscription usages:', subscription?.usages);
     return subscription;
   }
 

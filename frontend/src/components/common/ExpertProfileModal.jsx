@@ -21,26 +21,57 @@ const ExpertProfileModal = ({
   mySubscription = null,
   getLimitationDetails = null,
   showPlanLimitationModal = null,
-  apiService = null
+  setLimitationType = null,
+  apiService = null,
+  subsLoading = false
 }) => {
   if (!isOpen || !expert) return null;
 
-  const handleRevealContact = async () => {
-    if (!apiService || !onRevealContact) return;
-    
-    // Check subscription before revealing contact
-    if (!mySubscription?.plan) {
-      const limitation = getLimitationDetails?.();
-      if (limitation) {
-        showPlanLimitationModal?.(true);
-        return;
-      }
+  // Always show contact information as masked initially
+  const [isContactRevealed, setIsContactRevealed] = React.useState(false);
+
+  // Check if expert was already revealed when modal opens
+  React.useEffect(() => {
+    if (isOpen && expert) {
+      // Check if this expert was already revealed in the global state
+      const wasAlreadyRevealed = revealedExpertIds.has(expert.id);
+      setIsContactRevealed(wasAlreadyRevealed);
     }
+  }, [isOpen, expert, revealedExpertIds]);
+
+  const handleRevealContact = async () => {
+    if (!apiService) return;
+    
+    // Debug subscription data
+    console.log('ExpertProfileModal - mySubscription:', mySubscription);
+    console.log('ExpertProfileModal - mySubscription?.plan:', mySubscription?.plan);
+    console.log('ExpertProfileModal - subsLoading:', subsLoading);
+    
+    // Check if subscription data is still loading
+    if (subsLoading) {
+      console.log('Subscription data is still loading, please wait...');
+      return;
+    }
+    
+    // Use the same logic as requirements - check limitations first
+    const limitation = getLimitationDetails?.();
+    if (limitation) {
+      console.log('Limitation found, showing modal:', limitation);
+      setLimitationType?.(limitation.type);
+      showPlanLimitationModal?.(true);
+      return;
+    }
+    
+    console.log('No limitations found, proceeding with reveal');
     
     try {
       const response = await apiService.revealExpertContact(expert.id);
       if (response.success && response.contactDetails) {
-        onRevealContact(expert.id);
+        setIsContactRevealed(true);
+        // Also call the parent's onRevealContact to update the global state
+        if (onRevealContact) {
+          onRevealContact(expert.id);
+        }
       }
     } catch (e) {
       console.error('Contact revelation error:', e);
@@ -55,7 +86,7 @@ const ExpertProfileModal = ({
   };
 
   const handleContactExpert = () => {
-    if (revealedExpertIds.has(expert.id) && expert.user?.email) {
+    if (isContactRevealed && expert.user?.email) {
       const subject = `Expert Inquiry - ${expert.user.fullName}`;
       const body = `Dear ${expert.user.fullName},\n\nI hope this email finds you well. I am reaching out regarding your expertise.\n\nBest regards,`;
       const mailtoLink = `mailto:${expert.user.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
@@ -286,7 +317,7 @@ const ExpertProfileModal = ({
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-lg font-semibold text-gray-900">Contact Information</h3>
-                  {!revealedExpertIds.has(expert.id) && (
+                  {!isContactRevealed && (
                     <button
                       onClick={handleRevealContact}
                       className="text-sm text-indigo-600 hover:text-indigo-800 font-medium px-3 py-1 border border-indigo-300 rounded-md hover:bg-indigo-50 transition-colors"
@@ -299,14 +330,14 @@ const ExpertProfileModal = ({
                   <div className="flex items-center space-x-3 p-2">
                     <Mail className="w-4 h-4 text-gray-500" />
                     <span className="text-sm text-gray-700">
-                      {revealedExpertIds.has(expert.id) ? expert.user?.email : '••••••••••@•••'}
+                      {isContactRevealed ? expert.user?.email : '••••••••••@•••'}
                     </span>
                   </div>
                   {expert.user?.phone && (
                     <div className="flex items-center space-x-3 p-2">
                       <Phone className="w-4 h-4 text-gray-500" />
                       <span className="text-sm text-gray-700">
-                        {revealedExpertIds.has(expert.id) ? expert.user?.phone : '••••••••••'}
+                        {isContactRevealed ? expert.user?.phone : '••••••••••'}
                       </span>
                     </div>
                   )}
@@ -375,5 +406,6 @@ const ExpertProfileModal = ({
 };
 
 export default ExpertProfileModal;
+
 
 

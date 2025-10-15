@@ -28,7 +28,16 @@ const RequirementCard = ({
   onClick,
   className = '',
   applicationStatus = null,
-  applicationData = null
+  applicationData = null,
+  // New props for expert profile modal functionality
+  mySubscription = null,
+  subsLoading = false,
+  getLimitationDetails = null,
+  showPlanLimitationModal = null,
+  setLimitationType = null,
+  apiService = null,
+  revealedExpertIds = new Set(),
+  setRevealedExpertIds = null
 }) => {
   // Simple state for expert modal
   const [showExpertModal, setShowExpertModal] = useState(false);
@@ -650,7 +659,7 @@ const RequirementCard = ({
       expert={selectedExpert}
       onClose={closeProfileModal}
       onContactExpert={() => {
-        if (selectedExpert?.user?.email) {
+        if (revealedExpertIds.has(selectedExpert?.id) && selectedExpert?.user?.email) {
           const subject = `Expert Inquiry - ${selectedExpert.user.fullName}`;
           const body = `Dear ${selectedExpert.user.fullName},\n\nI hope this email finds you well. I am reaching out regarding your expertise.\n\nBest regards,`;
           const mailtoLink = `mailto:${selectedExpert.user.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
@@ -658,12 +667,24 @@ const RequirementCard = ({
           closeProfileModal();
         }
       }}
-      revealedExpertIds={new Set([selectedExpert?.id].filter(Boolean))} // Assume contact is revealed for RequirementCard
-      onRevealContact={() => {}}
-      mySubscription={null}
-      getLimitationDetails={() => null}
-      showPlanLimitationModal={() => {}}
-      apiService={null}
+      revealedExpertIds={revealedExpertIds}
+      onRevealContact={(expertId) => {
+        if (setRevealedExpertIds) {
+          setRevealedExpertIds(prev => {
+            const newSet = new Set([...prev, expertId]);
+            return newSet;
+          });
+        }
+        if (window.refreshSubscriptionData) {
+          window.refreshSubscriptionData();
+        }
+      }}
+      mySubscription={mySubscription}
+      getLimitationDetails={getLimitationDetails}
+      showPlanLimitationModal={showPlanLimitationModal}
+      setLimitationType={setLimitationType}
+      apiService={apiService}
+      subsLoading={subsLoading}
     />
     </>
   );
