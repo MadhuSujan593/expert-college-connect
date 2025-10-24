@@ -1,12 +1,20 @@
-# React + Vite
+# Expert College Connect
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A platform that connects industry experts with educational institutions to facilitate meaningful partnerships and collaborations.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Expert registration and profile management
+- College/institution registration and requirements posting
+- AI-powered matching system
+- Subscription-based premium features
+- Real-time messaging and notifications
+- Rating and review system
 
-## Expanding the ESLint configuration
+## Technology Stack
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- React with modern hooks
+- Tailwind CSS for styling
+- Framer Motion for animations
+- React Router for navigation
+- Context API for state management

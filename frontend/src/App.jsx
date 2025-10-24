@@ -9,6 +9,7 @@ import Footer from './components/layout/Footer';
 
 // Pages
 import HomePage from './pages/HomePage';
+import ContactUs from './pages/ContactUs';
 import { 
   ExpertRegistration, 
   CollegeRegistration, 
@@ -80,6 +81,7 @@ const AppContent = () => {
   const isDashboardPage = location.pathname.startsWith('/dashboard');
   const isRequirementPage = location.pathname.startsWith('/requirement');
   const isSubscriptionPage = location.pathname === '/subscription-plans';
+  const isContactPage = location.pathname === '/contact-us';
   
   // Debug logging
   console.log('Current pathname:', location.pathname);
@@ -89,11 +91,12 @@ const AppContent = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      {!isAuthPage && !isDashboardPage && !isRequirementPage && !isSubscriptionPage && <Navbar />}
+      {!isAuthPage && !isDashboardPage && !isRequirementPage && !isSubscriptionPage && !isContactPage && <Navbar />}
       <main className="flex-1">
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<HomePage />} />
+          <Route path="/contact-us" element={<ContactUs />} />
           <Route path="/register/expert" element={<ExpertRegistration />} />
           <Route path="/register/college" element={<CollegeRegistration />} />
           <Route path="/login" element={<Login />} />
@@ -160,7 +163,7 @@ const AppContent = () => {
           <Route path="/college/:id" element={<CollegeProfile />} /> */}
         </Routes>
       </main>
-      {!isAuthPage && !isDashboardPage && !isRequirementPage && !isSubscriptionPage && <Footer />}
+      {!isAuthPage && !isDashboardPage && !isRequirementPage && !isSubscriptionPage && !isContactPage && <Footer />}
       <Toaster
         position="top-right"
         toastOptions={{

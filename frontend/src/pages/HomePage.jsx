@@ -486,6 +486,91 @@ const HomePage = () => {
         </div>
       </section>
 
+      {/* Contact Us Section */}
+      <section className="py-20 sm:py-28 lg:py-36 bg-gradient-to-br from-slate-50 via-white to-blue-50 relative overflow-hidden">
+        {/* Sophisticated Background Elements */}
+        <div className="absolute inset-0">
+          <div className="absolute top-20 left-20 w-80 h-80 bg-gradient-to-br from-blue-400/15 to-cyan-400/15 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-20 right-20 w-96 h-96 bg-gradient-to-br from-purple-400/15 to-pink-400/15 rounded-full blur-3xl"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-indigo-200/10 to-blue-300/10 rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            viewport={{ once: true }}
+          >
+            <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full text-sm font-semibold mb-8 shadow-xl">
+              <MessageCircle className="w-5 h-5 mr-2" />
+              Need Help?
+            </div>
+            
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-8 leading-tight">
+              Have Questions?
+              <span className="block bg-gradient-to-r from-purple-600 via-pink-600 to-cyan-600 bg-clip-text text-transparent">
+                We're Here to Help
+              </span>
+            </h2>
+            
+            <p className="text-xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
+              Our support team is ready to assist you with any questions or concerns. 
+              Get in touch and we'll respond within 24 hours.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16">
+              <Link
+                to="/contact-us"
+                className="group relative bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-xl text-base font-semibold hover:shadow-2xl hover:shadow-purple-500/30 transition-all duration-300 flex items-center justify-center overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-700 to-pink-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <span className="relative z-10">Contact Us</span>
+                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-300 relative z-10" />
+              </Link>
+              <a
+                href="mailto:support@expertcollegeconnect.com"
+                className="group relative bg-white/80 backdrop-blur-sm border-2 border-gray-200 text-gray-700 px-8 py-4 rounded-xl text-base font-semibold hover:border-gray-300 hover:bg-white hover:shadow-xl transition-all duration-300 flex items-center justify-center"
+              >
+                <Mail className="mr-2 w-5 h-5" />
+                <span>Email Support</span>
+              </a>
+            </div>
+
+            {/* Contact Info */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
+              <div className="flex items-center justify-center space-x-3 p-4 bg-white/50 backdrop-blur-sm rounded-lg">
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Mail className="w-5 h-5 text-blue-600" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-medium text-gray-900">Email</p>
+                  <p className="text-xs text-gray-600">support@expertcollegeconnect.com</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-center space-x-3 p-4 bg-white/50 backdrop-blur-sm rounded-lg">
+                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                  <Phone className="w-5 h-5 text-green-600" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-medium text-gray-900">Phone</p>
+                  <p className="text-xs text-gray-600">+1 (234) 567-890</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-center space-x-3 p-4 bg-white/50 backdrop-blur-sm rounded-lg">
+                <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-purple-600" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-medium text-gray-900">Response Time</p>
+                  <p className="text-xs text-gray-600">Within 24 hours</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
       {/* Premium CTA Section */}
       <section className="py-20 sm:py-28 lg:py-36 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-slate-50 via-white to-blue-50 relative overflow-hidden">
         {/* Sophisticated Background Elements */}

@@ -876,4 +876,29 @@ export class EmailService {
       return false;
     }
   }
+
+  /**
+   * Send Contact Form Email to Admin
+   */
+  async sendContactEmail(to: string, mailOptions: any): Promise<boolean> {
+    try {
+      this.logger.log(`Attempting to send contact email to: ${to}`);
+
+      // In development mode or if SMTP fails, just log the email
+      if (this.configService.get('NODE_ENV') === 'development' || !this.transporter) {
+        this.logger.log(`[DEV MODE] Contact email would be sent to: ${to}`);
+        this.logger.log(`[DEV MODE] Subject: ${mailOptions.subject}`);
+        this.logger.log(`[DEV MODE] Content preview: ${mailOptions.text?.substring(0, 100)}...`);
+        return true;
+      }
+
+      this.logger.log('Sending contact email via SMTP...');
+      const result = await this.transporter.sendMail(mailOptions);
+      this.logger.log(`Contact email sent successfully to ${to}. Message ID: ${result.messageId}`);
+      return true;
+    } catch (error) {
+      this.logger.error(`Failed to send contact email to ${to}:`, error);
+      return false;
+    }
+  }
 }

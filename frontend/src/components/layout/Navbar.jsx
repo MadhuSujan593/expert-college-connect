@@ -11,7 +11,8 @@ import {
   ChevronDown,
   LogOut,
   Settings,
-  UserCircle
+  UserCircle,
+  MessageCircle
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -66,6 +67,22 @@ const Navbar = () => {
 
           {/* Desktop Auth Buttons / User Menu */}
           <div className="hidden md:flex items-center space-x-4">
+            {/* Contact Us Link */}
+            <Link
+              to="/contact-us"
+              className={`text-sm font-semibold transition-all duration-300 px-4 py-2 rounded-full relative flex items-center space-x-2 ${
+                isActive('/contact-us') 
+                  ? 'text-white' 
+                  : 'text-gray-700 hover:text-gray-900'
+              }`}
+            >
+              {isActive('/contact-us') && (
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-lg"></div>
+              )}
+              <MessageCircle className="w-4 h-4 relative z-10" />
+              <span className="relative z-10">Contact Us</span>
+            </Link>
+
             {isAuthenticated ? (
               // Authenticated User Menu
               <div className="relative">
@@ -195,20 +212,19 @@ const Navbar = () => {
             className="md:hidden border-t border-gray-100 bg-white/90 backdrop-blur-xl"
           >
             <div className="px-4 pt-4 pb-3 space-y-2">
-              {/* {navItems.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.path}
-                  className={`block px-4 py-3 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                    isActive(item.path)
-                      ? 'text-white bg-gradient-to-r from-blue-500 to-cyan-500 shadow-lg'
-                      : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
-                  }`}
-                  onClick={() => setIsOpen(false)}
-                >
-                  {item.name}
-                </Link>
-              ))} */}
+              {/* Contact Us Link */}
+              <Link
+                to="/contact-us"
+                className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                  isActive('/contact-us')
+                    ? 'text-white bg-gradient-to-r from-purple-500 to-pink-500 shadow-lg'
+                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+                onClick={() => setIsOpen(false)}
+              >
+                <MessageCircle className="w-5 h-5" />
+                <span>Contact Us</span>
+              </Link>
               
               <div className="pt-4 pb-2 border-t border-gray-100 space-y-3">
                 {isAuthenticated ? (

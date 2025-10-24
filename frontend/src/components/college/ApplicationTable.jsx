@@ -184,8 +184,6 @@ const ApplicationTable = ({
         return { icon: Star, color: 'text-blue-600', bgColor: 'bg-blue-100', label: 'Shortlisted' };
       case 'REJECTED':
         return { icon: XCircle, color: 'text-red-600', bgColor: 'bg-red-100', label: 'Rejected' };
-      case 'ACCEPTED':
-        return { icon: CheckCircle, color: 'text-green-600', bgColor: 'bg-green-100', label: 'Accepted' };
       default:
         return { icon: Clock, color: 'text-gray-600', bgColor: 'bg-gray-100', label: status };
     }
@@ -238,7 +236,6 @@ const ApplicationTable = ({
             <option value="PENDING">Pending</option>
             <option value="SHORTLISTED">Shortlisted</option>
             <option value="REJECTED">Rejected</option>
-            <option value="ACCEPTED">Accepted</option>
           </select>
         </div>
       </div>

@@ -1756,7 +1756,7 @@ const CollegeDashboard = () => {
                         <div className="flex items-center space-x-3 mb-5">
                           <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
                             <CreditCard className="w-6 h-6 text-white" />
-                        </div>
+                          </div>
                           <div>
                             <h4 className="text-2xl font-bold text-gray-900 mb-1">Your current plan</h4>
                             <p className="text-lg font-medium text-gray-800">{mySubscription.plan.name}</p>
@@ -1780,6 +1780,18 @@ const CollegeDashboard = () => {
                             }
                           </p>
                         </div>
+                        
+                        {/* Upgrade button for free plan users */}
+                        {mySubscription.plan.planType === 'FREE' && (
+                          <div className="mt-4 pt-4 border-t border-gray-200">
+                            <button 
+                              onClick={() => navigate('/subscription-plans')} 
+                              className="px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-sm hover:shadow-md font-medium"
+                            >
+                              Upgrade to Premium
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div className="text-center py-6">

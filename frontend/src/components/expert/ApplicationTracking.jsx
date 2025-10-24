@@ -94,24 +94,6 @@ const ApplicationTracking = ({ onRequestRating, ratingRequests = [] }) => {
           label: 'Not Selected',
           dotColor: 'bg-red-400'
         };
-      case 'ACCEPTED':
-        return { 
-          icon: CheckCircle, 
-          color: 'text-green-700', 
-          bgColor: 'bg-green-50', 
-          borderColor: 'border-green-200',
-          label: 'Selected',
-          dotColor: 'bg-green-400'
-        };
-      case 'WITHDRAWN':
-        return { 
-          icon: AlertCircle, 
-          color: 'text-slate-700', 
-          bgColor: 'bg-slate-50', 
-          borderColor: 'border-slate-200',
-          label: 'Withdrawn',
-          dotColor: 'bg-slate-400'
-        };
       default:
         return { 
           icon: Clock, 
@@ -176,8 +158,6 @@ const ApplicationTracking = ({ onRequestRating, ratingRequests = [] }) => {
               <option value="PENDING">Pending</option>
               <option value="SHORTLISTED">Shortlisted</option>
               <option value="REJECTED">Rejected</option>
-              <option value="ACCEPTED">Accepted</option>
-              <option value="WITHDRAWN">Withdrawn</option>
             </select>
           </div>
         </div>

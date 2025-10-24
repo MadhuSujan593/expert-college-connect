@@ -2044,6 +2044,18 @@ const ExpertDashboard = () => {
                             }
                           </p>
                         </div>
+                        
+                        {/* Upgrade button for free plan users */}
+                        {mySubscription.plan.planType === 'FREE' && (
+                          <div className="mt-3 pt-3 border-t border-gray-200">
+                            <button 
+                              onClick={() => navigate('/subscription-plans')} 
+                              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-sm hover:shadow-md font-medium text-sm"
+                            >
+                              Upgrade to Premium
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div className="text-center py-6">

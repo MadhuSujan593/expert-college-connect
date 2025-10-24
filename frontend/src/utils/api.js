@@ -1241,6 +1241,19 @@ class ApiService {
     });
     return this.handleResponse(response);
   }
+
+  // === CONTACT FORM API ===
+  
+  async submitContactForm(formData) {
+    const response = await fetch(`${this.baseURL}/contact/submit`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formData),
+    });
+    return this.handleResponse(response);
+  }
 }
 
 // Create and export a single instance
