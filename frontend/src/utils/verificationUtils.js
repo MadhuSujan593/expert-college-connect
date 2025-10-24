@@ -33,6 +33,17 @@ export const isValidPhone = (phone) => {
   }
 };
 
+// Validation for phone number without country code (for use with country selector)
+export const isValidPhoneNumber = (phoneNumber) => {
+  if (!phoneNumber) return false;
+  
+  // Remove all non-digit characters
+  const cleanPhone = phoneNumber.replace(/[^\d]/g, '');
+  
+  // Phone number should be 7-15 digits (without country code)
+  return cleanPhone.length >= 7 && cleanPhone.length <= 15;
+};
+
 // Check if email/phone is available (not already taken)
 export const checkAvailability = async (type, value) => {
   try {

@@ -35,6 +35,7 @@ import {
 } from '../../utils/verificationUtils';
 import VerificationRequirementModal from '../../components/common/VerificationRequirementModal';
 import PlanLimitationModal from '../../components/common/PlanLimitationModal';
+import CountrySelector from '../../components/common/CountrySelector';
 
 const ExpertDashboard = () => {
   const { user, logout, setUser } = useAuth();
@@ -95,6 +96,7 @@ const ExpertDashboard = () => {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
 
   const [editedProfile, setEditedProfile] = useState({});
+  const [selectedCountry, setSelectedCountry] = useState(null);
 
   // Verification states
   const [showEmailVerification, setShowEmailVerification] = useState(false);
@@ -826,15 +828,10 @@ const ExpertDashboard = () => {
       return;
     }
 
-    // Check if existing email or phone needs verification
-    if (!user?.isEmailVerified && !emailChanged && editedProfile.email !== originalEmail) {
-      showToast('error', 'Please verify your email address before saving');
-      return;
-    }
+    // Email verification requirement removed - email is now non-editable
     
     if (!user?.isPhoneVerified && !phoneChanged && editedProfile.phone !== originalPhone) {
-      showToast('error', 'Please verify your phone number before saving');
-      return;
+      // Phone verification requirement removed - allow saving without verification
     }
 
     try {
@@ -2157,31 +2154,7 @@ const ExpertDashboard = () => {
 
 
 
-                                         {/* Verification Warning */}
-                     {isEditingProfile && (
-                       (emailChanged && !currentEmailVerified) || 
-                       (phoneChanged && !currentPhoneVerified) || 
-                       (!user?.isEmailVerified && !emailChanged && editedProfile.email !== originalEmail) || 
-                       (!user?.isPhoneVerified && !phoneChanged && editedProfile.phone !== originalPhone)
-                     ) && (
-                       <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                         <div className="flex items-start space-x-3">
-                           <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
-                           <div className="flex-1">
-                             <h4 className="text-sm font-semibold text-amber-800 mb-1">
-                               Verification Required
-                             </h4>
-                             <p className="text-sm text-amber-700">
-                               {emailChanged && !currentEmailVerified && "Please verify your new email address. "}
-                               {phoneChanged && !currentPhoneVerified && "Please verify your new phone number. "}
-                               {!user?.isEmailVerified && !emailChanged && editedProfile.email !== originalEmail && "Please verify your email address. "}
-                               {!user?.isPhoneVerified && !phoneChanged && editedProfile.phone !== originalPhone && "Please verify your phone number. "}
-                               You must complete verification before saving your profile.
-                             </p>
-                           </div>
-                         </div>
-                       </div>
-                     )}
+                                         {/* Verification Warning - Removed */}
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
@@ -2387,14 +2360,23 @@ const ExpertDashboard = () => {
                            {isEditingProfile ? (
                              <div className="space-y-2">
                                <div className="flex flex-col md:flex-row gap-2">
-                        <input
-                          type="tel"
-                                   name="phone"
-                                   value={editedProfile.phone || ''}
-                                   onChange={handleProfileInputChange}
-                                   className="flex-1 px-4 py-3 pr-12 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500"
-                          placeholder="Enter your phone number"
-                        />
+                                 <div className="flex flex-1">
+                                   <CountrySelector
+                                     selectedCountry={selectedCountry}
+                                     onCountryChange={setSelectedCountry}
+                                     className="flex-shrink-0"
+                                   />
+                                   <div className="relative flex-1">
+                                     <input
+                                       type="tel"
+                                       name="phone"
+                                       value={editedProfile.phone || ''}
+                                       onChange={handleProfileInputChange}
+                                       className="w-full px-4 py-3 border border-slate-200 rounded-r-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500 border-l-0"
+                                       placeholder="1234567890"
+                                     />
+                                   </div>
+                                 </div>
                                  {(phoneChanged || !user?.isPhoneVerified) && (
                                    <button
                                      type="button"
@@ -2454,42 +2436,15 @@ const ExpertDashboard = () => {
                          <div className="relative">
                            {isEditingProfile ? (
                              <div className="space-y-2">
-                               <div className="flex flex-col md:flex-row gap-2">
-                                 <input
-                                   type="email"
-                                   name="email"
-                                   value={editedProfile.email || ''}
-                                   onChange={handleProfileInputChange}
-                                   className="flex-1 px-4 py-3 pr-12 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500"
-                                   placeholder="Enter your email address"
-                                 />
-                                 {(emailChanged || !user?.isEmailVerified) && (
-                                   <button
-                                     type="button"
-                                     onClick={handleSendEmailOtpForUpdate}
-                                     disabled={isEmailSending || !isValidEmail(editedProfile.email)}
-                                     className="w-full md:w-auto px-3 md:px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-sm font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap"
-                                   >
-                                     {isEmailSending ? 'Sending...' : 'Verify Email'}
-                                   </button>
-                                 )}
-                               </div>
-                               {editedProfile.email && !isValidEmail(editedProfile.email) && (
-                                 <span className="text-xs text-red-600">Please enter a valid email address</span>
-                               )}
-                               
-                               {/* Email Verification Modal - Inline */}
-                               <EmailVerificationModal
-                                 isOpen={showEmailVerification}
-                                 email={editedProfile.email}
-                                 isVerifying={isEmailVerifying}
-                                 onVerify={handleEmailVerification}
-                                 onClose={() => setShowEmailVerification(false)}
-                                 onSendOtp={handleSendEmailOtpForUpdate}
-                                 isVerified={currentEmailVerified}
-                                 isSending={isEmailSending}
-                                 otpSent={emailOtpSent}
+                               <input
+                                 type="email"
+                                 name="email"
+                                 value={editedProfile.email || ''}
+                                 disabled={true}
+                                 className="w-full px-4 py-3 pr-12 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500 bg-slate-50 disabled:bg-slate-50 disabled:text-slate-500 transition-colors"
+                                 placeholder="Enter your email address"
                                />
+                               {/* Email verification removed - email is now non-editable */}
                              </div>
                            ) : (
                              <input
@@ -2506,15 +2461,7 @@ const ExpertDashboard = () => {
                              </div>
                            )}
                          </div>
-                         {editedProfile.email && (!currentEmailVerified || emailChanged || !user?.isEmailVerified) && !(editedProfile.email === originalEmail && user?.isEmailVerified) && (
-                           <p className="text-xs text-amber-600 mt-1 flex items-center space-x-1">
-                             <AlertCircle className="h-3 w-3" />
-                             <span>
-                               {emailChanged ? 'New email needs verification' : 
-                                !user?.isEmailVerified ? 'Email not verified' : 'Email not verified'}
-                             </span>
-                           </p>
-                         )}
+                         {/* Email verification warning removed - email is now non-editable */}
                        </div>
 
                       <div>

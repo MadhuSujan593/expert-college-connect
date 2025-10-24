@@ -48,6 +48,7 @@ import ExpertRatingDisplay from '../../components/college/ExpertRatingDisplay';
 import RatingRequestsList from '../../components/college/RatingRequestsList';
 import VerificationRequirementModal from '../../components/common/VerificationRequirementModal';
 import RequirementCard from '../../components/common/RequirementCard';
+import CountrySelector from '../../components/common/CountrySelector';
 import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
 import ApplicationManagement from '../../components/college/ApplicationManagement';
 import PlanLimitationModal from '../../components/common/PlanLimitationModal';
@@ -92,6 +93,7 @@ const CollegeDashboard = () => {
   const [totalRequirements, setTotalRequirements] = useState(0);
   const [editingProfile, setEditingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState({});
+  const [selectedCountry, setSelectedCountry] = useState(null);
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -866,13 +868,18 @@ const CollegeDashboard = () => {
     try {
       console.log('🔄 Starting phone OTP process...');
       
+      // Combine country code with phone number
+      const fullPhoneNumber = profileForm.phone && selectedCountry 
+        ? `${selectedCountry.dialCode}${profileForm.phone}` 
+        : profileForm.phone;
+      
       // For profile updates, we need to check if the phone is different from current user's phone
       // If it's the same phone, allow verification. If it's different, check availability.
-      const isOwnPhone = profileForm.phone === user?.phone;
+      const isOwnPhone = fullPhoneNumber === user?.phone;
       
       if (!isOwnPhone) {
         // Only check availability if it's a different phone
-        const isAvailable = await checkPhoneAvailability(profileForm.phone);
+        const isAvailable = await checkPhoneAvailability(fullPhoneNumber);
         if (!isAvailable) {
           showToast('error', 'This phone number is already in use by another account.');
           return;
@@ -895,7 +902,7 @@ const CollegeDashboard = () => {
             'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
           },
           body: JSON.stringify({ 
-            phone: profileForm.phone,
+            phone: fullPhoneNumber,
             isProfileUpdate: true,
             userId: user?.id
           }),
@@ -970,6 +977,15 @@ const CollegeDashboard = () => {
       // Local format: just digits (10-15 digits)
       return cleanPhone.length >= 10 && cleanPhone.length <= 15;
     }
+  };
+
+  // Phone validation function for phone numbers without country code
+  const isValidPhoneNumber = (phoneNumber) => {
+    if (!phoneNumber) return false;
+    // Remove all non-digit characters
+    const cleanPhone = phoneNumber.replace(/[^\d]/g, '');
+    // Phone number should be 7-15 digits (without country code)
+    return cleanPhone.length >= 7 && cleanPhone.length <= 15;
   };
 
   // Handle input changes and track modifications
@@ -1278,42 +1294,27 @@ const CollegeDashboard = () => {
       // Debug: Log the profile form data
       console.log('Profile form data being sent:', profileForm);
       
-      // Check if email or phone has changed and require verification
-      if (emailChanged) {
-        if (!profileForm.email || !isValidEmail(profileForm.email)) {
-          showToast('error', 'Please enter a valid email address before saving changes');
-          return;
-        }
-        if (!currentEmailVerified) {
-          showToast('error', 'Please verify your new email address before saving changes');
-          return;
-        }
-      }
+      // Email verification requirement removed - email is now non-editable
       
       if (phoneChanged) {
-        if (!profileForm.phone || !isValidPhone(profileForm.phone)) {
+        if (!profileForm.phone || !isValidPhoneNumber(profileForm.phone)) {
           showToast('error', 'Please enter a valid phone number before saving changes');
           return;
         }
-        if (!currentPhoneVerified) {
-          showToast('error', 'Please verify your new phone number before saving changes');
-          return;
-        }
+        // Phone verification requirement removed - allow saving without verification
       }
 
-      // Check if existing email or phone needs verification (only if not changed and not set back to original verified values)
-      if (!user?.isEmailVerified && !emailChanged && profileForm.email !== originalEmail) {
-        showToast('error', 'Please verify your email address before saving changes');
-        return;
-      }
+      // Email verification requirement removed - email is now non-editable
       
-      if (!user?.isPhoneVerified && !phoneChanged && profileForm.phone !== originalPhone) {
-        showToast('error', 'Please verify your phone number before saving changes');
-        return;
-      }
+      // Phone verification requirement removed - allow saving without verification
       
       // Create a clean profile data object (similar to expert profile updates)
       const profileData = { ...profileForm };
+      
+      // Combine country code with phone number if phone is provided
+      if (profileData.phone && selectedCountry) {
+        profileData.phone = `${selectedCountry.dialCode}${profileData.phone}`;
+      }
       
       // Convert empty strings to undefined for optional fields
       Object.keys(profileData).forEach(key => {
@@ -1967,6 +1968,11 @@ const CollegeDashboard = () => {
                    currentEmailVerified={currentEmailVerified}
                    currentPhoneVerified={currentPhoneVerified}
                    stats={stats}
+                   selectedCountry={selectedCountry}
+                   setSelectedCountry={setSelectedCountry}
+                   isValidEmail={isValidEmail}
+                   isValidPhone={isValidPhone}
+                   isValidPhoneNumber={isValidPhoneNumber}
                  />
                 </motion.div>
               )}
@@ -2438,7 +2444,12 @@ const ProfileTab = ({
   handleProfileInputChange,
   currentEmailVerified,
   currentPhoneVerified,
-  stats
+  stats,
+  selectedCountry,
+  setSelectedCountry,
+  isValidEmail,
+  isValidPhone,
+  isValidPhoneNumber
 }) => {
   console.log('🔄 ProfileTab rendered with props:', {
     editingProfile,
@@ -2487,29 +2498,6 @@ const ProfileTab = ({
       });
     }
   }, [profile, user, setProfileForm]);
-
-  // Email validation function
-  const isValidEmail = (email) => {
-    if (!email) return false;
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  // Phone validation function
-  const isValidPhone = (phone) => {
-    if (!phone) return false;
-    // Remove all non-digit characters except +
-    const cleanPhone = phone.replace(/[^\d+]/g, '');
-    // Check if it starts with + (international) or just digits (local)
-    if (cleanPhone.startsWith('+')) {
-      // International format: +[country code][number] (total 7-15 digits)
-      const phoneWithoutPlus = cleanPhone.substring(1);
-      return phoneWithoutPlus.length >= 7 && phoneWithoutPlus.length <= 15;
-    } else {
-      // Local format: just digits (10-15 digits)
-      return cleanPhone.length >= 10 && cleanPhone.length <= 15;
-    }
-  };
 
   const handleInputChange = (e) => {
     // Use the parent's input change handler for verification tracking
@@ -2785,37 +2773,13 @@ const ProfileTab = ({
                         type="email"
                         name="email"
                         value={profileForm.email || ''}
-                        onChange={handleProfileInputChange}
-                        className="flex-1 px-4 py-2.5 pr-12 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
+                        disabled={true}
+                        className="flex-1 px-4 py-2.5 pr-12 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 bg-gray-50 disabled:bg-gray-50 disabled:text-gray-500 transition-colors text-sm"
                         placeholder="Enter email address"
                       />
-                      {(emailChanged || !user?.isEmailVerified) && (
-                        <button
-                          type="button"
-                          onClick={onSendEmailOtp}
-                          disabled={isEmailSending || !isValidEmail(profileForm.email)}
-                          className="w-full md:w-auto px-4 md:px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white text-sm font-semibold rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap shadow-lg hover:shadow-xl"
-                        >
-                          {isEmailSending ? 'Sending...' : 'Verify Email'}
-                        </button>
-                      )}
+                      {/* Email verification removed - email is now non-editable */}
                     </div>
-                    {profileForm.email && !isValidEmail(profileForm.email) && (
-                      <span className="text-xs text-red-600">Please enter a valid email address</span>
-                    )}
-                    
-                    {/* Email Verification Modal - Inline */}
-                    <EmailVerificationModal
-                      isOpen={showEmailVerification}
-                      email={profileForm.email || user?.email}
-                      isVerifying={isEmailVerifying}
-                      onVerify={onEmailVerification}
-                      onClose={() => setShowEmailVerification(false)}
-                      onSendOtp={onSendEmailOtp}
-                      isVerified={currentEmailVerified}
-                      isSending={isEmailSending}
-                      otpSent={emailOtpSent}
-                    />
+                    {/* Email verification removed - email is now non-editable */}
                   </div>
               ) : (
                 <input
@@ -2831,12 +2795,7 @@ const ProfileTab = ({
                 </div>
               )}
             </div>
-            {(user?.email || profile?.email) && (!currentEmailVerified || emailChanged) && !(profileForm.email === originalEmail && user?.isEmailVerified) && (
-              <p className="text-xs text-amber-600 mt-1 flex items-center space-x-1">
-                <AlertCircle className="h-3 w-3" />
-                <span>{emailChanged ? 'New email needs verification' : 'Email not verified'}</span>
-              </p>
-            )}
+            {/* Email verification warning removed - email is now non-editable */}
           </div>
 
           {/* Institution Type field - Next to Email */}
@@ -2934,33 +2893,44 @@ const ProfileTab = ({
               {editingProfile ? (
                 <div className="space-y-2">
                   <div className="flex flex-col md:flex-row gap-2">
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={profileForm.phone || ''}
-                      onChange={handleProfileInputChange}
-                        className="flex-1 px-4 py-2.5 pr-12 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
-                      placeholder="Enter phone number"
-                    />
+                    <div className="flex flex-1">
+                      <CountrySelector
+                        selectedCountry={selectedCountry}
+                        onCountryChange={setSelectedCountry}
+                        className="flex-shrink-0"
+                      />
+                      <div className="relative flex-1">
+                        <input
+                          type="tel"
+                          name="phone"
+                          value={profileForm.phone || ''}
+                          onChange={handleProfileInputChange}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-r-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm border-l-0"
+                          placeholder="1234567890"
+                        />
+                      </div>
+                    </div>
                     {(phoneChanged || !user?.isPhoneVerified) && (
                       <button
                         type="button"
                         onClick={onSendPhoneOtp}
-                        disabled={isPhoneSending || !isValidPhone(profileForm.phone)}
+                        disabled={isPhoneSending || !isValidPhoneNumber(profileForm.phone)}
                         className="w-full md:w-auto px-4 md:px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white text-sm font-semibold rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap shadow-lg hover:shadow-xl"
                       >
                         {isPhoneSending ? 'Sending...' : 'Verify Phone'}
                       </button>
                     )}
                   </div>
-                  {profileForm.phone && !isValidPhone(profileForm.phone) && (
+                  {profileForm.phone && !isValidPhoneNumber(profileForm.phone) && (
                     <span className="text-xs text-red-600">Please enter a valid phone number</span>
                   )}
                   
                   {/* Phone Verification Modal - Inline */}
                   <PhoneVerificationModal
                     isOpen={showPhoneVerification}
-                    phone={profileForm.phone || user?.phone}
+                    phone={profileForm.phone && selectedCountry 
+                      ? `${selectedCountry.dialCode}${profileForm.phone}` 
+                      : (profileForm.phone || user?.phone)}
                     isVerifying={isPhoneVerifying}
                     onVerify={onPhoneVerification}
                     onClose={() => setShowPhoneVerification(false)}

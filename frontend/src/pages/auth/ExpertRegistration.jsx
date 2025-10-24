@@ -261,10 +261,14 @@ const ExpertRegistration = () => {
 
     try {
       // Prepare data for API
+      const fullPhoneNumber = formData.phone && selectedCountry 
+        ? `${selectedCountry.dialCode}${formData.phone}` 
+        : undefined;
+      
       const registrationData = {
         fullName: formData.fullName,
         email: formData.email,
-        phone: formData.phone || undefined,
+        phone: fullPhoneNumber,
         password: formData.password,
         role: 'EXPERT',
         jobTitle: formData.jobTitle,
@@ -392,20 +396,24 @@ const ExpertRegistration = () => {
                     <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
                       Phone Number
                     </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Phone className="h-4 w-4 text-gray-500" />
-                      </div>
-                      <input
-                        id="phone"
-                        name="phone"
-                        type="tel"
-                        required
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200 transition-colors text-sm"
-                        placeholder="+1 (555) 123-4567"
+                    <div className="flex">
+                      <CountrySelector
+                        selectedCountry={selectedCountry}
+                        onCountryChange={setSelectedCountry}
+                        className="flex-shrink-0"
                       />
+                      <div className="relative flex-1">
+                        <input
+                          id="phone"
+                          name="phone"
+                          type="tel"
+                          required
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-r-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200 transition-colors text-sm border-l-0"
+                          placeholder="1234567890"
+                        />
+                      </div>
                     </div>
                   </div>
 

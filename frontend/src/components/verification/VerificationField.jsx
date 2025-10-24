@@ -1,4 +1,5 @@
 import React from 'react';
+import CountrySelector from '../common/CountrySelector';
 
 const VerificationField = ({
   type,
@@ -16,13 +17,16 @@ const VerificationField = ({
   buttonColor = 'bg-gradient-to-r from-blue-600 to-indigo-600',
   buttonHoverColor = 'hover:from-blue-700 hover:to-indigo-700',
   verifiedTagColor = 'text-emerald-600',
-  className = ''
+  className = '',
+  selectedCountry,
+  setSelectedCountry,
+  showCountrySelector = false
 }) => {
   // Determine if this is a phone input that should connect with country selector
   const isPhoneWithCountry = type === 'tel' && className.includes('rounded-l-none');
   
   // Base input classes
-  const baseInputClasses = "w-full pl-10 pr-4 py-2.5 sm:py-3 lg:py-3 bg-gray-50/80 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 hover:border-gray-300 transition-all duration-300 focus:bg-white focus:shadow-lg focus:shadow-blue-500/20 text-sm placeholder:text-sm";
+  const baseInputClasses = "w-full px-4 py-2.5 sm:py-3 lg:py-3 bg-gray-50/80 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 hover:border-gray-300 transition-all duration-300 focus:bg-white focus:shadow-lg focus:shadow-blue-500/20 text-sm placeholder:text-sm";
   
   // Apply different styling for phone input vs regular input
   const inputClasses = isPhoneWithCountry 
@@ -45,34 +49,64 @@ const VerificationField = ({
         )}
       </div>
       <div className="flex flex-col sm:flex-row gap-2">
-        <div className="relative group flex-1">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            {type === 'email' ? (
-              <svg className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-            ) : (
-              <svg className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-              </svg>
-            )}
-          </div>
-          <input
-            id={id}
-            name={name}
-            type={type}
-            required
-            value={value}
-            onChange={onChange}
-            className={inputClasses}
-            placeholder={placeholder}
-            maxLength={type === 'tel' ? '15' : undefined}
-          />
+        <div className="flex flex-1">
+          {type === 'tel' && showCountrySelector && selectedCountry && setSelectedCountry ? (
+            <>
+              <CountrySelector
+                selectedCountry={selectedCountry}
+                onCountryChange={setSelectedCountry}
+                className="flex-shrink-0"
+              />
+              <div className="relative group flex-1">
+                <input
+                  id={id}
+                  name={name}
+                  type={type}
+                  required
+                  value={value}
+                  onChange={onChange}
+                  className={`${baseInputClasses} border border-gray-300/50 rounded-r-xl border-l-0`}
+                  placeholder={placeholder || "1234567890"}
+                  maxLength={type === 'tel' ? '15' : undefined}
+                />
+              </div>
+            </>
+          ) : (
+            <div className="relative group flex-1">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                {type === 'email' ? (
+                  <svg className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                ) : (
+                  <svg className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                )}
+              </div>
+              <input
+                id={id}
+                name={name}
+                type={type}
+                required
+                value={value}
+                onChange={onChange}
+                className={inputClasses}
+                placeholder={placeholder}
+                maxLength={type === 'tel' ? '15' : undefined}
+              />
+            </div>
+          )}
         </div>
         {!isVerified && (
           <button
             type="button"
-            onClick={() => onSendOtp(value)}
+            onClick={() => {
+              const phoneValue = type === 'tel' && showCountrySelector && selectedCountry 
+                ? `${selectedCountry.dialCode}${value}` 
+                : value;
+              onSendOtp(phoneValue);
+            }}
             disabled={isSending || !value || !isValid(value)}
             className={`w-full sm:w-auto px-4 py-2.5 sm:py-3 text-white text-sm font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 transform disabled:transform-none disabled:cursor-not-allowed ${
               isSending || !value || !isValid(value)

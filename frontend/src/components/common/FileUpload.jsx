@@ -230,7 +230,7 @@ const FileUpload = ({
       {/* File Upload Area */}
       {(!currentFile || selectedFile) && (
         <div
-          className={`relative border-2 border-dashed rounded-lg p-8 transition-all duration-200 ${
+          className={`relative border-2 border-solid rounded-lg p-8 transition-all duration-200 ${
             type === 'document' ? 'w-full max-w-md h-40' : 'w-full max-w-sm h-40'
           } ${
             dragActive

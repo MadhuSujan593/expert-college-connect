@@ -45,6 +45,16 @@ export class SmsService {
     // Remove all non-digit characters after +
     const digits = cleaned.substring(1).replace(/\D/g, '');
     
+    // If the phone number is 10 digits and doesn't have a country code, assume India (+91)
+    if (digits.length === 10 && !cleaned.startsWith('+91')) {
+      return `+91${digits}`;
+    }
+    
+    // If the phone number is 12 digits and starts with 91, add the + prefix
+    if (digits.length === 12 && digits.startsWith('91')) {
+      return `+${digits}`;
+    }
+    
     return `+${digits}`;
   }
 

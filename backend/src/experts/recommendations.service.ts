@@ -45,19 +45,120 @@ export class RecommendationsService {
       throw new NotFoundException('Expert profile not found');
     }
 
+    // If expert has no skills, show all opportunities without filtering
     if (!expertProfile.expertskill || expertProfile.expertskill.length === 0) {
+      // Fetch all active requirements with pagination
+      const skip = (page - 1) * limit;
+      const requirements = await this.prisma.requirement.findMany({
+        where: {
+          isActive: true,
+          // Exclude requirements already applied by this expert
+          applications: {
+            none: {
+              expertId: userId,
+            },
+          },
+        },
+        include: {
+          collegeprofile: {
+            include: {
+              user: {
+                select: {
+                  fullName: true,
+                  email: true,
+                },
+              },
+            },
+          },
+          _count: {
+            select: {
+              applications: true,
+            },
+          },
+        },
+        skip,
+        take: limit,
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      // Get total count for pagination
+      const totalRequirements = await this.prisma.requirement.count({
+        where: {
+          isActive: true,
+          applications: {
+            none: {
+              expertId: userId,
+            },
+          },
+        },
+      });
+
+      // Return all opportunities without recommendation scores
+      const opportunities = await Promise.all(requirements.map(async (requirement) => {
+        const collegeProfile = await this.prisma.collegeprofile.findUnique({
+          where: { id: requirement.collegeProfileId },
+          include: {
+            user: {
+              select: {
+                fullName: true,
+                email: true,
+              },
+            },
+          },
+        });
+
+        if (!collegeProfile) return null;
+        
+        return {
+          id: requirement.id,
+          title: requirement.title,
+          description: requirement.description,
+          category: requirement.category,
+          subcategory: requirement.subcategory,
+          budget: requirement.budget ? requirement.budget.toNumber() : null,
+          budgetType: requirement.budgetType,
+          deadline: requirement.deadline,
+          isUrgent: requirement.isUrgent,
+          requiredSkills: requirement.requiredSkills,
+          experience: requirement.experience,
+          college: {
+            id: collegeProfile.id,
+            name: collegeProfile.institutionName,
+            contactName: collegeProfile.user.fullName,
+            email: collegeProfile.user.email,
+            logoUrl: collegeProfile.logoUrl,
+            city: collegeProfile.city,
+          },
+          recommendation: {
+            score: 0, // No recommendation score when no skills
+            matchedSkills: [],
+            unmatchedSkills: [],
+            reasonScore: 0,
+            urgencyScore: 0,
+            budgetScore: 0,
+          },
+          applicationsCount: (requirement as any)._count?.applications || 0,
+          createdAt: requirement.createdAt,
+        };
+      }));
+
       return {
-        opportunities: [],
+        opportunities: opportunities.filter(opp => opp !== null),
+        expertSkillsForDisplay: [],
         pagination: {
           currentPage: page,
-          totalPages: 0,
-          totalCount: 0,
-          hasNextPage: false,
-          hasPrevPage: false,
+          totalPages: Math.ceil(totalRequirements / limit),
+          totalCount: totalRequirements,
+          hasNextPage: page < Math.ceil(totalRequirements / limit),
+          hasPrevPage: page > 1,
         },
         summary: {
-          message: 'Add skills to your profile to get personalized recommendations',
+          message: 'Showing all opportunities. Add skills to get personalized recommendations',
           expertSkillCount: 0,
+          minScore: 0,
+          totalRecommendations: opportunities.length,
         },
       };
     }

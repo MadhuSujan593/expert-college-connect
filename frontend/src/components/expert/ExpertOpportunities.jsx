@@ -223,7 +223,7 @@ const ExpertOpportunities = () => {
       </div>
 
 
-       {/* Recommended Section */}
+       {/* Recommended Section - Only show if there are skills and recommendations */}
        {requirements.filter(req => req.recommendation?.score >= 20).length > 0 && (
          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
            <div className="flex items-center gap-3 mb-4">
@@ -258,16 +258,24 @@ const ExpertOpportunities = () => {
          </div>
        )}
 
-       {/* Other Opportunities Section */}
-       {requirements.filter(req => req.recommendation?.score < 20).length > 0 && (
+       {/* All Opportunities Section - Show when no skills or when there are opportunities with score < 20 */}
+       {requirements.length > 0 && (
          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
            <div className="flex items-center gap-3 mb-4">
              <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
                <Briefcase className="w-5 h-5 text-gray-600" />
              </div>
              <div>
-               <h2 className="text-lg font-semibold text-gray-900">Other Opportunities</h2>
-               <p className="text-sm text-gray-600">Explore all available requirements</p>
+               <h2 className="text-lg font-semibold text-gray-900">
+                 {requirements.filter(req => req.recommendation?.score >= 20).length > 0 
+                   ? "Other Opportunities" 
+                   : "All Opportunities"}
+               </h2>
+               <p className="text-sm text-gray-600">
+                 {requirements.filter(req => req.recommendation?.score >= 20).length > 0 
+                   ? "Explore all available requirements" 
+                   : "Browse all available opportunities. Add skills to get personalized recommendations."}
+               </p>
              </div>
            </div>
            
