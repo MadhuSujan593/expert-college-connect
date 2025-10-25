@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import apiService from '../../utils/api';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
+import AccountCreation from '../../components/super-admin/AccountCreation';
 import toast from 'react-hot-toast';
 import { 
   Users, 
@@ -94,11 +95,13 @@ const SuperAdminDashboard = () => {
   const [subscribersLoading, setSubscribersLoading] = useState(false);
   const [editingSubscription, setEditingSubscription] = useState(null);
   const [newExpirationDate, setNewExpirationDate] = useState('');
+  const [showAccountCreation, setShowAccountCreation] = useState(false);
 
   // Navigation tabs
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Home },
     { id: 'users', label: 'User Management', icon: Users },
+    { id: 'create-account', label: 'Create Account', icon: UserCog },
     { id: 'plans', label: 'Plans', icon: BadgeDollarSign },
     { id: 'subscribers', label: 'Subscribers', icon: Users },
     { id: 'invoices', label: 'Invoice Details', icon: FileText },
@@ -700,6 +703,19 @@ const SuperAdminDashboard = () => {
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: 0.175 }}
+              >
+                <SidebarItem
+                  id="create-account"
+                  label="Create Account"
+                  icon={UserCog}
+                  isActive={activeTab === 'create-account'}
+                  onClick={handleTabChange}
+                />
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3, delay: 0.2 }}
               >
                 <SidebarItem
@@ -1176,6 +1192,57 @@ const SuperAdminDashboard = () => {
                       </div>
                     </div>
                   )}
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'create-account' && (
+              <motion.div
+                key="create-account"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="bg-white rounded-2xl border border-slate-200/60 shadow-lg shadow-slate-900/5">
+                  <div className="px-6 py-4 border-b border-slate-200/60 flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-slate-900">Create Account</h3>
+                    <button
+                      onClick={() => setShowAccountCreation(true)}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Create New Account</span>
+                    </button>
+                  </div>
+                  <div className="px-6 py-8">
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <UserCog className="w-8 h-8 text-blue-600" />
+                      </div>
+                      <h4 className="text-xl font-semibold text-gray-900 mb-2">Account Creation</h4>
+                      <p className="text-gray-600 mb-6">
+                        Create new accounts for experts or college administrators. 
+                        Click the button above to get started.
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+                        <div className="p-4 border border-gray-200 rounded-lg">
+                          <Briefcase className="w-8 h-8 text-blue-600 mx-auto mb-2" />
+                          <h5 className="font-semibold text-gray-900 mb-1">Expert Accounts</h5>
+                          <p className="text-sm text-gray-600">
+                            Create accounts for industry professionals who can provide guidance and mentorship.
+                          </p>
+                        </div>
+                        <div className="p-4 border border-gray-200 rounded-lg">
+                          <GraduationCap className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                          <h5 className="font-semibold text-gray-900 mb-1">College Admin Accounts</h5>
+                          <p className="text-sm text-gray-600">
+                            Create accounts for college administrators to manage their institution.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </motion.div>
             )}
@@ -2047,6 +2114,11 @@ const SuperAdminDashboard = () => {
         confirmText={confirmationModal.type === 'success' ? 'OK' : 'Confirm'}
         cancelText="Cancel"
       />
+
+      {/* Account Creation Modal */}
+      {showAccountCreation && (
+        <AccountCreation onClose={() => setShowAccountCreation(false)} />
+      )}
 
       {/* User Details Modal */}
       {showUserModal && selectedUser && (

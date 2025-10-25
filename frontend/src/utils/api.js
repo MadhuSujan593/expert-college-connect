@@ -849,6 +849,16 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  async createAccount(accountData) {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}/super-admin/create-account`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(accountData),
+    });
+    return this.handleResponse(response);
+  }
+
   async getAllUsers(page = 1, limit = 10, role = null, search = '', isActive = null) {
     const queryParams = new URLSearchParams({
       page: page.toString(),

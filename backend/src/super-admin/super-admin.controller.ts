@@ -20,12 +20,21 @@ import { user_role } from '@prisma/client';
 import { CreatePlanDto } from './dto/create-plan.dto';
 import { UpdatePlanDto } from './dto/update-plan.dto';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
+import { CreateAccountDto } from './dto/create-account.dto';
 
 @Controller('super-admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(user_role.SUPER_ADMIN)
 export class SuperAdminController {
   constructor(private readonly superAdminService: SuperAdminService) {}
+
+  /**
+   * Create account for expert or college admin
+   */
+  @Post('create-account')
+  async createAccount(@Body() dto: CreateAccountDto) {
+    return this.superAdminService.createAccount(dto);
+  }
 
   /**
    * Get dashboard statistics

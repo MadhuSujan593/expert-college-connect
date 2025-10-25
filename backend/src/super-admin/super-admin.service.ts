@@ -3,6 +3,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { user_role } from '@prisma/client';
 import { CreatePlanDto } from './dto/create-plan.dto';
 import { UpdatePlanDto } from './dto/update-plan.dto';
+import { CreateAccountDto } from './dto/create-account.dto';
+import * as bcrypt from 'bcrypt';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class SuperAdminService {
@@ -907,6 +910,154 @@ export class SuperAdminService {
         pages: Math.ceil(filteredItems.length / limit),
       },
     };
+  }
+
+  /**
+   * Create account for expert or college admin using existing auth service logic
+   */
+  async createAccount(dto: CreateAccountDto) {
+    try {
+      // Check if email already exists
+      const existingUser = await this.prisma.user.findFirst({
+        where: {
+          OR: [
+            { email: dto.email },
+            { phone: dto.phone || undefined }
+          ]
+        }
+      });
+
+      if (existingUser) {
+        if (existingUser.email === dto.email) {
+          throw new BadRequestException('Email already registered');
+        }
+        if (dto.phone && existingUser.phone === dto.phone) {
+          throw new BadRequestException('Phone number already registered');
+        }
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(dto.password, 10);
+
+      // Create user with profile in a transaction
+      const result = await this.prisma.$transaction(async (prisma) => {
+        // Create user - super admin created accounts are pre-verified
+        const user = await prisma.user.create({
+          data: {
+            id: uuidv4(),
+            email: dto.email,
+            phone: dto.phone,
+            password: hashedPassword,
+            fullName: dto.fullName,
+            role: dto.role,
+            isEmailVerified: true, // Super admin created accounts are pre-verified
+            isPhoneVerified: dto.phone ? true : false, // Super admin created accounts are pre-verified
+            updatedAt: new Date(),
+          },
+          select: {
+            id: true,
+            email: true,
+            phone: true,
+            fullName: true,
+            role: true,
+            isEmailVerified: true,
+            isPhoneVerified: true,
+            createdAt: true,
+          }
+        });
+
+        // Create Expert Profile if role is EXPERT
+        if (dto.role === user_role.EXPERT) {
+          const expertProfile = await prisma.expertprofile.create({
+            data: {
+              id: uuidv4(),
+              userId: user.id,
+              jobTitle: dto.jobTitle || '',
+              company: dto.company || '',
+              experience: dto.experience || '',
+              primaryExpertise: dto.primaryExpertise || '',
+              bio: dto.bio || '',
+              availableFor: dto.availableFor ? JSON.parse(dto.availableFor) : null,
+              preferredMode: dto.preferredMode || '',
+              hourlyRate: dto.hourlyRate ? parseFloat(dto.hourlyRate.toString()) : null,
+              updatedAt: new Date(),
+            }
+          });
+
+          // Create Expert Skills if skills are provided
+          if (dto.skills) {
+            const skillsArray = dto.skills.split(',').map(skill => skill.trim());
+            for (const skillName of skillsArray) {
+              if (skillName) {
+                await prisma.expertskill.create({
+                  data: {
+                    id: uuidv4(),
+                    expertProfileId: expertProfile.id,
+                    skillName: skillName,
+                    skillLevel: 'INTERMEDIATE'
+                  }
+                });
+              }
+            }
+          }
+        }
+
+        // Create College Profile if role is COLLEGE_ADMIN
+        if (dto.role === user_role.COLLEGE_ADMIN) {
+          // Validate and set institution type
+          const validInstitutionType = this.validateInstitutionType(dto.institutionType);
+          
+          await prisma.collegeprofile.create({
+            data: {
+              id: uuidv4(),
+              userId: user.id,
+              institutionName: dto.institutionName || '',
+              contactPersonName: dto.contactPersonName || '',
+              institutionType: validInstitutionType,
+              website: dto.institutionWebsite || '',
+              address: dto.institutionAddress || '',
+              city: '',
+              state: '',
+              country: '',
+              postalCode: '',
+              updatedAt: new Date(),
+            }
+          });
+        }
+
+        return user;
+      });
+
+      // Get the created user with profile
+      const createdUser = await this.prisma.user.findUnique({
+        where: { id: result.id },
+        include: {
+          expertprofile: dto.role === user_role.EXPERT,
+          collegeprofile: dto.role === user_role.COLLEGE_ADMIN,
+        }
+      });
+
+      return {
+        user: createdUser,
+        message: `${dto.role === user_role.EXPERT ? 'Expert' : 'College Admin'} account created successfully`
+      };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException('Failed to create account');
+    }
+  }
+
+  /**
+   * Validate Institution Type
+   */
+  private validateInstitutionType(type: string | undefined): 'UNIVERSITY' | 'COLLEGE' | 'INSTITUTE' | 'SCHOOL' | 'OTHER' {
+    const validTypes = ['UNIVERSITY', 'COLLEGE', 'INSTITUTE', 'SCHOOL', 'OTHER'];
+    if (type && validTypes.includes(type.toUpperCase())) {
+      return type.toUpperCase() as 'UNIVERSITY' | 'COLLEGE' | 'INSTITUTE' | 'SCHOOL' | 'OTHER';
+    }
+    return 'UNIVERSITY'; // Default fallback
   }
 
   /**
