@@ -34,6 +34,7 @@ import {
   Mail,
   ExternalLink
 } from 'lucide-react';
+import PricingSection from '../components/common/PricingSection';
 
 const HomePage = () => {
   const features = [
@@ -570,6 +571,9 @@ const HomePage = () => {
           </motion.div>
         </div>
       </section>
+
+      {/* Pricing Section */}
+      <PricingSection />
 
       {/* Premium CTA Section */}
       <section className="py-20 sm:py-28 lg:py-36 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-slate-50 via-white to-blue-50 relative overflow-hidden">
