@@ -85,6 +85,12 @@ export class RequirementsService {
           }
         }
       };
+      
+      // Exclude expired requirements (deadline has passed)
+      where.OR = [
+        { deadline: null }, // No deadline set
+        { deadline: { gt: new Date() } } // Deadline is in the future
+      ];
     }
     
     if (category && category !== 'All Categories') {

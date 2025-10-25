@@ -58,6 +58,11 @@ export class RecommendationsService {
               expertId: userId,
             },
           },
+          // Exclude expired requirements (deadline has passed)
+          OR: [
+            { deadline: null }, // No deadline set
+            { deadline: { gt: new Date() } } // Deadline is in the future
+          ],
         },
         include: {
           collegeprofile: {
@@ -92,6 +97,11 @@ export class RecommendationsService {
               expertId: userId,
             },
           },
+          // Exclude expired requirements (deadline has passed)
+          OR: [
+            { deadline: null }, // No deadline set
+            { deadline: { gt: new Date() } } // Deadline is in the future
+          ],
         },
       });
 
@@ -179,6 +189,11 @@ export class RecommendationsService {
             expertId: userId,
           },
         },
+        // Exclude expired requirements (deadline has passed)
+        OR: [
+          { deadline: null }, // No deadline set
+          { deadline: { gt: new Date() } } // Deadline is in the future
+        ],
       },
       include: {
         collegeprofile: {
@@ -226,6 +241,11 @@ export class RecommendationsService {
             expertId: userId,
           },
         },
+        // Exclude expired requirements (deadline has passed)
+        OR: [
+          { deadline: null }, // No deadline set
+          { deadline: { gt: new Date() } } // Deadline is in the future
+        ],
       },
     });
 
@@ -496,7 +516,14 @@ export class RecommendationsService {
       where: { id: collegeId },
       include: {
         requirement: {
-          where: { isActive: true },
+          where: { 
+            isActive: true,
+            // Exclude expired requirements (deadline has passed)
+            OR: [
+              { deadline: null }, // No deadline set
+              { deadline: { gt: new Date() } } // Deadline is in the future
+            ],
+          },
           include: {
             _count: {
               select: {
