@@ -1219,12 +1219,17 @@ class ApiService {
 
   // === RECOMMENDATIONS API ===
   
-  async getRecommendedOpportunities(page = 1, limit = 10, minScore = 20) {
+  async getRecommendedOpportunities(page = 1, limit = 10, minScore = 20, search = '') {
     const queryParams = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
       minScore: minScore.toString(),
     });
+
+    // Add search parameter if provided
+    if (search && search.trim()) {
+      queryParams.append('search', search);
+    }
 
     const headers = await this.getAuthHeaders();
     const response = await fetch(`${this.baseURL}/recommendations/opportunities?${queryParams}`, {

@@ -22,10 +22,11 @@ const Footer = () => {
       { name: 'Success Stories', path: '/#success-stories' },
     ],
     company: [
-      { name: 'About Us', path: '/about' },
-      { name: 'Contact', path: '/contact' },
-      { name: 'Privacy Policy', path: '/privacy' },
-      { name: 'Terms of Service', path: '/terms' },
+      { name: 'About Us', path: '/about-us' },
+      { name: 'Contact', path: '/contact-us' },
+      { name: 'Terms & Conditions', path: '/terms-and-conditions' },
+      { name: 'Shipping Policy', path: '/shipping-policy' },
+      { name: 'Cancellation & Refund', path: '/cancellation-refund-policy' },
     ],
     support: [
       { name: 'Help Center', path: '/help' },
@@ -64,15 +65,15 @@ const Footer = () => {
             <div className="space-y-3">
               <div className="flex items-center space-x-3 text-secondary-300">
                 <Mail className="w-4 h-4" />
-                <span className="text-sm">contact@expertconnect.com</span>
+                <span className="text-sm">contact@vmsconsultix.com</span>
               </div>
               <div className="flex items-center space-x-3 text-secondary-300">
                 <Phone className="w-4 h-4" />
-                <span className="text-sm">+91 98765 43210</span>
+                <span className="text-sm">9000621876</span>
               </div>
               <div className="flex items-center space-x-3 text-secondary-300">
                 <MapPin className="w-4 h-4" />
-                <span className="text-sm">Mumbai, Maharashtra, India</span>
+                <span className="text-sm">Bangalore, Karnataka, India</span>
               </div>
             </div>
           </div>
@@ -133,7 +134,7 @@ const Footer = () => {
         <div className="border-t border-secondary-700 mt-8 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div className="text-secondary-300 text-sm">
-              © {currentYear} ExpertConnect. All rights reserved.
+              © {currentYear} VMS CONSULTIX PRIVATE LIMITED. All rights reserved.
             </div>
             
             {/* Social Links */}

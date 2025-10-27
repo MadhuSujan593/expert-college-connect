@@ -12,7 +12,8 @@ import {
   LogOut,
   Settings,
   UserCircle,
-  MessageCircle
+  MessageCircle,
+  Info
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -67,6 +68,22 @@ const Navbar = () => {
 
           {/* Desktop Auth Buttons / User Menu */}
           <div className="hidden md:flex items-center space-x-4">
+            {/* About Us Link */}
+            <Link
+              to="/about-us"
+              className={`text-sm font-semibold transition-all duration-300 px-4 py-2 rounded-full relative flex items-center space-x-2 ${
+                isActive('/about-us') 
+                  ? 'text-white' 
+                  : 'text-gray-700 hover:text-gray-900'
+              }`}
+            >
+              {isActive('/about-us') && (
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full shadow-lg"></div>
+              )}
+              <Info className="w-4 h-4 relative z-10" />
+              <span className="relative z-10">About Us</span>
+            </Link>
+
             {/* Contact Us Link */}
             <Link
               to="/contact-us"
@@ -212,6 +229,20 @@ const Navbar = () => {
             className="md:hidden border-t border-gray-100 bg-white/90 backdrop-blur-xl"
           >
             <div className="px-4 pt-4 pb-3 space-y-2">
+              {/* About Us Link */}
+              <Link
+                to="/about-us"
+                className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                  isActive('/about-us')
+                    ? 'text-white bg-gradient-to-r from-blue-500 to-cyan-500 shadow-lg'
+                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+                onClick={() => setIsOpen(false)}
+              >
+                <Info className="w-5 h-5" />
+                <span>About Us</span>
+              </Link>
+              
               {/* Contact Us Link */}
               <Link
                 to="/contact-us"

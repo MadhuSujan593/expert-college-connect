@@ -10,6 +10,10 @@ import Footer from './components/layout/Footer';
 // Pages
 import HomePage from './pages/HomePage';
 import ContactUs from './pages/ContactUs';
+import AboutUs from './pages/AboutUs';
+import TermsAndConditions from './pages/TermsAndConditions';
+import ShippingPolicy from './pages/ShippingPolicy';
+import CancellationRefundPolicy from './pages/CancellationRefundPolicy';
 import { 
   ExpertRegistration, 
   CollegeRegistration, 
@@ -82,6 +86,10 @@ const AppContent = () => {
   const isRequirementPage = location.pathname.startsWith('/requirement');
   const isSubscriptionPage = location.pathname === '/subscription-plans';
   const isContactPage = location.pathname === '/contact-us';
+  const isAboutPage = location.pathname === '/about-us';
+  const isTermsPage = location.pathname === '/terms-and-conditions';
+  const isShippingPage = location.pathname === '/shipping-policy';
+  const isCancellationPage = location.pathname === '/cancellation-refund-policy';
   
   // Debug logging
   console.log('Current pathname:', location.pathname);
@@ -91,12 +99,16 @@ const AppContent = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      {!isAuthPage && !isDashboardPage && !isRequirementPage && !isSubscriptionPage && !isContactPage && <Navbar />}
+      {!isAuthPage && !isDashboardPage && !isRequirementPage && !isSubscriptionPage && !isContactPage && !isAboutPage && !isTermsPage && !isShippingPage && !isCancellationPage && <Navbar />}
       <main className="flex-1">
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<HomePage />} />
           <Route path="/contact-us" element={<ContactUs />} />
+          <Route path="/about-us" element={<AboutUs />} />
+          <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+          <Route path="/shipping-policy" element={<ShippingPolicy />} />
+          <Route path="/cancellation-refund-policy" element={<CancellationRefundPolicy />} />
           <Route path="/register/expert" element={<ExpertRegistration />} />
           <Route path="/register/college" element={<CollegeRegistration />} />
           <Route path="/login" element={<Login />} />
@@ -163,7 +175,7 @@ const AppContent = () => {
           <Route path="/college/:id" element={<CollegeProfile />} /> */}
         </Routes>
       </main>
-      {!isAuthPage && !isDashboardPage && !isRequirementPage && !isSubscriptionPage && !isContactPage && <Footer />}
+      {!isAuthPage && !isDashboardPage && !isRequirementPage && !isSubscriptionPage && !isContactPage && !isAboutPage && !isTermsPage && !isShippingPage && !isCancellationPage && <Footer />}
       <Toaster
         position="top-right"
         toastOptions={{

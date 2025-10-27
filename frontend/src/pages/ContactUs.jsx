@@ -124,8 +124,8 @@ const ContactUs = () => {
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-1">Email Us</h3>
                   <p className="text-gray-600 mb-2">Send us an email and we'll respond within 24 hours</p>
-                  <a href="mailto:support@expertcollegeconnect.com" className="text-blue-600 hover:text-blue-700 font-medium">
-                    support@expertcollegeconnect.com
+                  <a href="mailto:contact@vmsconsultix.com" className="text-blue-600 hover:text-blue-700 font-medium">
+                    contact@vmsconsultix.com
                   </a>
                 </div>
               </motion.div>
@@ -142,8 +142,8 @@ const ContactUs = () => {
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-1">Call Us</h3>
                   <p className="text-gray-600 mb-2">Speak with our support team during business hours</p>
-                  <a href="tel:+1234567890" className="text-green-600 hover:text-green-700 font-medium">
-                    +1 (234) 567-890
+                  <a href="tel:9000621876" className="text-green-600 hover:text-green-700 font-medium">
+                    9000621876
                   </a>
                 </div>
               </motion.div>
@@ -161,8 +161,9 @@ const ContactUs = () => {
                   <h3 className="text-lg font-semibold text-gray-900 mb-1">Visit Us</h3>
                   <p className="text-gray-600 mb-2">Our headquarters location</p>
                   <p className="text-purple-600 font-medium">
-                    123 Education Street<br />
-                    Tech City, TC 12345
+                    No-3, 1st Crs Rd, Dwaraka L/O, Kithaganu, Virgonagar<br />
+                    Bangalore North Karnataka, KARNATAKA 560049<br />
+                    India
                   </p>
                 </div>
               </motion.div>

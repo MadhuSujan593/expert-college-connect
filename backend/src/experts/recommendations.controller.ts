@@ -22,12 +22,14 @@ export class RecommendationsController {
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
     @Query('minScore') minScore?: number,
+    @Query('search') search?: string,
   ) {
     return this.recommendationsService.getRecommendedOpportunities(
       req.user.id,
       page,
       limit,
       minScore,
+      search,
     );
   }
 

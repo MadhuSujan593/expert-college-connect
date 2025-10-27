@@ -27,6 +27,7 @@ export class RecommendationsService {
     page: number = 1,
     limit: number = 10,
     minScore: number = 20,
+    search?: string,
   ) {
     // Get expert profile and skills
     const expertProfile = await this.prisma.expertprofile.findUnique({
@@ -47,23 +48,38 @@ export class RecommendationsService {
 
     // If expert has no skills, show all opportunities without filtering
     if (!expertProfile.expertskill || expertProfile.expertskill.length === 0) {
+      // Build where clause
+      const whereClause: any = {
+        isActive: true,
+        // Exclude requirements already applied by this expert
+        applications: {
+          none: {
+            expertId: userId,
+          },
+        },
+      };
+
+      // Add search filter if provided
+      if (search && search.trim()) {
+        whereClause.OR = [
+          { title: { contains: search } },
+          { description: { contains: search } },
+          { category: { contains: search } },
+          { subcategory: { contains: search } },
+          { requiredSkills: { hasSome: [search] } },
+        ];
+      } else {
+        // Exclude expired requirements (deadline has passed)
+        whereClause.OR = [
+          { deadline: null }, // No deadline set
+          { deadline: { gt: new Date() } } // Deadline is in the future
+        ];
+      }
+
       // Fetch all active requirements with pagination
       const skip = (page - 1) * limit;
       const requirements = await this.prisma.requirement.findMany({
-        where: {
-          isActive: true,
-          // Exclude requirements already applied by this expert
-          applications: {
-            none: {
-              expertId: userId,
-            },
-          },
-          // Exclude expired requirements (deadline has passed)
-          OR: [
-            { deadline: null }, // No deadline set
-            { deadline: { gt: new Date() } } // Deadline is in the future
-          ],
-        },
+        where: whereClause,
         include: {
           collegeprofile: {
             include: {
@@ -90,19 +106,7 @@ export class RecommendationsService {
 
       // Get total count for pagination
       const totalRequirements = await this.prisma.requirement.count({
-        where: {
-          isActive: true,
-          applications: {
-            none: {
-              expertId: userId,
-            },
-          },
-          // Exclude expired requirements (deadline has passed)
-          OR: [
-            { deadline: null }, // No deadline set
-            { deadline: { gt: new Date() } } // Deadline is in the future
-          ],
-        },
+        where: whereClause,
       });
 
       // Return all opportunities without recommendation scores
@@ -178,23 +182,46 @@ export class RecommendationsService {
       level: skill.skillLevel,
     }));
 
+    // Build where clause
+    const whereClause: any = {
+      isActive: true,
+      // Exclude requirements already applied by this expert
+      applications: {
+        none: {
+          expertId: userId,
+        },
+      },
+    };
+
+    // Exclude expired requirements (deadline has passed)
+    const deadlineConditions = [
+      { deadline: null }, // No deadline set
+      { deadline: { gt: new Date() } } // Deadline is in the future
+    ];
+
+    // Add search filter if provided
+    if (search && search.trim()) {
+      const searchConditions = [
+        { title: { contains: search } },
+        { description: { contains: search } },
+        { category: { contains: search } },
+        { subcategory: { contains: search } },
+        { requiredSkills: { hasSome: [search] } },
+      ];
+
+      // Combine deadline and search conditions
+      whereClause.AND = [
+        { OR: deadlineConditions },
+        { OR: searchConditions }
+      ];
+    } else {
+      whereClause.OR = deadlineConditions;
+    }
+
     // Fetch all active requirements with pagination
     const skip = (page - 1) * limit;
     const requirements = await this.prisma.requirement.findMany({
-      where: {
-        isActive: true,
-        // Exclude requirements already applied by this expert
-        applications: {
-          none: {
-            expertId: userId,
-          },
-        },
-        // Exclude expired requirements (deadline has passed)
-        OR: [
-          { deadline: null }, // No deadline set
-          { deadline: { gt: new Date() } } // Deadline is in the future
-        ],
-      },
+      where: whereClause,
       include: {
         collegeprofile: {
           include: {
@@ -234,19 +261,7 @@ export class RecommendationsService {
     // For pagination, we need total count - in real implementation,
     // you'd want to optimize this query
     const totalRequirements = await this.prisma.requirement.count({
-      where: {
-        isActive: true,
-        applications: {
-          none: {
-            expertId: userId,
-          },
-        },
-        // Exclude expired requirements (deadline has passed)
-        OR: [
-          { deadline: null }, // No deadline set
-          { deadline: { gt: new Date() } } // Deadline is in the future
-        ],
-      },
+      where: whereClause,
     });
 
     return {
