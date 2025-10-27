@@ -59,21 +59,23 @@ export class RecommendationsService {
         },
       };
 
+      // Add deadline filter
+      whereClause.OR = [
+        { deadline: null }, // No deadline set
+        { deadline: { gt: new Date() } } // Deadline is in the future
+      ];
+
       // Add search filter if provided
       if (search && search.trim()) {
-        whereClause.OR = [
-          { title: { contains: search } },
-          { description: { contains: search } },
-          { category: { contains: search } },
-          { subcategory: { contains: search } },
-          { requiredSkills: { hasSome: [search] } },
-        ];
-      } else {
-        // Exclude expired requirements (deadline has passed)
-        whereClause.OR = [
-          { deadline: null }, // No deadline set
-          { deadline: { gt: new Date() } } // Deadline is in the future
-        ];
+        whereClause.AND = whereClause.AND || [];
+        whereClause.AND.push({
+          OR: [
+            { title: { contains: search } },
+            { description: { contains: search } },
+            { category: { contains: search } },
+            { subcategory: { contains: search } },
+          ],
+        });
       }
 
       // Fetch all active requirements with pagination
@@ -206,10 +208,9 @@ export class RecommendationsService {
         { description: { contains: search } },
         { category: { contains: search } },
         { subcategory: { contains: search } },
-        { requiredSkills: { hasSome: [search] } },
       ];
 
-      // Combine deadline and search conditions
+      // Combine deadline and search conditions  
       whereClause.AND = [
         { OR: deadlineConditions },
         { OR: searchConditions }

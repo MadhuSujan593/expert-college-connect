@@ -49,8 +49,8 @@ const ExpertOpportunities = () => {
       setLoading(!isLoadMore);
       setError(null);
       
-      console.log('🔍 Fetching requirements with recommendations...');
-      const response = await apiService.getRecommendedOpportunities(filters.page, filters.limit, 0); // Get all with minScore = 0
+      console.log('🔍 Fetching requirements with recommendations...', 'Search:', filters.search);
+      const response = await apiService.getRecommendedOpportunities(filters.page, filters.limit, 0, filters.search); // Get all with minScore = 0
       
       console.log('📡 API Response:', response);
       console.log('📋 Requirements data:', response.opportunities);
@@ -156,6 +156,7 @@ const ExpertOpportunities = () => {
 
 
 
+
   // Show requirement details
   const showRequirementDetails = (requirementId) => {
     navigate(`/requirement/${requirementId}`);
@@ -165,18 +166,15 @@ const ExpertOpportunities = () => {
   useEffect(() => {
     console.log('🚀 Component mounted, fetching requirements...');
     fetchRequirements(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    // Only fetch when filters change, but determine if it's load more based on page
-    if (filters.page > 1) {
-      console.log('📥 Filters changed - loading more (page:', filters.page, ')');
-      fetchRequirements(true);
-    } else if (filters.page === 1) {
-      console.log('🔄 Filters changed - initial load');
-      fetchRequirements(false);
-    }
-  }, [filters]);
+    // Handle search changes - reset to page 1 and refetch
+    console.log('🔍 Search term changed:', filters.search);
+    fetchRequirements(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.search]);
 
   useEffect(() => {
     fetchExpertApplications();
