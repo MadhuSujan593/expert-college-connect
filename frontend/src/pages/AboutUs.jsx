@@ -163,7 +163,7 @@ const AboutUs = () => {
             </h1>
             
             <p className="text-xl text-gray-600 leading-relaxed max-w-3xl mx-auto">
-              ExpertConnect was founded with a simple yet powerful vision: to break down barriers 
+              VMS Tech Hub was founded with a simple yet powerful vision: to break down barriers 
               between industry expertise and educational institutions, creating meaningful partnerships 
               that drive innovation and excellence.
             </p>

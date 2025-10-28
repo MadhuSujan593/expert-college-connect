@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Frontend for Expert College Connect platform",
+  "description": "Frontend for VMS Tech Hub platform",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

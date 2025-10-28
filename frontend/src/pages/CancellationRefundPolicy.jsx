@@ -201,7 +201,7 @@ const CancellationRefundPolicy = () => {
                 <p><strong>Pin Code:</strong> 560049</p>
                 <p><strong>Country:</strong> India</p>
                 <p className="mt-4"><strong>Phone:</strong> 9000621876</p>
-                <p><strong>Email:</strong> contact@vmsconsultix.com</p>
+                <p><strong>Email:</strong> contact@vmstechhub.com</p>
               </div>
             </div>
           </motion.div>

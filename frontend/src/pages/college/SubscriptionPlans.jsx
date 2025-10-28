@@ -156,7 +156,7 @@ const SubscriptionPlans = () => {
       key: keyId,
       amount: order.amount,
       currency: order.currency,
-      name: 'Expert College Connect',
+      name: 'VMS Tech Hub',
       description: 'Subscription Payment',
       order_id: order.id,
       handler: async (response) => {

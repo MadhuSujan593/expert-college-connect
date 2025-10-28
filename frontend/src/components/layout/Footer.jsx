@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   GraduationCap, 
   Facebook, 
@@ -12,12 +12,40 @@ import {
 } from 'lucide-react';
 
 const Footer = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const currentYear = new Date().getFullYear();
+
+  const handleLinkClick = (e, path) => {
+    if (path.includes('#')) {
+      const [route, hash] = path.split('#');
+      e.preventDefault();
+      
+      if (location.pathname === '/' || location.pathname === route) {
+        // Already on homepage, scroll to section
+        setTimeout(() => {
+          const element = document.getElementById(hash);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth' });
+          }
+        }, 100);
+      } else {
+        // Navigate to homepage then scroll
+        navigate(route);
+        setTimeout(() => {
+          const element = document.getElementById(hash);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth' });
+          }
+        }, 500);
+      }
+    }
+  };
 
   const footerLinks = {
     platform: [
-      { name: 'Find Experts', path: '/search/experts' },
-      { name: 'Find Requirements', path: '/search/requirements' },
+      { name: 'Find Experts', path: '/login' },
+      { name: 'Find Requirements', path: '/login' },
       { name: 'How It Works', path: '/#how-it-works' },
       { name: 'Success Stories', path: '/#success-stories' },
     ],
@@ -29,10 +57,9 @@ const Footer = () => {
       { name: 'Cancellation & Refund', path: '/cancellation-refund-policy' },
     ],
     support: [
-      { name: 'Help Center', path: '/help' },
-      { name: 'FAQ', path: '/faq' },
-      { name: 'Support', path: '/support' },
-      { name: 'Feedback', path: '/feedback' },
+      { name: 'FAQ', path: '/contact-us' },
+      { name: 'Support', path: '/contact-us' },
+      { name: 'Feedback', path: '/contact-us' },
     ],
   };
 
@@ -54,7 +81,7 @@ const Footer = () => {
                 <GraduationCap className="w-5 h-5 text-white" />
               </div>
               <span className="text-xl font-heading font-bold">
-                ExpertConnect
+                VMS Tech Hub
               </span>
             </Link>
             <p className="text-secondary-300 mb-6 max-w-xs">
@@ -65,7 +92,7 @@ const Footer = () => {
             <div className="space-y-3">
               <div className="flex items-center space-x-3 text-secondary-300">
                 <Mail className="w-4 h-4" />
-                <span className="text-sm">contact@vmsconsultix.com</span>
+                <span className="text-sm">contact@vmstechhub.com</span>
               </div>
               <div className="flex items-center space-x-3 text-secondary-300">
                 <Phone className="w-4 h-4" />
@@ -84,12 +111,22 @@ const Footer = () => {
             <ul className="space-y-2">
               {footerLinks.platform.map((link) => (
                 <li key={link.name}>
-                  <Link
-                    to={link.path}
-                    className="text-secondary-300 hover:text-white transition-colors text-sm"
-                  >
-                    {link.name}
-                  </Link>
+                  {link.path.includes('#') ? (
+                    <a
+                      href={link.path}
+                      onClick={(e) => handleLinkClick(e, link.path)}
+                      className="text-secondary-300 hover:text-white transition-colors text-sm cursor-pointer"
+                    >
+                      {link.name}
+                    </a>
+                  ) : (
+                    <Link
+                      to={link.path}
+                      className="text-secondary-300 hover:text-white transition-colors text-sm"
+                    >
+                      {link.name}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>

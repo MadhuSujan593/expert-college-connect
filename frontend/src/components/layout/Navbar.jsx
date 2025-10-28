@@ -42,7 +42,7 @@ const Navbar = () => {
               <GraduationCap className="w-6 h-6 text-white" />
             </div>
             <span className="text-xl font-bold text-gray-900 tracking-tight">
-              ExpertConnect
+              VMS Tech Hub
             </span>
           </Link>
 

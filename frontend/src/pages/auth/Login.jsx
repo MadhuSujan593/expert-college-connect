@@ -170,7 +170,7 @@ const Login = () => {
                     <GraduationCap className="w-8 h-8 text-blue-600" />
                   </div>
                   <div>
-                    <h1 className="text-3xl font-bold text-white drop-shadow-2xl">ExpertConnect</h1>
+                    <h1 className="text-3xl font-bold text-white drop-shadow-2xl">VMS Tech Hub</h1>
                     <p className="text-white text-lg drop-shadow-xl">Professional Network Platform</p>
                   </div>
                 </div>

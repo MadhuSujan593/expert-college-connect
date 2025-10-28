@@ -154,7 +154,7 @@ const ShippingPolicy = () => {
                 </div>
                 <div className="flex items-center space-x-3 text-gray-700">
                   <Mail className="w-5 h-5 text-blue-600 flex-shrink-0" />
-                  <span className="text-lg">contact@vmsconsultix.com</span>
+                  <span className="text-lg">contact@vmstechhub.com</span>
                 </div>
               </div>
 

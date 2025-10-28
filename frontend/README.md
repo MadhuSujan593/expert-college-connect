@@ -1,4 +1,4 @@
-# Expert College Connect
+# VMS Tech Hub
 
 A platform that connects industry experts with educational institutions to facilitate meaningful partnerships and collaborations.
 

@@ -101,7 +101,7 @@ const HomePage = () => {
       role: "AI Research Director",
       company: "Stanford University",
       image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
-      content: "ExpertConnect transformed how we find industry experts. The quality of connections is outstanding.",
+      content: "VMS Tech Hub transformed how we find industry experts. The quality of connections is outstanding.",
       rating: 5
     },
     {
@@ -343,7 +343,7 @@ const HomePage = () => {
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-6 leading-tight">
               Why Choose
               <span className="block bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">
-                ExpertConnect?
+                VMS Tech Hub?
               </span>
             </h2>
             <p className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
@@ -399,8 +399,207 @@ const HomePage = () => {
         </div>
       </section>
 
+      {/* How It Works Section */}
+      <section id="how-it-works" className="py-20 sm:py-28 lg:py-36 bg-gradient-to-br from-slate-50 via-white to-blue-50 relative overflow-hidden scroll-mt-24">
+        {/* Sophisticated Background Elements */}
+        <div className="absolute inset-0">
+          <div className="absolute top-20 right-20 w-96 h-96 bg-gradient-to-br from-cyan-400/15 to-blue-400/15 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-20 left-20 w-80 h-80 bg-gradient-to-br from-blue-400/15 to-indigo-400/15 rounded-full blur-3xl" style={{animationDelay: '1s'}}></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-br from-teal-400/10 to-blue-400/10 rounded-full blur-3xl"></div>
+        </div>
+        
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            viewport={{ once: true }}
+            className="text-center mb-16 sm:mb-20 lg:mb-24"
+          >
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-6 leading-tight">
+              How It
+              <span className="block bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-600 bg-clip-text text-transparent">
+                Works
+              </span>
+            </h2>
+            <p className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
+              Simple steps to connect with top experts or find the perfect opportunities for your expertise.
+            </p>
+          </motion.div>
+
+          {/* Two Columns - College Admin and Expert */}
+          <div className="grid lg:grid-cols-2 gap-8 mb-12">
+            {/* College Admin Flow */}
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+              className="h-full"
+            >
+              <div className="h-full relative bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-xl border border-blue-200/50 hover:border-blue-300 transition-all duration-500">
+                {/* Header */}
+                <div className="text-center mb-8">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg">
+                    <GraduationCap className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">For College Admins</h3>
+                  <p className="text-gray-600">Find and connect with industry experts</p>
+                </div>
+
+                {/* Steps */}
+                <div className="space-y-6">
+                  <div className="flex items-start space-x-4">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <span className="text-blue-600 font-bold text-lg">1</span>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">Register Your College</h4>
+                      <p className="text-gray-600 text-sm">Create an account and set up your college profile with details about your institution.</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-4">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <span className="text-blue-600 font-bold text-lg">2</span>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">Post Requirements</h4>
+                      <p className="text-gray-600 text-sm">Publish your requirement for workshops, seminars, or expert consultations.</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-4">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <span className="text-blue-600 font-bold text-lg">3</span>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">Find Experts</h4>
+                      <p className="text-gray-600 text-sm">Browse through verified experts and find the perfect match for your needs.</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-4">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <span className="text-blue-600 font-bold text-lg">4</span>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">Contact & Collaborate</h4>
+                      <p className="text-gray-600 text-sm">Reach out to experts directly through our messaging system and start conversations.</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-4">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <span className="text-white font-bold text-lg">5</span>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">Purchase Plan</h4>
+                      <p className="text-gray-600 text-sm">Choose a subscription plan that suits your institution's needs and unlock all features.</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* CTA Button */}
+                <div className="mt-8 pt-8 border-t border-gray-200">
+                  <Link
+                    to="/register/college"
+                    className="w-full block text-center bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg hover:shadow-blue-500/30 transition-all duration-300"
+                  >
+                    Register as College
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Expert Flow */}
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+              className="h-full"
+            >
+              <div className="h-full relative bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-xl border border-purple-200/50 hover:border-purple-300 transition-all duration-500">
+                {/* Header */}
+                <div className="text-center mb-8">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
+                    <UserCheck className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">For Experts</h3>
+                  <p className="text-gray-600">Find opportunities and grow your impact</p>
+                </div>
+
+                {/* Steps */}
+                <div className="space-y-6">
+                  <div className="flex items-start space-x-4">
+                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <span className="text-purple-600 font-bold text-lg">1</span>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">Register as Expert</h4>
+                      <p className="text-gray-600 text-sm">Create your professional profile showcasing your expertise, credentials, and experience.</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-4">
+                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <span className="text-purple-600 font-bold text-lg">2</span>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">Browse Requirements</h4>
+                      <p className="text-gray-600 text-sm">Explore requirements posted by colleges and find opportunities that match your expertise.</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-4">
+                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <span className="text-purple-600 font-bold text-lg">3</span>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">Apply to Requirements</h4>
+                      <p className="text-gray-600 text-sm">Submit your application for requirements that interest you and showcase your value.</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-4">
+                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <span className="text-purple-600 font-bold text-lg">4</span>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">Track Applications</h4>
+                      <p className="text-gray-600 text-sm">Monitor the status of your applications and manage your responses in one place.</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-4">
+                    <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <span className="text-white font-bold text-lg">5</span>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">Get Connected</h4>
+                      <p className="text-gray-600 text-sm">Connect with colleges, conduct sessions, and build your professional network.</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* CTA Button */}
+                <div className="mt-8 pt-8 border-t border-gray-200">
+                  <Link
+                    to="/register/expert"
+                    className="w-full block text-center bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/30 transition-all duration-300"
+                  >
+                    Register as Expert
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
       {/* Premium Testimonials Section */}
-      <section className="py-20 sm:py-28 lg:py-36 bg-gradient-to-br from-slate-50 via-white to-blue-50 relative overflow-hidden">
+      <section id="success-stories" className="py-20 sm:py-28 lg:py-36 bg-gradient-to-br from-slate-50 via-white to-blue-50 relative overflow-hidden scroll-mt-24">
         {/* Sophisticated Background Elements */}
         <div className="absolute inset-0">
           <div className="absolute top-20 left-20 w-80 h-80 bg-gradient-to-br from-pink-400/15 to-purple-400/15 rounded-full blur-3xl"></div>
@@ -530,7 +729,7 @@ const HomePage = () => {
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-300 relative z-10" />
               </Link>
               <a
-                href="mailto:support@expertcollegeconnect.com"
+                href="mailto:contact@vmstechhub.com"
                 className="group relative bg-white/80 backdrop-blur-sm border-2 border-gray-200 text-gray-700 px-8 py-4 rounded-xl text-base font-semibold hover:border-gray-300 hover:bg-white hover:shadow-xl transition-all duration-300 flex items-center justify-center"
               >
                 <Mail className="mr-2 w-5 h-5" />
@@ -546,7 +745,7 @@ const HomePage = () => {
                 </div>
                 <div className="text-left">
                   <p className="text-sm font-medium text-gray-900">Email</p>
-                  <p className="text-xs text-gray-600">support@expertcollegeconnect.com</p>
+                  <p className="text-xs text-gray-600">contact@vmstechhub.com</p>
                 </div>
               </div>
               <div className="flex items-center justify-center space-x-3 p-4 bg-white/50 backdrop-blur-sm rounded-lg">
@@ -555,7 +754,7 @@ const HomePage = () => {
                 </div>
                 <div className="text-left">
                   <p className="text-sm font-medium text-gray-900">Phone</p>
-                  <p className="text-xs text-gray-600">+1 (234) 567-890</p>
+                  <p className="text-xs text-gray-600">9000621876</p>
                 </div>
               </div>
               <div className="flex items-center justify-center space-x-3 p-4 bg-white/50 backdrop-blur-sm rounded-lg">

@@ -124,8 +124,8 @@ const ContactUs = () => {
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-1">Email Us</h3>
                   <p className="text-gray-600 mb-2">Send us an email and we'll respond within 24 hours</p>
-                  <a href="mailto:contact@vmsconsultix.com" className="text-blue-600 hover:text-blue-700 font-medium">
-                    contact@vmsconsultix.com
+                  <a href="mailto:contact@vmstechhub.com" className="text-blue-600 hover:text-blue-700 font-medium">
+                    contact@vmstechhub.com
                   </a>
                 </div>
               </motion.div>

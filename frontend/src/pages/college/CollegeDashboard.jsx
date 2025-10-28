@@ -296,7 +296,7 @@ const CollegeDashboard = () => {
         const rzp = new window.Razorpay({
           key: keyId,
           order_id: order.id,
-          name: 'Expert College Connect',
+          name: 'VMS Tech Hub',
           description: 'Subscription Purchase',
           handler: async () => {
             try {
