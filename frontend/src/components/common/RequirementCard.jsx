@@ -12,7 +12,8 @@ import {
   Users,
   X,
   Target,
-  User
+  User,
+  Star
 } from 'lucide-react';
 import { formatCurrency } from '../../utils/currency';
 import ExpertProfileModal from './ExpertProfileModal';
@@ -37,7 +38,11 @@ const RequirementCard = ({
   setLimitationType = null,
   apiService = null,
   revealedExpertIds = new Set(),
-  setRevealedExpertIds = null
+  setRevealedExpertIds = null,
+  // Rating request controls for application variant
+  onRequestRating = null,
+  canRequestRating = false,
+  hasRequested = false
 }) => {
   // Simple state for expert modal
   const [showExpertModal, setShowExpertModal] = useState(false);
@@ -274,7 +279,7 @@ const RequirementCard = ({
   return (
     <>
       <div
-        className={`bg-white border border-gray-200 hover:border-gray-300 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 rounded-xl cursor-pointer group shadow-sm ${className}`}
+        className={`bg-white border border-gray-200 hover:border-gray-300 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 rounded-xl cursor-pointer group shadow-sm relative ${className}`}
       onClick={onClick}
     >
       <div className="p-4">
@@ -307,7 +312,31 @@ const RequirementCard = ({
                   <span className="truncate">{collegeData.city}</span>
                 </span>
               </div>
-            </div>
+      {/* Bottom-right Request Rating (application variant) */}
+      {variant === 'application' && (
+        <div className="absolute bottom-4 right-4">
+          {hasRequested ? (
+            <span className="px-3 py-1 bg-gray-50 text-gray-600 text-xs font-medium rounded-md border border-gray-200">
+              Rating requested
+            </span>
+          ) : (
+            canRequestRating && onRequestRating && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRequestRating();
+                }}
+                className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
+              >
+                <Star className="w-3.5 h-3.5 text-white" />
+                Request Rating
+              </button>
+            )
+          )}
+        </div>
+      )}
+    </div>
 
             {/* Description - Separate Line */}
             <div className="mb-3">

@@ -27,8 +27,9 @@ const ApplicationTracking = ({ onRequestRating, ratingRequests = [] }) => {
 
   // Check if there's already a rating request for this application
   const hasRatingRequest = (application) => {
+    const requirementId = application.requirementId || application.requirement?.id;
     return ratingRequests.some(request => 
-      request.requirementId === application.requirementId && 
+      request.requirementId === requirementId && 
       request.applicationId === application.id
     );
   };
@@ -178,6 +179,9 @@ const ApplicationTracking = ({ onRequestRating, ratingRequests = [] }) => {
               <RequirementCard
                 requirement={application.requirement}
                 variant="application"
+                onRequestRating={() => onRequestRating?.(application.requirement, application)}
+                canRequestRating={application.status === 'SHORTLISTED' && !hasRatingRequest(application)}
+                hasRequested={hasRatingRequest(application)}
                 onClick={() => {
                   console.log('Navigating to requirement details for:', application.requirement?.title || 'Unknown Requirement');
                   

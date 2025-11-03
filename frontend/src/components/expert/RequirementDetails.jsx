@@ -175,8 +175,15 @@ const RequirementDetails = () => {
         setApplicationForm({ coverLetter: '' });
         // Refresh subscription data to update usage
         await loadMySubscription();
-        // Navigate back to dashboard or refresh the page
-        navigate('/dashboard/expert');
+        // Show success toast, then redirect to Opportunities tab
+        if (typeof window !== 'undefined' && window.showToast) {
+          window.showToast('Application submitted successfully!', 'success');
+        } else if (typeof showToast !== 'undefined') {
+          showToast('Application submitted successfully!', 'success');
+        }
+        setTimeout(() => {
+          navigate('/dashboard/expert?tab=colleges');
+        }, 1200);
       }
     } catch (err) {
       console.error('Error submitting application:', err);

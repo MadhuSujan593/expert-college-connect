@@ -74,6 +74,9 @@ export class RecommendationsService {
             { description: { contains: search } },
             { category: { contains: search } },
             { subcategory: { contains: search } },
+            // Also allow searching by college name and city
+            { collegeprofile: { is: { institutionName: { contains: search } } } },
+            { collegeprofile: { is: { city: { contains: search } } } },
           ],
         });
       }
@@ -208,6 +211,9 @@ export class RecommendationsService {
         { description: { contains: search } },
         { category: { contains: search } },
         { subcategory: { contains: search } },
+        // Allow search by college name and city
+        { collegeprofile: { is: { institutionName: { contains: search } } } },
+        { collegeprofile: { is: { city: { contains: search } } } },
       ];
 
       // Combine deadline and search conditions  
