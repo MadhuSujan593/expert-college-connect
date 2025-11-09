@@ -221,7 +221,7 @@ const RequirementDetails = () => {
   }
 
   return (
-    <div className="min-h-screen bg-secondary-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Local toast fallback */}
       {successMessage && (
         <div className="fixed top-6 right-6 z-50">
@@ -230,10 +230,10 @@ const RequirementDetails = () => {
           </div>
         </div>
       )}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Modern Application Status Banner */}
         {hasApplied && (
-          <div className="mb-8 bg-white border border-secondary-200 rounded-xl p-6 shadow-sm">
+          <div className="mb-8 bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
             <div className="flex items-center gap-4">
               <div className="flex-shrink-0">
                 <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
@@ -241,11 +241,11 @@ const RequirementDetails = () => {
                 </div>
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-secondary-900 mb-1">Application Status</h3>
-                <p className="text-secondary-600">
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">Application Status</h3>
+                <p className="text-gray-600">
                   You have applied for this requirement. Current status: 
-                  <span className="ml-2 inline-flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-semibold bg-primary-50 text-primary-700 border border-primary-200">
-                    <div className="w-2 h-2 rounded-full bg-primary-400"></div>
+                  <span className="ml-2 inline-flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                    <div className="w-2 h-2 rounded-full bg-blue-400"></div>
                     {applicationData?.applicationStatus || applicationStatus || 'Pending'}
                   </span>
                 </p>
@@ -258,18 +258,18 @@ const RequirementDetails = () => {
           {/* Main Content */}
           <div className="lg:col-span-2">
             {/* Modern Job Card */}
-            <div className="bg-white rounded-xl border border-secondary-200 p-8 shadow-sm">
+            <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm">
               {/* Modern Job Header */}
               <div className="flex items-start justify-between mb-8">
                 <div className="flex-1">
-                  <h1 className="text-3xl font-bold text-secondary-900 mb-3">
+                  <h1 className="text-3xl font-bold text-gray-900 mb-3">
                     {requirement.title}
                   </h1>
-                  <div className="flex items-center gap-2 text-secondary-600 mb-2">
+                  <div className="flex items-center gap-2 text-gray-700 mb-2">
                     <Building2 className="w-5 h-5" />
                     <span className="font-semibold text-lg">{requirement.collegeprofile?.institutionName || 'College Name'}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-secondary-500 mb-4">
+                  <div className="flex items-center gap-2 text-gray-500 mb-4">
                     <MapPin className="w-4 h-4" />
                     <span>{requirement.collegeprofile?.city || 'Location not specified'}</span>
                   </div>
@@ -282,7 +282,7 @@ const RequirementDetails = () => {
                       Urgent
                     </span>
                   )}
-                  <span className="text-sm text-secondary-500 font-medium">
+                  <span className="text-sm text-gray-500 font-medium">
                     Posted {new Date(requirement.createdAt).toLocaleDateString()}
                   </span>
                 </div>
@@ -290,25 +290,25 @@ const RequirementDetails = () => {
 
               {/* Key Job Details - Modern Layout */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div className="flex items-center gap-3 p-4 bg-secondary-50 rounded-lg">
+                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-100">
                   <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
                     <IndianRupee className="w-5 h-5 text-emerald-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-secondary-600 font-medium">Budget</p>
-                    <p className="text-lg font-semibold text-secondary-900">
+                    <p className="text-sm text-gray-600 font-medium">Budget</p>
+                    <p className="text-lg font-semibold text-gray-900">
                       {requirement.budget ? `₹${new Intl.NumberFormat('en-IN').format(requirement.budget)}` : 'Not disclosed'}
                     </p>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-3 p-4 bg-secondary-50 rounded-lg">
+                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-100">
                   <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
                     <Clock className="w-5 h-5 text-orange-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-secondary-600 font-medium">Deadline</p>
-                    <p className="text-lg font-semibold text-secondary-900">
+                    <p className="text-sm text-gray-600 font-medium">Deadline</p>
+                    <p className="text-lg font-semibold text-gray-900">
                       {requirement.deadline ? new Date(requirement.deadline).toLocaleDateString() : 'No deadline'}
                     </p>
                   </div>
@@ -317,21 +317,21 @@ const RequirementDetails = () => {
 
               {/* Modern Tags */}
               <div className="flex flex-wrap gap-3 mb-8">
-                <span className="px-4 py-2 bg-primary-100 text-primary-800 text-sm font-semibold rounded-lg border border-primary-200">
+                <span className="px-4 py-2 bg-blue-50 text-blue-800 text-sm font-medium rounded-md border border-blue-200">
                   {requirement.category}
                 </span>
                 {requirement.subcategory && (
-                  <span className="px-4 py-2 bg-secondary-100 text-secondary-800 text-sm font-semibold rounded-lg border border-secondary-200">
+                  <span className="px-4 py-2 bg-indigo-50 text-indigo-800 text-sm font-medium rounded-md border border-indigo-200">
                     {requirement.subcategory}
                   </span>
                 )}
               </div>
 
               {/* Modern Job Description */}
-              <div className="border-t border-secondary-200 pt-6">
-                <h3 className="text-xl font-semibold text-secondary-900 mb-4">Job Description</h3>
+              <div className="border-t border-gray-200 pt-6">
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">Job Description</h3>
                 <div className="prose prose-gray max-w-none">
-                  <p className="text-secondary-700 leading-relaxed text-base">
+                  <p className="text-gray-700 leading-relaxed text-base">
                     {requirement.description}
                   </p>
                 </div>
@@ -368,7 +368,20 @@ const RequirementDetails = () => {
                      {requirement.requiredSkills && (
                        <div>
                          <span className="text-gray-600 text-sm">Required Skills:</span>
-                         <p className="text-gray-900 mt-1">{requirement.requiredSkills}</p>
+                         <div className="mt-2 flex flex-wrap gap-2">
+                           {String(requirement.requiredSkills)
+                             .split(',')
+                             .map(s => s.trim())
+                             .filter(Boolean)
+                             .map((s, i) => (
+                               <span
+                                 key={i}
+                                 className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200"
+                               >
+                                 {s}
+                               </span>
+                           ))}
+                         </div>
                        </div>
                      )}
                      {requirement.experience && (

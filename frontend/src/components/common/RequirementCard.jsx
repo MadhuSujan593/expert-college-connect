@@ -281,7 +281,7 @@ const RequirementCard = ({
   return (
     <>
       <div
-        className={`bg-white border border-gray-200 hover:border-gray-300 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 rounded-xl cursor-pointer group shadow-sm relative ${className}`}
+        className={`bg-white border border-gray-200 hover:border-gray-300 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 rounded-lg cursor-pointer group shadow-sm relative ${className}`}
       onClick={onClick}
     >
       <div className="p-4">

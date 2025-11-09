@@ -225,8 +225,8 @@ export class RecommendationsService {
       whereClause.OR = deadlineConditions;
     }
 
-    // Fetch all active requirements with pagination
-    const skip = (page - 1) * limit;
+    // Fetch ALL active requirements that match filters.
+    // We'll compute recommendation scores for all, then paginate AFTER sorting by score.
     const requirements = await this.prisma.requirement.findMany({
       where: whereClause,
       include: {
@@ -246,11 +246,7 @@ export class RecommendationsService {
           },
         },
       },
-      skip,
-      take: limit,
-      orderBy: {
-        createdAt: 'desc',
-      },
+      // No skip/take/orderBy here; we paginate after scoring
     });
 
     // Calculate recommendation scores
@@ -260,19 +256,27 @@ export class RecommendationsService {
       }),
     );
 
-    // Filter by minimum score and sort by score
+    // Filter by minimum score and sort by score (desc), then by createdAt (newest) for ties
     const filteredRecommendations = recommendations
       .filter(rec => rec.score >= minScore)
-      .sort((a, b) => b.score - a.score);
+      .sort((a, b) => {
+        const scoreDiff = b.score - a.score;
+        if (scoreDiff !== 0) return scoreDiff;
+        const reqA = requirements.find(r => r.id === a.requirementId);
+        const reqB = requirements.find(r => r.id === b.requirementId);
+        const dateA = reqA?.createdAt ? new Date(reqA.createdAt).getTime() : 0;
+        const dateB = reqB?.createdAt ? new Date(reqB.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
 
-    // For pagination, we need total count - in real implementation,
-    // you'd want to optimize this query
-    const totalRequirements = await this.prisma.requirement.count({
-      where: whereClause,
-    });
+    // Paginate AFTER sorting by recommendation score
+    const totalRequirements = filteredRecommendations.length;
+    const start = (page - 1) * limit;
+    const end = start + limit;
+    const pagedRecommendations = filteredRecommendations.slice(start, end);
 
     return {
-        opportunities: await Promise.all(filteredRecommendations.map(async (rec) => {
+        opportunities: await Promise.all(pagedRecommendations.map(async (rec) => {
         const requirement = requirements.find(r => r.id === rec.requirementId);
         if (!requirement) return null;
         
@@ -338,7 +342,7 @@ export class RecommendationsService {
         message: `${expertSkills.length} skills analyzed`,
         expertSkillCount: expertSkills.length,
         minScore,
-        totalRecommendations: filteredRecommendations.length,
+        totalRecommendations: totalRequirements,
       },
     };
   }
