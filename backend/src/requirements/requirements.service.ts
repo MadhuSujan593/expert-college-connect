@@ -98,10 +98,27 @@ export class RequirementsService {
     }
     
     if (search && typeof search === 'string' && search.trim() !== '') {
-      where.OR = [
+      const searchConditions = [
         { title: { contains: search } },
-        { description: { contains: search } }
+        { description: { contains: search } },
+        { category: { contains: search } },
+        { subcategory: { contains: search } },
+        { requiredSkills: { contains: search } },
+        { collegeprofile: { is: { institutionName: { contains: search } } } },
       ];
+
+      // If we already applied deadline conditions for expert browsing,
+      // combine them with search using AND of two OR groups.
+      if (!filterByCollege) {
+        const deadlineConditions = [
+          { deadline: null },
+          { deadline: { gt: new Date() } }
+        ];
+        where.AND = [{ OR: deadlineConditions }, { OR: searchConditions }];
+        delete where.OR; // ensure we don't conflict with the above AND clause
+      } else {
+        where.OR = searchConditions;
+      }
     }
 
     const [requirements, total] = await Promise.all([

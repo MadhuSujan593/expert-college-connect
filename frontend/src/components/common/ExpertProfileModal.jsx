@@ -203,9 +203,6 @@ const ExpertProfileModal = ({
                       className="px-3 py-1 bg-blue-50 text-blue-700 rounded-md text-sm border border-blue-200"
                     >
                       {skill.skillName}
-                      {skill.skillLevel && (
-                        <span className="ml-2 text-blue-500">({skill.skillLevel})</span>
-                      )}
                     </span>
                   ))}
                 </div>

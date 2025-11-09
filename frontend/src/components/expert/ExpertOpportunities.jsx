@@ -229,85 +229,39 @@ const ExpertOpportunities = () => {
         </div>
       </div>
 
-
-       {/* Recommended Section - Only show if there are skills and recommendations */}
-       {requirements.filter(req => req.recommendation?.score >= 20).length > 0 && (
-         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
-           <div className="flex items-center gap-3 mb-4">
-             <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-               <Sparkles className="w-5 h-5 text-blue-600" />
-             </div>
-             <div>
-               <h2 className="text-lg font-semibold text-gray-900">Recommended for you</h2>
-               <p className="text-sm text-gray-600">Jobs matched to your profile and experience</p>
-             </div>
-           </div>
-           
-           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-             {requirements
-               .filter(req => req.recommendation?.score >= 20)
-               .map((requirement, index) => (
-                 <motion.div
-                   key={requirement.id}
-                   initial={{ opacity: 0, y: 20 }}
-                   animate={{ opacity: 1, y: 0 }}
-                   transition={{ delay: index * 0.05 }}
-                 >
-                   <RequirementCard
-                     requirement={requirement}
-                     variant="expert"
-                     onClick={() => showRequirementDetails(requirement.id)}
-                     applicationStatus={appliedRequirements.has(requirement.id) ? applicationStatuses.get(requirement.id) : null}
-                   />
-                 </motion.div>
-               ))}
-           </div>
-         </div>
-       )}
-
-       {/* All Opportunities Section - Show when no skills or when there are opportunities with score < 20 */}
-       {requirements.length > 0 && (
-         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-           <div className="flex items-center gap-3 mb-4">
-             <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-               <Briefcase className="w-5 h-5 text-gray-600" />
-             </div>
-             <div>
-               <h2 className="text-lg font-semibold text-gray-900">
-                 {requirements.filter(req => req.recommendation?.score >= 20).length > 0 
-                   ? "Other Opportunities" 
-                   : "All Opportunities"}
-               </h2>
-               <p className="text-sm text-gray-600">
-                 {requirements.filter(req => req.recommendation?.score >= 20).length > 0 
-                   ? "Explore all available requirements" 
-                   : "Browse all available opportunities. Add skills to get personalized recommendations."}
-               </p>
-             </div>
-           </div>
-           
-           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-             {requirements
-               .filter(req => req.recommendation?.score < 20)
-               .map((requirement, index) => (
-                 <motion.div
-                   key={requirement.id}
-                   initial={{ opacity: 0, y: 20 }}
-                   animate={{ opacity: 1, y: 0 }}
-                   transition={{ delay: index * 0.05 }}
-                   ref={index === requirements.filter(req => req.recommendation?.score < 20).length - 1 ? lastRequirementRef : null}
-                 >
-                   <RequirementCard
-                     requirement={requirement}
-                     variant="expert"
-                     onClick={() => showRequirementDetails(requirement.id)}
-                     applicationStatus={appliedRequirements.has(requirement.id) ? applicationStatuses.get(requirement.id) : null}
-                   />
-                 </motion.div>
-               ))}
-           </div>
-         </div>
-       )}
+      {/* Unified Opportunities List */}
+      {requirements.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+              <Briefcase className="w-5 h-5 text-gray-600" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">All Opportunities</h2>
+              <p className="text-sm text-gray-600">Browse all available opportunities. Add skills to get personalized recommendations.</p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {requirements.map((requirement, index) => (
+              <motion.div
+                key={requirement.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                ref={index === requirements.length - 1 ? lastRequirementRef : null}
+              >
+                <RequirementCard
+                  requirement={requirement}
+                  variant="expert"
+                  onClick={() => showRequirementDetails(requirement.id)}
+                  applicationStatus={appliedRequirements.has(requirement.id) ? applicationStatuses.get(requirement.id) : null}
+                />
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Loading More Indicator (infinite scroll only) */}
       {isLoadingMore && (

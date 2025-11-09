@@ -26,6 +26,7 @@ const RequirementDetails = () => {
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [showPlanLimitationModal, setShowPlanLimitationModal] = useState(false);
   const [limitationType, setLimitationType] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
 
   // Check if user has already applied and get status
   const checkIfApplied = async () => {
@@ -178,8 +179,10 @@ const RequirementDetails = () => {
         // Show success toast, then redirect to Opportunities tab
         if (typeof window !== 'undefined' && window.showToast) {
           window.showToast('Application submitted successfully!', 'success');
-        } else if (typeof showToast !== 'undefined') {
-          showToast('Application submitted successfully!', 'success');
+        } else {
+          // Local lightweight toast as fallback
+          setSuccessMessage('Application submitted successfully!');
+          setTimeout(() => setSuccessMessage(null), 1500);
         }
         setTimeout(() => {
           navigate('/dashboard/expert?tab=colleges');
@@ -219,6 +222,14 @@ const RequirementDetails = () => {
 
   return (
     <div className="min-h-screen bg-secondary-50">
+      {/* Local toast fallback */}
+      {successMessage && (
+        <div className="fixed top-6 right-6 z-50">
+          <div className="px-4 py-3 rounded-lg shadow-lg bg-emerald-50 border border-emerald-200 text-emerald-800 font-medium">
+            {successMessage}
+          </div>
+        </div>
+      )}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Modern Application Status Banner */}
         {hasApplied && (

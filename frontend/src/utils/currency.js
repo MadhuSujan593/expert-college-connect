@@ -5,12 +5,12 @@ export const formatCurrency = (amount) => {
   // Remove any existing currency symbols to avoid duplication
   const cleanAmount = amount.toString().replace(/[₹$€£¥]/g, '');
   
-  // Convert to number and format with commas
+  // Convert to number and format with Indian grouping (12,34,567)
   const numericAmount = parseFloat(cleanAmount);
   
   if (isNaN(numericAmount)) return 'Not specified';
   
-  return `${numericAmount.toLocaleString()}`;
+  return `${new Intl.NumberFormat('en-IN').format(numericAmount)}`;
 };
 
 export default formatCurrency;

@@ -13,7 +13,8 @@ import {
   X,
   Target,
   User,
-  Star
+  Star,
+  Sparkles
 } from 'lucide-react';
 import { formatCurrency } from '../../utils/currency';
 import ExpertProfileModal from './ExpertProfileModal';
@@ -267,6 +268,7 @@ const RequirementCard = ({
   };
 
   const matchScore = getMatchScore();
+  const isRecommended = variant === 'expert' && (matchScore || 0) >= 20;
 
   // Get score color
   const getScoreColor = (score) => {
@@ -294,6 +296,29 @@ const RequirementCard = ({
               <p className="text-gray-900 text-sm mb-1">
                 {collegeData.name}
               </p>
+            {/* Inline badges for expert variant */}
+            {variant === 'expert' && (
+              <div className="flex flex-wrap items-center gap-2 mt-1">
+                {isRecommended && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md bg-emerald-50 text-emerald-700 border border-emerald-100">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    Recommended
+                  </span>
+                )}
+                {requirement.isUrgent && (
+                  <span className="px-2.5 py-1 bg-red-50 text-red-600 text-xs font-medium rounded-md border border-red-100">
+                    Urgent
+                  </span>
+                )}
+                {matchScore && (
+                  <span className={`px-2.5 py-1 text-xs font-medium rounded-md ${
+                    getScoreColor(matchScore)
+                  }`}>
+                    {matchScore}% Match
+                  </span>
+                )}
+              </div>
+            )}
             </div>
 
             {/* Middle Section - Job Details in ONE ROW */}
@@ -404,20 +429,18 @@ const RequirementCard = ({
               </div>
             )}
 
-            {/* Status Badges */}
+            {/* Status Badges (non-expert variants keep right-side badges) */}
             <div className="flex flex-col gap-1">
-              {requirement.isUrgent && (
+              {variant !== 'expert' && requirement.isUrgent && (
                 <span className="px-3 py-1 bg-red-50 text-red-600 text-xs font-medium rounded-md border border-red-100">
                   Urgent
-            </span>
-          )}
-          
-              {/* Match Score for Expert variant */}
-              {matchScore && (
+                </span>
+              )}
+              {variant !== 'expert' && matchScore && (
                 <span className={`px-3 py-1 text-xs font-medium rounded-md ${getScoreColor(matchScore)}`}>
                   {matchScore}% Match
-            </span>
-          )}
+                </span>
+              )}
 
               {/* Application Status for Application variant */}
               {variant === 'application' && applicationStatus && (

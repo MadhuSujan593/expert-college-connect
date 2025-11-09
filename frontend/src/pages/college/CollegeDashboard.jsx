@@ -90,6 +90,25 @@ const CollegeDashboard = () => {
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [requirementsSearch, setRequirementsSearch] = useState('');
+  const requirementsSearchDebounceRef = useRef(null);
+  const requirementsFetchAbortRef = useRef(null);
+
+  const handleRequirementsSearchChange = (value) => {
+    setRequirementsSearch(value);
+    // Debounce immediate fetch to avoid spamming the API
+    if (requirementsSearchDebounceRef.current) {
+      clearTimeout(requirementsSearchDebounceRef.current);
+    }
+    requirementsSearchDebounceRef.current = setTimeout(() => {
+      fetchRequirementsPage(1, false);
+    }, 300);
+  };
+
+  // Expose an explicit trigger for immediate reload (e.g., Enter press)
+  const triggerRequirementsReload = () => {
+    fetchRequirementsPage(1, false);
+  };
   const [totalRequirements, setTotalRequirements] = useState(0);
   const [editingProfile, setEditingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState({});
@@ -1157,10 +1176,18 @@ const CollegeDashboard = () => {
   const fetchRequirementsPage = async (pageNum = 1, append = false) => {
     try {
       setLoadingMore(true);
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/requirements/college?page=${pageNum}&limit=20`, {
+      const searchParam = requirementsSearch && requirementsSearch.trim() ? `&search=${encodeURIComponent(requirementsSearch.trim())}` : '';
+      // Abort any in-flight request before starting a new one
+      if (requirementsFetchAbortRef.current) {
+        requirementsFetchAbortRef.current.abort();
+      }
+      const controller = new AbortController();
+      requirementsFetchAbortRef.current = controller;
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/requirements/college?page=${pageNum}&limit=20${searchParam}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-        }
+        },
+        signal: controller.signal
       });
 
       if (response.ok) {
@@ -1181,6 +1208,10 @@ const CollegeDashboard = () => {
         console.error('Failed to fetch requirements page');
       }
     } catch (error) {
+      if (error.name === 'AbortError') {
+        // Ignore aborted requests
+        return;
+      }
       console.error('Error fetching requirements page:', error);
     } finally {
       setLoadingMore(false);
@@ -1193,6 +1224,13 @@ const CollegeDashboard = () => {
       fetchRequirementsPage(page + 1, true);
     }
   }, [hasMore, loadingMore, page]);
+
+  // When switching to requirements tab, ensure initial load
+  useEffect(() => {
+    if (activeTab === 'requirements') {
+      fetchRequirementsPage(1, false);
+    }
+  }, [activeTab]);
 
   // Load more rating requests for infinite scroll
   const loadMoreRatingRequests = useCallback(() => {
@@ -2028,6 +2066,10 @@ const CollegeDashboard = () => {
                     apiService={apiService}
                     revealedExpertIds={revealedExpertIds}
                     setRevealedExpertIds={setRevealedExpertIds}
+                    requirementsSearch={requirementsSearch}
+                    setRequirementsSearch={setRequirementsSearch}
+                    onRequirementsSearchChange={handleRequirementsSearchChange}
+                    onRequirementsSearchSubmit={triggerRequirementsReload}
                   />
 
 
@@ -3105,7 +3147,7 @@ const ProfileTab = ({
 };
 
 // Requirements Tab Component - Enhanced with form
-const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhone, onPostRequirement, showToast, setActiveTab, onView, onDelete, onRate, onToggleActive, requirements, setRequirements, refreshRequirements, totalRequirements, loading, loadingMore, hasMore, loadMoreRequirements, onCreateRequirementClick, loadMySubscription, mySubscription, subsLoading, getLimitationDetails, showPlanLimitationModal, setLimitationType, apiService, revealedExpertIds, setRevealedExpertIds }) => {
+const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhone, onPostRequirement, showToast, setActiveTab, onView, onDelete, onRate, onToggleActive, requirements, setRequirements, refreshRequirements, totalRequirements, loading, loadingMore, hasMore, loadMoreRequirements, onCreateRequirementClick, loadMySubscription, mySubscription, subsLoading, getLimitationDetails, showPlanLimitationModal, setLimitationType, apiService, revealedExpertIds, setRevealedExpertIds, requirementsSearch, setRequirementsSearch, onRequirementsSearchChange }) => {
   // Check if user can access requirements creation
   const canAccessRequirements = () => {
     return user?.isEmailVerified || user?.isPhoneVerified;
@@ -3127,8 +3169,9 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
   const [showViewModal, setShowViewModal] = useState(false);
   const [customCategory, setCustomCategory] = useState('');
   const [showCustomCategoryInput, setShowCustomCategoryInput] = useState(false);
-  const [editingRequirement, setEditingRequirement] = useState(null);
-  const [showEditForm, setShowEditForm] = useState(false);
+const [editingRequirement, setEditingRequirement] = useState(null);
+const [showEditForm, setShowEditForm] = useState(false);
+const editFormRef = useRef(null);
 
   // Remove duplicate loading logic since parent component handles it
   // The requirements are now passed as props from the parent component
@@ -3328,8 +3371,16 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
       setShowCustomCategoryInput(false);
     }
     
-    setShowEditForm(true);
-    setShowForm(false);
+  setShowEditForm(true);
+  setShowForm(false);
+  // Ensure the user sees the edit form by scrolling to it
+  setTimeout(() => {
+    if (editFormRef && editFormRef.current) {
+      editFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, 0);
   };
 
   const handleUpdate = async (e) => {
@@ -3429,16 +3480,27 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
       <div className="max-w-4xl mx-auto px-8 py-6">
         {!showForm && !showEditForm && (
           <div className="mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+              <div className="flex-1">
                 <h2 className="text-lg font-medium text-gray-900 mb-1">All Requirements ({totalRequirements})</h2>
               </div>
-              <button 
-                onClick={() => onCreateRequirementClick(setShowForm)}
-                className="px-4 py-2 text-sm font-semibold transition-all duration-300 shadow-lg hover:shadow-xl bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-700 hover:to-cyan-700 rounded-md"
-              >
-                Create requirement
-              </button>
+              <div className="flex w-full sm:w-auto items-center gap-3">
+                <div className="relative w-full sm:w-72">
+                  <input
+                    type="text"
+                    value={requirementsSearch}
+                    onChange={(e) => (onRequirementsSearchChange ? onRequirementsSearchChange(e.target.value) : setRequirementsSearch(e.target.value))}
+                    placeholder="Search by title, description, skills..."
+                    className="w-full pl-3 pr-3 py-2.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <button 
+                  onClick={() => onCreateRequirementClick(setShowForm)}
+                  className="px-6 py-3 text-sm font-semibold transition-all duration-300 shadow-lg hover:shadow-xl bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-700 hover:to-cyan-700 rounded-md whitespace-nowrap"
+                >
+                  Create requirement
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -3661,7 +3723,7 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
 
         {/* Requirements Edit Form */}
         {showEditForm && (
-          <div className="mb-8">
+          <div className="mb-8" ref={editFormRef}>
             <div className="mb-4">
               <h1 className="text-xl font-bold text-gray-900">Edit Requirement</h1>
             </div>
@@ -3865,7 +3927,7 @@ const RequirementsTab = ({ recentRequirements, user, onVerifyEmail, onVerifyPhon
               <p className="text-gray-500 mb-6 text-sm">Create your first requirement to connect with experts</p>
               <button 
                 onClick={() => onCreateRequirementClick(setShowForm)}
-                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white text-sm font-semibold hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 shadow-lg hover:shadow-xl rounded-md"
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white text-sm font-semibold hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 shadow-lg hover:shadow-xl rounded-md"
               >
                 Create requirement
               </button>
