@@ -156,6 +156,37 @@ export class SubscriptionsController {
       }
       
       cfOrder = await this.cashfree.createOrder(orderParams);
+      
+      // Store orderId -> planId mapping in Payment record for later lookup
+      // This is a fallback in case Cashfree doesn't return notes in getOrder response
+      try {
+        const paymentId = `pay_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        await this.subscriptionsService['prisma'].payment.create({
+          data: {
+            id: paymentId,
+            userId,
+            amount: dynamicPrice / 100, // Convert from cents to rupees
+            currency: plan.currency || 'INR',
+            paymentMethod: 'DIGITAL_WALLET',
+            status: 'PENDING',
+            transactionId: orderId, // Store orderId as transactionId for lookup
+            description: `Subscription payment for ${plan.name} plan (${billingPeriod}) - Order created`,
+            metadata: { 
+              orderId,
+              planId,
+              billingPeriod,
+              cashfreeOrderId: cfOrder?.order_id,
+              paymentSessionId: cfOrder?.payment_session_id,
+            },
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          }
+        });
+        console.log('✅ Payment record created for order lookup:', { orderId, planId });
+      } catch (paymentError) {
+        // Log but don't fail - this is just for lookup fallback
+        console.warn('⚠️ Failed to create payment record for order lookup:', paymentError);
+      }
     } catch (error) {
       console.error('Cashfree order creation failed:', error);
       return { 
@@ -242,10 +273,58 @@ export class SubscriptionsController {
     try {
       const order = await this.cashfree.getOrder(orderId);
       
-      // Extract planId and billingPeriod from order notes
+      // Try to extract planId and billingPeriod from order notes first
       const notes = order.notes || {};
-      const planId = notes.planId || null;
-      const billingPeriod = notes.billingPeriod || 'MONTHLY';
+      let planId = notes.planId || null;
+      let billingPeriod = notes.billingPeriod || 'MONTHLY';
+      
+      // Fallback: If notes don't have planId, look it up from Payment record
+      if (!planId) {
+        console.log('⚠️ PlanId not found in Cashfree order notes, looking up from Payment record...');
+        try {
+          // Try to find by our orderId (stored in transactionId)
+          let payment = await this.subscriptionsService['prisma'].payment.findFirst({
+            where: {
+              transactionId: orderId,
+              status: { in: ['PENDING', 'COMPLETED'] },
+            },
+            orderBy: { createdAt: 'desc' },
+          });
+          
+          // If not found, try by Cashfree's order_id (stored in metadata)
+          if (!payment && order.order_id) {
+            const payments = await this.subscriptionsService['prisma'].payment.findMany({
+              where: {
+                status: { in: ['PENDING', 'COMPLETED'] },
+              },
+              orderBy: { createdAt: 'desc' },
+              take: 100, // Limit search to recent payments
+            });
+            
+            const foundPayment = payments.find(p => {
+              const metadata = p.metadata as any;
+              return metadata?.cashfreeOrderId === order.order_id || metadata?.orderId === orderId;
+            });
+            
+            if (foundPayment) {
+              payment = foundPayment;
+            }
+          }
+          
+          if (payment && payment.metadata) {
+            const metadata = payment.metadata as any;
+            planId = metadata.planId || null;
+            billingPeriod = metadata.billingPeriod || 'MONTHLY';
+            console.log('✅ Found planId from Payment record:', { planId, billingPeriod });
+          } else {
+            console.warn('⚠️ Payment record not found for orderId:', orderId, 'or Cashfree order_id:', order.order_id);
+          }
+        } catch (lookupError) {
+          console.warn('⚠️ Error looking up Payment record:', lookupError);
+        }
+      } else {
+        console.log('✅ Found planId in Cashfree order notes:', { planId, billingPeriod });
+      }
       
       return {
         order_id: order.order_id,
@@ -254,8 +333,8 @@ export class SubscriptionsController {
         order_amount: order.order_amount,
         order_currency: order.order_currency,
         order_expiry_time: order.order_expiry_time,
-        planId, // Include planId from notes
-        billingPeriod, // Include billingPeriod from notes
+        planId, // Include planId from notes or Payment record
+        billingPeriod, // Include billingPeriod from notes or Payment record
       };
     } catch (error) {
       console.error('Order verification error:', error);
