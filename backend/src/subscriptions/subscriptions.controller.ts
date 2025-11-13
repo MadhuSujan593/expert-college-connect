@@ -233,7 +233,7 @@ export class SubscriptionsController {
     };
   }
 
-  // Verify order status endpoint (for debugging)
+  // Verify order status endpoint (for debugging and payment callbacks)
   @Get('verify-order')
   async verifyOrder(@Query('orderId') orderId: string) {
     if (!orderId) {
@@ -241,6 +241,12 @@ export class SubscriptionsController {
     }
     try {
       const order = await this.cashfree.getOrder(orderId);
+      
+      // Extract planId and billingPeriod from order notes
+      const notes = order.notes || {};
+      const planId = notes.planId || null;
+      const billingPeriod = notes.billingPeriod || 'MONTHLY';
+      
       return {
         order_id: order.order_id,
         order_status: order.order_status,
@@ -248,6 +254,8 @@ export class SubscriptionsController {
         order_amount: order.order_amount,
         order_currency: order.order_currency,
         order_expiry_time: order.order_expiry_time,
+        planId, // Include planId from notes
+        billingPeriod, // Include billingPeriod from notes
       };
     } catch (error) {
       console.error('Order verification error:', error);
