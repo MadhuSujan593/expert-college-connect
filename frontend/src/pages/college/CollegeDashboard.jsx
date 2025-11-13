@@ -298,41 +298,108 @@ const CollegeDashboard = () => {
         return;
       }
       
-      // For paid plans, proceed with Razorpay
-      const { order, keyId } = response;
-      if (!order || !keyId) throw new Error('Failed to create payment order');
-
-      // Load Razorpay script if not present
-      if (typeof window.Razorpay === 'undefined') {
-        await new Promise((resolve, reject) => {
-          const s = document.createElement('script');
-          s.src = 'https://checkout.razorpay.com/v1/checkout.js';
-          s.onload = resolve; s.onerror = reject; document.body.appendChild(s);
-        });
+      // For paid plans, proceed with Cashfree
+      const { paymentSessionId, order, cashfreeMode, paymentLink } = response;
+      
+      // ✅ Use Cashfree JS SDK to open checkout (required - /pg/payments/ is SDK-only)
+      // The /pg/payments/{session_id} endpoint is SDK-only and cannot be accessed via direct redirect
+      
+      // If Cashfree provided a payment_link (hosted link), use that directly
+      if (paymentLink && paymentLink.includes('/pg/view/')) {
+        console.log('✅ Using Cashfree payment_link (hosted link):', paymentLink);
+        window.location.replace(paymentLink);
+        return;
       }
-
-      await new Promise((resolve, reject) => {
-        const rzp = new window.Razorpay({
-          key: keyId,
-          order_id: order.id,
-          name: 'VMS Tech Hub',
-          description: 'Subscription Purchase',
-          handler: async () => {
-            try {
-              await apiService.subscribeToPlan(planId);
-              showToast('success', 'Subscription activated');
-              setShowPlansModal(false);
-              await loadMySubscription();
-              resolve(null);
-            } catch (err) { reject(err); }
-          },
-          theme: { color: '#4f46e5' },
+      
+      // Otherwise, use Cashfree JS SDK to open checkout
+      if (!paymentSessionId) {
+        throw new Error('Payment session ID is required to open checkout');
+      }
+      
+      // Clean paymentSessionId (remove any trailing "payment" duplicates)
+      const cleanSessionId = paymentSessionId.replace(/(payment)+$/i, '');
+      
+      // Validate session ID format
+      if (!cleanSessionId.startsWith('session_')) {
+        throw new Error('Invalid payment session ID received');
+      }
+      
+      console.log('✅ Opening Cashfree checkout using JS SDK');
+      
+      // Load Cashfree SDK v3 (matching working example pattern)
+      const loadCashfreeSDK = () => {
+        return new Promise((resolve, reject) => {
+          if (window.Cashfree) {
+            resolve(window.Cashfree);
+            return;
+          }
+          const script = document.createElement('script');
+          script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
+          script.onload = () => {
+            if (window.Cashfree) {
+              resolve(window.Cashfree);
+            } else {
+              reject(new Error('Cashfree SDK failed to load'));
+            }
+          };
+          script.onerror = () => reject(new Error('Failed to load Cashfree SDK'));
+          document.body.appendChild(script);
         });
-        rzp.on('payment.failed', (resp) => {
-          reject(new Error(resp?.error?.description || 'Payment failed'));
-        });
-        rzp.open();
+      };
+      
+      const CashfreeSDK = await loadCashfreeSDK();
+      const cashfree = CashfreeSDK({
+        mode: cashfreeMode === 'production' ? 'production' : 'sandbox',
       });
+      
+      const checkoutOptions = {
+        paymentSessionId: cleanSessionId.trim(),
+        redirectTarget: '_self',
+      };
+      
+      cashfree.checkout(checkoutOptions)
+        .then(async (result) => {
+          console.log('Cashfree checkout result:', result);
+          
+          if (result.error) {
+            console.error('Payment error:', result.error);
+            showToast('error', result.error.message || 'Payment failed');
+            setSubscribingPlanId(null);
+            return;
+          }
+          
+          if (result.paymentDetails) {
+            try {
+              const payload = {
+                provider: 'CASHFREE',
+                orderId: order.id,
+                paymentSessionId: cleanSessionId,
+                paymentDetails: result.paymentDetails,
+                result,
+              };
+              const confirmationResult = await apiService.confirmRazorpayPayment(planId, payload);
+              
+              if (confirmationResult?.success) {
+                showToast('success', 'Subscription activated');
+                setShowPlansModal(false);
+                await loadMySubscription();
+              } else {
+                showToast('error', confirmationResult?.error || 'Activation failed');
+              }
+            } catch (err) {
+              console.error('Error confirming payment:', err);
+              showToast('error', 'Payment completed but there was an error');
+            }
+          }
+        })
+        .catch((err) => {
+          // User cancelled or payment failed
+          console.log('Payment cancelled or failed:', err);
+          if (err && err.message && !err.message.includes('User closed')) {
+            showToast('error', 'Payment was cancelled or failed. Please try again.');
+          }
+          setSubscribingPlanId(null);
+        });
     } catch (e) {
       console.error('Subscribe failed', e);
       showToast('error', e.message || 'Failed to subscribe');

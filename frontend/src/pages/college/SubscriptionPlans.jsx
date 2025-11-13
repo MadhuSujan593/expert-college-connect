@@ -128,86 +128,345 @@ const SubscriptionPlans = () => {
         return;
       }
       
-      // For paid plans, proceed with Razorpay
-      const { order, keyId } = response;
-      if (!order || !keyId) throw new Error('Failed to create payment order');
-
-      // Load Razorpay script if not present
-      if (!window.Razorpay) {
-        const script = document.createElement('script');
-        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-        script.onload = () => {
-          openRazorpayCheckout(order, keyId, planId);
-        };
-        document.body.appendChild(script);
-      } else {
-        openRazorpayCheckout(order, keyId, planId);
+      // Check for error response from backend
+      if (response.error) {
+        console.error('Backend error creating order:', response);
+        throw new Error(response.details || response.error || 'Failed to create payment order');
       }
+      
+      // For paid plans, proceed with Cashfree
+      const { paymentSessionId, order, cashfreeMode, paymentLink } = response;
+      
+      console.log('📦 Backend response received:', {
+        hasPaymentLink: !!paymentLink,
+        hasPaymentSessionId: !!paymentSessionId,
+        paymentLinkPreview: paymentLink ? paymentLink.substring(0, 100) + '...' : 'N/A',
+        paymentSessionIdPreview: paymentSessionId ? paymentSessionId.substring(0, 50) + '...' : 'N/A',
+        cashfreeMode,
+        orderId: order?.id,
+      });
+      
+      // Validate we have required data
+      if (!paymentSessionId && !paymentLink) {
+        console.error('Invalid response from backend:', response);
+        throw new Error('Payment order created but no payment session ID received. Please try again.');
+      }
+      
+      if (!order || !order.id) {
+        console.error('Invalid order data:', response);
+        throw new Error('Payment order created but order information is missing. Please try again.');
+      }
+      
+      // ✅ Use Cashfree payment link if it's a hosted link (/pg/view/)
+      // Note: /pg/payments/ URLs are SDK-only and cannot be used for direct redirect
+      if (paymentLink && paymentLink.includes('/pg/view/')) {
+        console.log('✅ Using Cashfree payment_link (hosted link):', paymentLink);
+        window.location.replace(paymentLink);
+        return;
+      }
+      
+      // If paymentLink is /pg/payments/, we must use SDK (it's SDK-only)
+      if (paymentLink && paymentLink.includes('/pg/payments/')) {
+        console.log('⚠️ Payment link is SDK-only, will use SDK instead');
+      }
+      
+      // Otherwise, use Cashfree JS SDK to open checkout
+      if (!paymentSessionId) {
+        throw new Error('Payment session ID is required to open checkout');
+      }
+      
+      // Log the original session ID for debugging
+      console.log('📋 Payment Session ID received:', {
+        original: paymentSessionId,
+        length: paymentSessionId?.length,
+        startsWithSession: paymentSessionId?.startsWith('session_'),
+        first50: paymentSessionId?.substring(0, 50),
+        fullSessionId: paymentSessionId, // Log full for debugging
+      });
+      
+      // If we have a paymentLink with /pg/payments/, extract session ID from it as fallback
+      let sessionIdToUse = paymentSessionId;
+      if (paymentLink && paymentLink.includes('/pg/payments/') && !sessionIdToUse) {
+        // Extract session ID from paymentLink: https://sandbox.cashfree.com/pg/payments/session_xxx
+        const match = paymentLink.match(/\/payments\/(session_[^/?]+)/);
+        if (match && match[1]) {
+          sessionIdToUse = match[1];
+          console.log('📋 Extracted session ID from paymentLink:', sessionIdToUse.substring(0, 50) + '...');
+        }
+      }
+      
+      // Clean paymentSessionId ONLY if it has the "paymentpayment" suffix issue
+      // Don't clean valid session IDs
+      let cleanSessionId = sessionIdToUse;
+      if (sessionIdToUse && (sessionIdToUse.endsWith('paymentpayment') || sessionIdToUse.endsWith('paymentpaymentpayment'))) {
+        console.warn('⚠️ Detected duplicate "payment" suffix, cleaning...');
+        cleanSessionId = sessionIdToUse.replace(/(payment)+$/i, '');
+        console.log('Cleaned session ID:', {
+          original: sessionIdToUse.substring(0, 50) + '...',
+          cleaned: cleanSessionId.substring(0, 50) + '...',
+        });
+      }
+      
+      // Validate session ID format (should start with "session_" or "session_f-")
+      if (!cleanSessionId.startsWith('session_')) {
+        console.error('❌ Invalid payment session ID format:', {
+          received: cleanSessionId,
+          length: cleanSessionId.length,
+          firstChars: cleanSessionId.substring(0, 20),
+        });
+        throw new Error('Invalid payment session ID received. Please try again.');
+      }
+      
+      // Note: Session IDs can start with "session_" or "session_f-" (both are valid)
+      console.log('✅ Session ID format validated:', {
+        startsWithSession: cleanSessionId.startsWith('session_'),
+        startsWithSessionF: cleanSessionId.startsWith('session_f-'),
+        length: cleanSessionId.length,
+      });
+      
+      console.log('✅ Opening Cashfree checkout using JS SDK:', {
+        paymentSessionId: cleanSessionId.substring(0, 50) + '...',
+        fullLength: cleanSessionId.length,
+        orderId: order.id,
+        cashfreeMode,
+      });
+      
+      // Load Cashfree SDK v3 (matching working example pattern)
+      const loadCashfreeSDK = () => {
+        return new Promise((resolve, reject) => {
+          // Check if SDK is already loaded
+          if (window.Cashfree) {
+            resolve(window.Cashfree);
+            return;
+          }
+
+          // Load Cashfree SDK
+          const script = document.createElement('script');
+          script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
+          script.onload = () => {
+            if (window.Cashfree) {
+              resolve(window.Cashfree);
+            } else {
+              reject(new Error('Cashfree SDK failed to load'));
+            }
+          };
+          script.onerror = () => reject(new Error('Failed to load Cashfree SDK'));
+          document.body.appendChild(script);
+        });
+      };
+      
+      // Load SDK
+      const CashfreeSDK = await loadCashfreeSDK();
+      
+      console.log('Initializing Cashfree v3 with mode:', cashfreeMode);
+      
+      // Initialize Cashfree v3 (matching working example - function call, not class)
+      const cashfree = CashfreeSDK({
+        mode: cashfreeMode === 'production' ? 'production' : 'sandbox',
+      });
+      
+      console.log('Cashfree instance created:', {
+        hasCheckout: typeof cashfree.checkout === 'function',
+        instanceKeys: Object.keys(cashfree),
+      });
+      
+      // Verify checkout method exists
+      if (typeof cashfree.checkout !== 'function') {
+        console.error('Cashfree instance:', cashfree);
+        console.error('Available methods:', Object.keys(cashfree));
+        throw new Error('Cashfree checkout method is not available. Please ensure you are using SDK v3.');
+      }
+      
+      // Open checkout using SDK v3
+      console.log('Using checkout() method from SDK v3 with session ID:', {
+        sessionId: cleanSessionId.substring(0, 30) + '...',
+        fullLength: cleanSessionId.length,
+        isValidFormat: cleanSessionId.startsWith('session_'),
+        fullSessionId: cleanSessionId, // Log full ID for debugging
+      });
+      
+      // Validate session ID format before calling SDK
+      if (!cleanSessionId || cleanSessionId.length < 20) {
+        throw new Error(`Invalid payment session ID: too short (${cleanSessionId?.length || 0} chars)`);
+      }
+      
+      if (!cleanSessionId.startsWith('session_')) {
+        throw new Error(`Invalid payment session ID format: does not start with 'session_'`);
+      }
+      
+      // Prepare checkout options (matching working example pattern)
+      const finalSessionId = cleanSessionId.trim();
+      
+      // Validate session ID
+      if (!finalSessionId || !finalSessionId.startsWith('session_') || finalSessionId.length < 30) {
+        console.error('❌ Session ID validation failed:', {
+          sessionId: finalSessionId,
+          length: finalSessionId?.length,
+        });
+        throw new Error(`Invalid payment session ID. Please try subscribing again.`);
+      }
+      
+      // Verify the order exists and session ID is valid before checkout
+      let verifiedSessionId = finalSessionId;
+      try {
+        console.log('🔍 Verifying order and session ID before checkout...');
+        const verifyResponse = await fetch(`${apiService.baseURL}/subscriptions/verify-order?orderId=${order.id}`, {
+          headers: await apiService.getAuthHeaders(),
+        });
+        if (verifyResponse.ok) {
+          const verifyData = await verifyResponse.json();
+          console.log('✅ Order verified:', verifyData);
+          
+          // Check if the session ID from verification matches what we have
+          if (verifyData.payment_session_id && verifyData.payment_session_id !== finalSessionId) {
+            console.warn('⚠️ Session ID mismatch!', {
+              fromResponse: finalSessionId.substring(0, 30) + '...',
+              fromVerification: verifyData.payment_session_id.substring(0, 30) + '...',
+            });
+            // Use the verified session ID instead
+            verifiedSessionId = verifyData.payment_session_id;
+            console.log('🔄 Using session ID from order verification');
+          }
+          
+          // Check order status
+          if (verifyData.order_status && !['ACTIVE', 'CREATED', 'PAYMENT_PENDING'].includes(verifyData.order_status)) {
+            console.warn('⚠️ Order status might not be ready for payment:', verifyData.order_status);
+          }
+        } else {
+          const errorData = await verifyResponse.json().catch(() => ({}));
+          console.warn('⚠️ Order verification failed:', errorData);
+        }
+      } catch (verifyErr) {
+        console.warn('⚠️ Order verification error (continuing anyway):', verifyErr);
+      }
+      
+      const checkoutOptions = {
+        paymentSessionId: verifiedSessionId, // Use verified session ID if available
+        redirectTarget: '_self', // Use '_self' for full page redirect (or '_modal' for modal)
+      };
+      
+      console.log('Calling cashfree.checkout() with options:', {
+        paymentSessionId: checkoutOptions.paymentSessionId.substring(0, 30) + '...',
+        paymentSessionIdFull: checkoutOptions.paymentSessionId, // Log full for debugging
+        redirectTarget: checkoutOptions.redirectTarget,
+        orderId: order.id,
+      });
+      
+      // Call checkout (matching working example pattern)
+      // Note: If this fails with 400, the session ID might be invalid or expired
+      cashfree.checkout(checkoutOptions)
+        .then(async (result) => {
+          console.log('Cashfree checkout result:', result);
+          
+          // Handle errors (matching working example pattern)
+          if (result.error) {
+            console.error('Payment error:', result.error);
+            showToast('error', result.error.message || 'Payment failed. Please try again.');
+            setSubscribingPlanId(null);
+            return;
+          }
+          
+          // Payment successful (matching working example pattern)
+          if (result.paymentDetails) {
+            try {
+              console.log('Payment completed via SDK:', result.paymentDetails);
+              const payload = {
+                provider: 'CASHFREE',
+                orderId: order.id,
+                paymentSessionId: finalSessionId,
+                paymentDetails: result.paymentDetails,
+                result,
+              };
+              const confirmationResult = await apiService.confirmRazorpayPayment(planId, payload, selectedBillingPeriod);
+              
+              if (confirmationResult?.success) {
+                await loadMySubscription();
+                showToast('success', 'Payment successful! Your plan has been activated.');
+                setTimeout(() => {
+                  navigate('/dashboard/college?tab=overview');
+                }, 1500);
+              } else {
+                showToast('error', confirmationResult?.error || 'Payment successful but activation failed');
+              }
+            } catch (err) {
+              console.error('Error confirming payment:', err);
+              showToast('error', 'Payment completed but there was an error. Please contact support.');
+            }
+          } else {
+            // Payment might have been redirected - verify on backend
+            console.log('Payment redirected, verifying...');
+            // The redirect will handle verification via callback
+          }
+        })
+        .catch((err) => {
+          // User cancelled, payment failed, or session ID error
+          console.error('❌ Cashfree checkout error:', err);
+          console.error('Session ID used:', {
+            sessionId: cleanSessionId,
+            length: cleanSessionId.length,
+            firstChars: cleanSessionId.substring(0, 30),
+          });
+          
+          // If it's a session ID error, try with the original (uncleaned) ID
+          if (err?.message?.includes('payment_session_id') && paymentSessionId !== cleanSessionId) {
+            console.warn('⚠️ Retrying with original (uncleaned) session ID');
+            cashfree.checkout({
+              paymentSessionId: paymentSessionId, // Try original
+              redirectTarget: '_self',
+            })
+            .then(async (result) => {
+              // Payment completed with original ID
+              try {
+                console.log('Payment completed via SDK (with original ID):', result);
+                const payload = {
+                  provider: 'CASHFREE',
+                  orderId: order.id,
+                  paymentSessionId: paymentSessionId,
+                  result,
+                };
+                const confirmationResult = await apiService.confirmRazorpayPayment(planId, payload, selectedBillingPeriod);
+                
+                if (confirmationResult?.success) {
+            await loadMySubscription();
+                  showToast('success', 'Payment successful! Your plan has been activated.');
+            setTimeout(() => {
+              navigate('/dashboard/college?tab=overview');
+            }, 1500);
+          } else {
+                  showToast('error', confirmationResult?.error || 'Payment successful but activation failed');
+                }
+              } catch (confirmErr) {
+                console.error('Error confirming payment:', confirmErr);
+                showToast('error', 'Payment completed but there was an error. Please contact support.');
+              }
+            })
+            .catch((retryErr) => {
+              console.error('❌ Retry also failed:', retryErr);
+              showToast('error', `Payment error: ${retryErr?.message || 'Invalid session ID. Please try again.'}`);
+              setSubscribingPlanId(null);
+            });
+            return;
+          }
+          
+          // Other errors (user cancelled, etc.)
+          if (err && err.message && !err.message.includes('User closed') && !err.message.includes('payment_session_id')) {
+            showToast('error', `Payment error: ${err.message || 'Please try again.'}`);
+          } else if (err?.message?.includes('payment_session_id')) {
+            showToast('error', 'Invalid payment session. Please try subscribing again.');
+          }
+          setSubscribingPlanId(null);
+        });
     } catch (error) {
       console.error('Subscription error:', error);
-      showToast('error', 'Failed to start subscription process. Please try again.');
+      const errorMessage = error.message || 'Failed to start subscription process';
+      showToast('error', errorMessage.includes('endpoint or method is not valid') 
+        ? 'Payment gateway configuration error. Please contact support.'
+        : errorMessage);
     } finally {
       setSubscribingPlanId(null);
     }
   };
 
-  const openRazorpayCheckout = (order, keyId, planId) => {
-    const options = {
-      key: keyId,
-      amount: order.amount,
-      currency: order.currency,
-      name: 'VMS Tech Hub',
-      description: 'Subscription Payment',
-      order_id: order.id,
-      handler: async (response) => {
-        try {
-          console.log('Payment successful!', response);
-          showToast('success', 'Payment successful! Activating your plan...');
-          
-          // Confirm payment with backend
-          const confirmationResult = await apiService.confirmRazorpayPayment(planId, response, selectedBillingPeriod);
-          
-          if (confirmationResult.success) {
-            console.log('Payment confirmed successfully:', confirmationResult);
-            // Reload subscription data
-            await loadMySubscription();
-            showToast('success', 'Payment successful! Your plan has been activated. Redirecting to dashboard...');
-            setTimeout(() => {
-              navigate('/dashboard/college?tab=overview');
-            }, 1500);
-          } else {
-            console.error('Payment confirmation failed:', confirmationResult.error);
-            showToast('error', `Payment successful but activation failed: ${confirmationResult.error}`);
-            setTimeout(() => {
-              navigate('/dashboard/college?tab=overview');
-            }, 2000);
-          }
-        } catch (error) {
-          console.error('Error after payment:', error);
-          showToast('error', 'Payment successful but there was an error activating your plan. Please contact support.');
-          setTimeout(() => {
-            navigate('/dashboard/college?tab=overview');
-          }, 2000);
-        }
-      },
-      prefill: {
-        name: 'College User',
-        email: 'college@example.com',
-      },
-      theme: {
-        color: '#2563eb',
-      },
-      modal: {
-        ondismiss: () => {
-          console.log('Payment modal dismissed');
-          setSubscribingPlanId(null);
-        }
-      }
-    };
-
-    const razorpay = new window.Razorpay(options);
-    razorpay.open();
-  };
 
   const getCurrentPlanId = () => {
     return mySubscription?.plan?.id;

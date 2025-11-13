@@ -1,9 +1,10 @@
 import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CashfreeService } from '../services/cashfree.service';
 
 @Injectable()
 export class SubscriptionsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly cashfree: CashfreeService) {}
 
   // Calculate dynamic pricing based on billing period
   calculateDynamicPrice(plan: any, billingPeriod: string): number {
@@ -298,6 +299,34 @@ export class SubscriptionsService {
         throw new NotFoundException('Plan not found or inactive');
       }
 
+      // For paid plans, verify payment with Cashfree using order_id
+      if (plan.priceCents > 0) {
+        const orderId =
+          paymentData?.orderId ||
+          paymentData?.order_id ||
+          paymentData?.order?.id;
+        if (!orderId) {
+          throw new ForbiddenException('Missing Cashfree order_id');
+        }
+
+        const order = await this.cashfree.getOrder(orderId);
+        const orderStatus: string | undefined = order?.order_status || order?.status;
+        if (!orderStatus || !['PAID', 'SUCCESS'].includes(orderStatus.toUpperCase())) {
+          throw new ForbiddenException('Payment not verified');
+        }
+
+        // Validate amount and currency
+        const expectedPaise = this.calculateDynamicPrice(plan, billingPeriod);
+        const orderAmountMajor = Number(order?.order_amount); // major units
+        const orderCurrency = order?.order_currency || 'INR';
+        if (orderCurrency !== (plan.currency || 'INR')) {
+          throw new ForbiddenException('Currency mismatch');
+        }
+        if (Math.round(orderAmountMajor * 100) !== expectedPaise) {
+          throw new ForbiddenException('Amount mismatch');
+        }
+      }
+
       // Calculate subscription end date based on selected billing period
       const now = new Date();
       let endsAt: Date;
@@ -359,7 +388,13 @@ export class SubscriptionsService {
           currency: plan.currency || 'INR',
           paymentMethod: 'DIGITAL_WALLET',
           status: 'COMPLETED',
-          transactionId: paymentData.razorpay_payment_id || paymentData.payment_id,
+          transactionId:
+            paymentData?.payment_id ||
+            paymentData?.paymentId ||
+            paymentData?.cf_payment_id ||
+            paymentData?.razorpay_payment_id ||
+            paymentData?.transactionId ||
+            (paymentData?.orderId || paymentData?.order_id || null),
           description: `Subscription payment for ${plan.name} plan (${billingPeriod})`,
           metadata: { ...paymentData, billingPeriod },
           createdAt: now,
