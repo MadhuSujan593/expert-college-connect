@@ -377,37 +377,144 @@ export class SubscriptionsService {
 
       console.log('Subscription created:', subscription);
 
-      // Create payment record with dynamic pricing
-      const paymentId = `pay_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // Create or update payment record with dynamic pricing
       const dynamicPrice = this.calculateDynamicPrice(plan, billingPeriod);
-      const payment = await this.prisma.payment.create({
-        data: {
-          id: paymentId,
-          userId,
-          amount: dynamicPrice / 100, // Convert from cents to rupees
-          currency: plan.currency || 'INR',
-          paymentMethod: 'DIGITAL_WALLET',
-          status: 'COMPLETED',
-          transactionId:
-            paymentData?.payment_id ||
-            paymentData?.paymentId ||
-            paymentData?.cf_payment_id ||
-            paymentData?.razorpay_payment_id ||
-            paymentData?.transactionId ||
-            (paymentData?.orderId || paymentData?.order_id || null),
-          description: `Subscription payment for ${plan.name} plan (${billingPeriod})`,
-          metadata: { ...paymentData, billingPeriod },
-          createdAt: now,
-          updatedAt: now,
-          completedAt: now
-        }
-      });
+      
+      // Determine transactionId - prefer payment ID over order ID
+      const transactionId =
+        paymentData?.payment_id ||
+        paymentData?.paymentId ||
+        paymentData?.cf_payment_id ||
+        paymentData?.razorpay_payment_id ||
+        paymentData?.transactionId ||
+        (paymentData?.orderId || paymentData?.order_id || null);
 
-      console.log('Payment record created:', payment);
+      // Check if payment with this transactionId already exists
+      const existingPayment = transactionId
+        ? await this.prisma.payment.findUnique({
+            where: { transactionId },
+          })
+        : null;
+
+      let payment;
+      if (existingPayment) {
+        // Update existing payment record
+        console.log('Updating existing payment record:', existingPayment.id);
+        payment = await this.prisma.payment.update({
+          where: { id: existingPayment.id },
+          data: {
+            userId,
+            amount: dynamicPrice / 100, // Convert from cents to rupees
+            currency: plan.currency || 'INR',
+            paymentMethod: 'DIGITAL_WALLET',
+            status: 'COMPLETED',
+            description: `Subscription payment for ${plan.name} plan (${billingPeriod})`,
+            metadata: { ...paymentData, billingPeriod },
+            updatedAt: now,
+            completedAt: now,
+          },
+        });
+        console.log('Payment record updated:', payment);
+      } else {
+        // Create new payment record
+        const paymentId = `pay_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        payment = await this.prisma.payment.create({
+          data: {
+            id: paymentId,
+            userId,
+            amount: dynamicPrice / 100, // Convert from cents to rupees
+            currency: plan.currency || 'INR',
+            paymentMethod: 'DIGITAL_WALLET',
+            status: 'COMPLETED',
+            transactionId,
+            description: `Subscription payment for ${plan.name} plan (${billingPeriod})`,
+            metadata: { ...paymentData, billingPeriod },
+            createdAt: now,
+            updatedAt: now,
+            completedAt: now,
+          },
+        });
+        console.log('Payment record created:', payment);
+      }
 
       return subscription;
     } catch (error) {
       console.error('Error confirming payment:', error);
+      
+      // Handle Prisma unique constraint errors specifically
+      if (error?.code === 'P2002' && error?.meta?.target?.includes('transactionId')) {
+        console.warn('Duplicate transactionId detected, attempting to update existing payment...');
+        
+        // Try to find and update existing payment
+        const transactionId =
+          paymentData?.payment_id ||
+          paymentData?.paymentId ||
+          paymentData?.cf_payment_id ||
+          paymentData?.razorpay_payment_id ||
+          paymentData?.transactionId ||
+          (paymentData?.orderId || paymentData?.order_id || null);
+        
+        if (transactionId) {
+          try {
+            const existingPayment = await this.prisma.payment.findUnique({
+              where: { transactionId },
+            });
+            
+            if (existingPayment) {
+              const plan = await this.prisma.subscriptionplan.findUnique({
+                where: { id: planId, isActive: true }
+              });
+              
+              if (plan) {
+                const dynamicPrice = this.calculateDynamicPrice(plan, billingPeriod);
+                const now = new Date();
+                
+                const updatedPayment = await this.prisma.payment.update({
+                  where: { id: existingPayment.id },
+                  data: {
+                    userId,
+                    amount: dynamicPrice / 100,
+                    currency: plan.currency || 'INR',
+                    paymentMethod: 'DIGITAL_WALLET',
+                    status: 'COMPLETED',
+                    description: `Subscription payment for ${plan.name} plan (${billingPeriod})`,
+                    metadata: { ...paymentData, billingPeriod },
+                    updatedAt: now,
+                    completedAt: now,
+                  },
+                });
+                
+                console.log('Payment record updated after duplicate error:', updatedPayment);
+                // Fetch the subscription that was already created (payment creation happens after subscription creation)
+                const recoveredSubscription = await this.prisma.subscription.findFirst({
+                  where: {
+                    userId,
+                    planId,
+                    status: 'ACTIVE',
+                  },
+                  include: {
+                    plan: true,
+                    usages: {
+                      orderBy: { periodStart: 'desc' },
+                      take: 1,
+                    },
+                  },
+                  orderBy: { createdAt: 'desc' },
+                });
+                
+                if (recoveredSubscription) {
+                  return recoveredSubscription;
+                }
+                // If subscription doesn't exist (shouldn't happen), re-throw original error
+                throw new Error('Payment updated but subscription not found');
+              }
+            }
+          } catch (recoveryError) {
+            console.error('Failed to recover from duplicate transactionId error:', recoveryError);
+          }
+        }
+      }
+      
       throw error;
     }
   }
