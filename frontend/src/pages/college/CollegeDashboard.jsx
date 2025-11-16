@@ -54,6 +54,69 @@ import ApplicationManagement from '../../components/college/ApplicationManagemen
 import PlanLimitationModal from '../../components/common/PlanLimitationModal';
 import { formatCurrency } from '../../utils/currency';
 
+// Utility functions for phone number handling
+const extractPhoneDigits = (phone) => {
+  if (!phone) return '';
+  // Remove all non-digit characters
+  return phone.replace(/\D/g, '');
+};
+
+const extractPhoneWithoutCountryCode = (phone) => {
+  if (!phone) return '';
+  // Remove + and spaces, get only digits
+  const digits = phone.replace(/\D/g, '');
+  
+  // Try to match known country codes and remove them
+  const countryCodes = ['91', '1', '44', '61', '49', '33', '81', '86', '55', '52', '65', '971', '966', '27'];
+  
+  for (const code of countryCodes) {
+    if (digits.startsWith(code)) {
+      const remaining = digits.substring(code.length);
+      // If remaining is 10 digits (typical phone length), return it
+      if (remaining.length === 10) {
+        return remaining;
+      }
+    }
+  }
+  
+  // If no country code matched, return last 10 digits (assuming it's a phone number)
+  return digits.length > 10 ? digits.substring(digits.length - 10) : digits;
+};
+
+const detectCountryFromPhone = (phone) => {
+  if (!phone) return null;
+  const digits = phone.replace(/\D/g, '');
+  
+  // Country code mapping
+  const countryMap = {
+    '91': { code: 'IN', name: 'India', dialCode: '+91', flag: '🇮🇳' },
+    '1': { code: 'US', name: 'United States', dialCode: '+1', flag: '🇺🇸' },
+    '44': { code: 'GB', name: 'United Kingdom', dialCode: '+44', flag: '🇬🇧' },
+    '61': { code: 'AU', name: 'Australia', dialCode: '+61', flag: '🇦🇺' },
+    '49': { code: 'DE', name: 'Germany', dialCode: '+49', flag: '🇩🇪' },
+    '33': { code: 'FR', name: 'France', dialCode: '+33', flag: '🇫🇷' },
+    '81': { code: 'JP', name: 'Japan', dialCode: '+81', flag: '🇯🇵' },
+    '86': { code: 'CN', name: 'China', dialCode: '+86', flag: '🇨🇳' },
+    '55': { code: 'BR', name: 'Brazil', dialCode: '+55', flag: '🇧🇷' },
+    '52': { code: 'MX', name: 'Mexico', dialCode: '+52', flag: '🇲🇽' },
+    '65': { code: 'SG', name: 'Singapore', dialCode: '+65', flag: '🇸🇬' },
+    '971': { code: 'AE', name: 'UAE', dialCode: '+971', flag: '🇦🇪' },
+    '966': { code: 'SA', name: 'Saudi Arabia', dialCode: '+966', flag: '🇸🇦' },
+    '27': { code: 'ZA', name: 'South Africa', dialCode: '+27', flag: '🇿🇦' },
+  };
+  
+  // Check for country codes (longer codes first to avoid partial matches)
+  const sortedCodes = Object.keys(countryMap).sort((a, b) => b.length - a.length);
+  for (const code of sortedCodes) {
+    if (digits.startsWith(code)) {
+      return countryMap[code];
+    }
+  }
+  
+  // Default to India
+  return countryMap['91'];
+};
+
 const CollegeDashboard = () => {
   const { user, logout, setUser } = useAuth();
   const navigate = useNavigate();
@@ -1154,7 +1217,14 @@ const CollegeDashboard = () => {
     if (!phoneNumber) return false;
     // Remove all non-digit characters
     const cleanPhone = phoneNumber.replace(/[^\d]/g, '');
-    // Phone number should be 7-15 digits (without country code)
+    
+    // For Indian numbers (default), validate exactly 10 digits
+    if (selectedCountry?.code === 'IN' || !selectedCountry) {
+      // Indian phone number: exactly 10 digits
+      return /^\d{10}$/.test(cleanPhone);
+    }
+    
+    // For other countries, validate 7-15 digits
     return cleanPhone.length >= 7 && cleanPhone.length <= 15;
   };
 
@@ -1182,12 +1252,18 @@ const CollegeDashboard = () => {
     }
     
     if (name === 'phone') {
-      if (value !== originalPhone) {
+      // Strip country code if user types it (keep only digits)
+      const phoneDigits = extractPhoneDigits(value);
+      const processedValue = phoneDigits;
+      
+      // Compare with original phone (also extract digits for comparison)
+      const originalPhoneDigits = extractPhoneWithoutCountryCode(originalPhone);
+      if (phoneDigits !== originalPhoneDigits) {
         setPhoneChanged(true);
         // Hide OTP modal when phone changes
         setShowPhoneVerification(false);
         setPhoneOtpSent(false);
-      } else if (value === originalPhone) {
+      } else if (phoneDigits === originalPhoneDigits) {
         setPhoneChanged(false);
         // Hide OTP modal when phone is set back to original
         setShowPhoneVerification(false);
@@ -1197,9 +1273,11 @@ const CollegeDashboard = () => {
           setCurrentPhoneVerified(true);
         }
       }
+      
+      setProfileForm(prev => ({ ...prev, [name]: processedValue }));
+    } else {
+      setProfileForm(prev => ({ ...prev, [name]: value }));
     }
-    
-    setProfileForm(prev => ({ ...prev, [name]: value }));
   };
 
   // Handle cancelling profile editing
@@ -1456,13 +1534,29 @@ const CollegeDashboard = () => {
         description: profileData.description || '',
       };
       
+      // Extract phone digits (without country code) for display
+      const phoneDigits = formData.phone ? extractPhoneWithoutCountryCode(formData.phone) : '';
+      formData.phone = phoneDigits;
+      
       // Set original values for tracking changes
       setOriginalEmail(formData.email);
-      setOriginalPhone(formData.phone);
+      setOriginalPhone(user?.phone || profileData.phone || '');
       
       // Set current verification status
       setCurrentEmailVerified(user?.isEmailVerified || false);
       setCurrentPhoneVerified(user?.isPhoneVerified || false);
+      
+      // Initialize country selector based on phone number
+      if (user?.phone || profileData.phone) {
+        const fullPhone = user?.phone || profileData.phone;
+        const detectedCountry = detectCountryFromPhone(fullPhone);
+        if (detectedCountry) {
+          setSelectedCountry(detectedCountry);
+        }
+      } else {
+        // Default to India if no phone
+        setSelectedCountry({ code: 'IN', name: 'India', dialCode: '+91', flag: '🇮🇳' });
+      }
       
       // Debug: Log the form data being set
       console.log('=== FORM DATA BEING SET ===');
@@ -3108,26 +3202,20 @@ const ProfileTab = ({
                         <input
                           type="tel"
                           name="phone"
-                          value={profileForm.phone || ''}
+                          value={profileForm.phone ? extractPhoneDigits(profileForm.phone) : ''}
                           onChange={handleProfileInputChange}
                           className="w-full px-4 py-2.5 border border-gray-300 rounded-r-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm border-l-0"
                           placeholder="1234567890"
                         />
                       </div>
                     </div>
-                    {(phoneChanged || !user?.isPhoneVerified) && (
-                      <button
-                        type="button"
-                        onClick={onSendPhoneOtp}
-                        disabled={isPhoneSending || !isValidPhoneNumber(profileForm.phone)}
-                        className="w-full md:w-auto px-4 md:px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white text-sm font-semibold rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap shadow-lg hover:shadow-xl"
-                      >
-                        {isPhoneSending ? 'Sending...' : 'Verify Phone'}
-                      </button>
-                    )}
                   </div>
                   {profileForm.phone && !isValidPhoneNumber(profileForm.phone) && (
-                    <span className="text-xs text-red-600">Please enter a valid phone number</span>
+                    <span className="text-xs text-red-600">
+                      {selectedCountry?.code === 'IN' || !selectedCountry
+                        ? 'Please enter a valid 10-digit phone number'
+                        : 'Please enter a valid phone number (7-15 digits)'}
+                    </span>
                   )}
                   
                   {/* Phone Verification Modal - Inline */}
@@ -3146,12 +3234,33 @@ const ProfileTab = ({
                   />
                 </div>
               ) : (
-                <input
-                  type="text"
-                  value={profile?.phone || 'Not specified'}
-                  disabled={true}
-                  className="w-full px-3 py-2 pr-12 bg-gray-50 text-gray-900 rounded-lg border border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
-                />
+                <div className="flex flex-1">
+                  {(() => {
+                    const displayPhone = profile?.phone || user?.phone || 'Not specified';
+                    const phoneDigits = displayPhone !== 'Not specified' 
+                      ? extractPhoneWithoutCountryCode(displayPhone) 
+                      : displayPhone;
+                    const detectedCountry = displayPhone !== 'Not specified' 
+                      ? detectCountryFromPhone(displayPhone) 
+                      : null;
+                    
+                    return (
+                      <>
+                        {detectedCountry && (
+                          <div className="flex items-center px-3 py-2 bg-gray-50 border border-gray-200 rounded-l-lg border-r-0">
+                            <span className="text-sm font-medium text-gray-700">{detectedCountry.dialCode}</span>
+                          </div>
+                        )}
+                        <input
+                          type="text"
+                          value={phoneDigits}
+                          disabled={true}
+                          className="w-full px-3 py-2 pr-12 bg-gray-50 text-gray-900 rounded-lg border border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 transition-colors border-l-0"
+                        />
+                      </>
+                    );
+                  })()}
+                </div>
               )}
               {currentPhoneVerified && profileForm.phone && !phoneChanged && user?.isPhoneVerified && (
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3">
@@ -3159,12 +3268,6 @@ const ProfileTab = ({
                 </div>
               )}
             </div>
-            {profile?.phone && (user?.isPhoneVerified === false || phoneChanged) && !(profileForm.phone === originalPhone && user?.isPhoneVerified) && (
-              <p className="text-xs text-amber-600 mt-1 flex items-center space-x-1">
-                <AlertCircle className="h-3 w-3" />
-                <span>{phoneChanged ? 'New phone number needs verification' : 'Phone number not verified'}</span>
-              </p>
-            )}
           </div>
 
           <div>

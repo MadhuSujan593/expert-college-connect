@@ -37,6 +37,69 @@ import VerificationRequirementModal from '../../components/common/VerificationRe
 import PlanLimitationModal from '../../components/common/PlanLimitationModal';
 import CountrySelector from '../../components/common/CountrySelector';
 
+// Utility functions for phone number handling
+const extractPhoneDigits = (phone) => {
+  if (!phone) return '';
+  // Remove all non-digit characters
+  return phone.replace(/\D/g, '');
+};
+
+const extractPhoneWithoutCountryCode = (phone) => {
+  if (!phone) return '';
+  // Remove + and spaces, get only digits
+  const digits = phone.replace(/\D/g, '');
+  
+  // Try to match known country codes and remove them
+  const countryCodes = ['91', '1', '44', '61', '49', '33', '81', '86', '55', '52', '65', '971', '966', '27'];
+  
+  for (const code of countryCodes) {
+    if (digits.startsWith(code)) {
+      const remaining = digits.substring(code.length);
+      // If remaining is 10 digits (typical phone length), return it
+      if (remaining.length === 10) {
+        return remaining;
+      }
+    }
+  }
+  
+  // If no country code matched, return last 10 digits (assuming it's a phone number)
+  return digits.length > 10 ? digits.substring(digits.length - 10) : digits;
+};
+
+const detectCountryFromPhone = (phone) => {
+  if (!phone) return null;
+  const digits = phone.replace(/\D/g, '');
+  
+  // Country code mapping
+  const countryMap = {
+    '91': { code: 'IN', name: 'India', dialCode: '+91', flag: '🇮🇳' },
+    '1': { code: 'US', name: 'United States', dialCode: '+1', flag: '🇺🇸' },
+    '44': { code: 'GB', name: 'United Kingdom', dialCode: '+44', flag: '🇬🇧' },
+    '61': { code: 'AU', name: 'Australia', dialCode: '+61', flag: '🇦🇺' },
+    '49': { code: 'DE', name: 'Germany', dialCode: '+49', flag: '🇩🇪' },
+    '33': { code: 'FR', name: 'France', dialCode: '+33', flag: '🇫🇷' },
+    '81': { code: 'JP', name: 'Japan', dialCode: '+81', flag: '🇯🇵' },
+    '86': { code: 'CN', name: 'China', dialCode: '+86', flag: '🇨🇳' },
+    '55': { code: 'BR', name: 'Brazil', dialCode: '+55', flag: '🇧🇷' },
+    '52': { code: 'MX', name: 'Mexico', dialCode: '+52', flag: '🇲🇽' },
+    '65': { code: 'SG', name: 'Singapore', dialCode: '+65', flag: '🇸🇬' },
+    '971': { code: 'AE', name: 'UAE', dialCode: '+971', flag: '🇦🇪' },
+    '966': { code: 'SA', name: 'Saudi Arabia', dialCode: '+966', flag: '🇸🇦' },
+    '27': { code: 'ZA', name: 'South Africa', dialCode: '+27', flag: '🇿🇦' },
+  };
+  
+  // Check for country codes (longer codes first to avoid partial matches)
+  const sortedCodes = Object.keys(countryMap).sort((a, b) => b.length - a.length);
+  for (const code of sortedCodes) {
+    if (digits.startsWith(code)) {
+      return countryMap[code];
+    }
+  }
+  
+  // Default to India
+  return countryMap['91'];
+};
+
 const ExpertDashboard = () => {
   const { user, logout, setUser } = useAuth();
   const navigate = useNavigate();
@@ -533,13 +596,16 @@ const ExpertDashboard = () => {
 
     if (profile && user) {
 
+      // Extract phone digits (without country code) for display
+      const phoneDigits = user?.phone ? extractPhoneWithoutCountryCode(user.phone) : '';
+      
       setEditedProfile(prev => ({
 
         ...prev,
 
         email: user.email || '',
 
-        phone: user.phone || '',
+        phone: phoneDigits,
 
         fullName: profile?.user?.fullName || '',
 
@@ -556,6 +622,17 @@ const ExpertDashboard = () => {
         hourlyRate: profile?.hourlyRate || '',
 
       }));
+      
+      // Initialize country selector based on phone number
+      if (user?.phone) {
+        const detectedCountry = detectCountryFromPhone(user.phone);
+        if (detectedCountry) {
+          setSelectedCountry(detectedCountry);
+        }
+      } else {
+        // Default to India if no phone
+        setSelectedCountry({ code: 'IN', name: 'India', dialCode: '+91', flag: '🇮🇳' });
+      }
 
     }
 
@@ -598,6 +675,20 @@ const ExpertDashboard = () => {
       setOriginalPhone(user?.phone || '');
       setCurrentEmailVerified(user?.isEmailVerified || false);
       setCurrentPhoneVerified(user?.isPhoneVerified || false);
+      
+      // Initialize country selector based on phone number
+      if (user?.phone) {
+        const detectedCountry = detectCountryFromPhone(user.phone);
+        if (detectedCountry) {
+          setSelectedCountry(detectedCountry);
+        }
+        // Extract phone digits (without country code) for display
+        const phoneDigits = extractPhoneWithoutCountryCode(user.phone);
+        setEditedProfile(prev => ({ ...prev, phone: phoneDigits }));
+      } else {
+        // Default to India if no phone
+        setSelectedCountry({ code: 'IN', name: 'India', dialCode: '+91', flag: '🇮🇳' });
+      }
 
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -926,12 +1017,26 @@ const ExpertDashboard = () => {
 
     // Email verification requirement removed - email is now non-editable
     
-    if (!user?.isPhoneVerified && !phoneChanged && editedProfile.phone !== originalPhone) {
-      // Phone verification requirement removed - allow saving without verification
+    // Validate phone number before saving
+    if (editedProfile.phone) {
+      if (!isValidPhoneNumber(editedProfile.phone)) {
+        showToast('error', 
+          selectedCountry?.code === 'IN' || !selectedCountry
+            ? 'Please enter a valid 10-digit phone number'
+            : 'Please enter a valid phone number (7-15 digits)'
+        );
+        return;
+      }
     }
 
     try {
-      const response = await api.updateExpertProfile(editedProfile);
+      // Combine country code with phone number before saving
+      const profileToSave = { ...editedProfile };
+      if (profileToSave.phone && selectedCountry) {
+        profileToSave.phone = `${selectedCountry.dialCode}${profileToSave.phone}`;
+      }
+      
+      const response = await api.updateExpertProfile(profileToSave);
       setProfile(response);
       setIsEditingProfile(false);
       showToast('success', 'Profile updated successfully!');
@@ -948,15 +1053,20 @@ const ExpertDashboard = () => {
     return emailRegex.test(email);
   };
 
-  const isValidPhone = (phone) => {
-    if (!phone) return false;
-    const cleanPhone = phone.replace(/[^\d+]/g, '');
-    if (cleanPhone.startsWith('+')) {
-      const phoneWithoutPlus = cleanPhone.substring(1);
-      return phoneWithoutPlus.length >= 7 && phoneWithoutPlus.length <= 15;
-    } else {
-      return cleanPhone.length >= 10 && cleanPhone.length <= 15;
+  // Phone validation function for phone numbers without country code (digits only)
+  const isValidPhoneNumber = (phoneNumber) => {
+    if (!phoneNumber) return false;
+    // Remove all non-digit characters
+    const cleanPhone = phoneNumber.replace(/[^\d]/g, '');
+    
+    // For Indian numbers (default), validate exactly 10 digits
+    if (selectedCountry?.code === 'IN' || !selectedCountry) {
+      // Indian phone number: exactly 10 digits
+      return /^\d{10}$/.test(cleanPhone);
     }
+    
+    // For other countries, validate 7-15 digits
+    return cleanPhone.length >= 7 && cleanPhone.length <= 15;
   };
 
   const handleSendEmailOtpForUpdate = async () => {
@@ -1167,13 +1277,19 @@ const ExpertDashboard = () => {
     }
     
     if (name === 'phone') {
-      if (value !== originalPhone) {
+      // Strip country code if user types it (keep only digits)
+      const phoneDigits = extractPhoneDigits(value);
+      processedValue = phoneDigits;
+      
+      // Compare with original phone (also extract digits for comparison)
+      const originalPhoneDigits = extractPhoneWithoutCountryCode(originalPhone);
+      if (phoneDigits !== originalPhoneDigits) {
         setPhoneChanged(true);
         setCurrentPhoneVerified(false);
         // Hide OTP modal when phone changes
         setShowPhoneVerification(false);
         setPhoneOtpSent(false);
-      } else if (value === originalPhone) {
+      } else if (phoneDigits === originalPhoneDigits) {
         setPhoneChanged(false);
         setCurrentPhoneVerified(user?.isPhoneVerified || false);
         // Hide OTP modal when phone is set back to original
@@ -2478,26 +2594,20 @@ const ExpertDashboard = () => {
                                      <input
                                        type="tel"
                                        name="phone"
-                                       value={editedProfile.phone || ''}
+                                       value={editedProfile.phone ? extractPhoneDigits(editedProfile.phone) : ''}
                                        onChange={handleProfileInputChange}
                                        className="w-full px-4 py-3 border border-slate-200 rounded-r-md focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500 border-l-0"
                                        placeholder="1234567890"
                                      />
                                    </div>
                                  </div>
-                                 {(phoneChanged || !user?.isPhoneVerified) && (
-                                   <button
-                                     type="button"
-                                     onClick={handleSendPhoneOtpForUpdate}
-                                     disabled={isPhoneSending || !isValidPhone(editedProfile.phone)}
-                                     className="w-full md:w-auto px-3 md:px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-sm font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap"
-                                   >
-                                     {isPhoneSending ? 'Sending...' : 'Verify Phone'}
-                                   </button>
-                                 )}
                                </div>
-                               {editedProfile.phone && !isValidPhone(editedProfile.phone) && (
-                                 <span className="text-xs text-red-600">Please enter a valid phone number</span>
+                               {editedProfile.phone && !isValidPhoneNumber(editedProfile.phone) && (
+                                 <span className="text-xs text-red-600">
+                                   {selectedCountry?.code === 'IN' || !selectedCountry
+                                     ? 'Please enter a valid 10-digit phone number'
+                                     : 'Please enter a valid phone number (7-15 digits)'}
+                                 </span>
                                )}
                                
                                {/* Phone Verification Modal - Inline */}
@@ -2514,13 +2624,41 @@ const ExpertDashboard = () => {
                                />
                              </div>
                            ) : (
-                             <input
-                               type="tel"
-                               value={profile?.user?.phone || ''}
-                               disabled={true}
-                               className="w-full px-4 py-3 pr-12 bg-slate-50 text-slate-900 rounded-xl border border-slate-200 disabled:bg-slate-50 disabled:text-slate-500 transition-colors"
-                               placeholder="Enter your phone number"
-                             />
+                             <div className="flex flex-1">
+                               {(() => {
+                                 const displayPhone = profile?.user?.phone || user?.phone || '';
+                                 if (!displayPhone) {
+                                   return (
+                                     <input
+                                       type="tel"
+                                       value=""
+                                       disabled={true}
+                                       className="w-full px-4 py-3 pr-12 bg-slate-50 text-slate-900 rounded-xl border border-slate-200 disabled:bg-slate-50 disabled:text-slate-500 transition-colors"
+                                       placeholder="Enter your phone number"
+                                     />
+                                   );
+                                 }
+                                 const phoneDigits = extractPhoneWithoutCountryCode(displayPhone);
+                                 const detectedCountry = detectCountryFromPhone(displayPhone);
+                                 
+                                 return (
+                                   <>
+                                     {detectedCountry && (
+                                       <div className="flex items-center px-3 py-3 bg-slate-50 border border-slate-200 rounded-l-xl border-r-0">
+                                         <span className="text-sm font-medium text-slate-700">{detectedCountry.dialCode}</span>
+                                       </div>
+                                     )}
+                                     <input
+                                       type="tel"
+                                       value={phoneDigits}
+                                       disabled={true}
+                                       className="w-full px-4 py-3 pr-12 bg-slate-50 text-slate-900 rounded-xl border border-slate-200 disabled:bg-slate-50 disabled:text-slate-500 transition-colors border-l-0"
+                                       placeholder="Enter your phone number"
+                                     />
+                                   </>
+                                 );
+                               })()}
+                             </div>
                            )}
                            {currentPhoneVerified && editedProfile.phone && !phoneChanged && user?.isPhoneVerified && (
                              <div className="absolute inset-y-0 right-0 flex items-center pr-3">
@@ -2528,15 +2666,6 @@ const ExpertDashboard = () => {
                              </div>
                            )}
                          </div>
-                         {editedProfile.phone && (!currentPhoneVerified || phoneChanged || !user?.isPhoneVerified) && !(editedProfile.phone === originalPhone && user?.isPhoneVerified) && (
-                           <p className="text-xs text-amber-600 mt-1 flex items-center space-x-1">
-                             <AlertCircle className="h-3 w-3" />
-                             <span>
-                               {phoneChanged ? 'New phone number needs verification' : 
-                                !user?.isPhoneVerified ? 'Phone number not verified' : 'Phone number not verified'}
-                             </span>
-                           </p>
-                         )}
                       </div>
 
                       <div>

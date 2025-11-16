@@ -98,34 +98,6 @@ const VerificationField = ({
             </div>
           )}
         </div>
-        {!isVerified && (
-          <button
-            type="button"
-            onClick={() => {
-              const phoneValue = type === 'tel' && showCountrySelector && selectedCountry 
-                ? `${selectedCountry.dialCode}${value}` 
-                : value;
-              onSendOtp(phoneValue);
-            }}
-            disabled={isSending || !value || !isValid(value)}
-            className={`w-full sm:w-auto px-4 py-2.5 sm:py-3 text-white text-sm font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 transform disabled:transform-none disabled:cursor-not-allowed ${
-              isSending || !value || !isValid(value)
-                ? 'bg-gray-400 hover:bg-gray-400 cursor-not-allowed shadow-gray-400/25 hover:shadow-gray-400/25'
-                : `${buttonColor} ${buttonHoverColor} shadow-blue-500/25 hover:shadow-blue-500/30`
-            }`}
-          >
-            {isSending ? (
-              <div className="flex items-center gap-1">
-                <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                Sending...
-              </div>
-            ) : otpSent ? (
-              'Resend OTP'
-            ) : (
-              `Verify ${type === 'email' ? 'Email' : 'Phone'}`
-            )}
-          </button>
-        )}
       </div>
     </div>
   );

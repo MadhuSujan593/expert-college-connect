@@ -34,13 +34,19 @@ export const isValidPhone = (phone) => {
 };
 
 // Validation for phone number without country code (for use with country selector)
-export const isValidPhoneNumber = (phoneNumber) => {
+export const isValidPhoneNumber = (phoneNumber, countryCode = 'IN') => {
   if (!phoneNumber) return false;
   
   // Remove all non-digit characters
   const cleanPhone = phoneNumber.replace(/[^\d]/g, '');
   
-  // Phone number should be 7-15 digits (without country code)
+  // For Indian numbers (default), validate exactly 10 digits
+  if (countryCode === 'IN') {
+    // Indian phone number: exactly 10 digits
+    return /^\d{10}$/.test(cleanPhone);
+  }
+  
+  // For other countries, validate 7-15 digits
   return cleanPhone.length >= 7 && cleanPhone.length <= 15;
 };
 
