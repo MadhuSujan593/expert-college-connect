@@ -1264,18 +1264,9 @@ const CollegeDashboard = () => {
       const originalPhoneDigits = extractPhoneWithoutCountryCode(originalPhone);
       if (phoneWithoutCountryCode !== originalPhoneDigits) {
         setPhoneChanged(true);
-        // Hide OTP modal when phone changes
-        setShowPhoneVerification(false);
-        setPhoneOtpSent(false);
+        // No verification required - just track the change
       } else if (phoneWithoutCountryCode === originalPhoneDigits) {
         setPhoneChanged(false);
-        // Hide OTP modal when phone is set back to original
-        setShowPhoneVerification(false);
-        setPhoneOtpSent(false);
-        // Reset verification states when phone is set back to original verified phone
-        if (user?.isPhoneVerified) {
-          setCurrentPhoneVerified(true);
-        }
       }
       
       setProfileForm(prev => ({ ...prev, [name]: processedValue }));
@@ -1598,13 +1589,15 @@ const CollegeDashboard = () => {
       // Create a clean profile data object (similar to expert profile updates)
       const profileData = { ...profileForm };
       
-      // Combine country code with phone number if phone is provided
-      // First, ensure phone doesn't already have a country code prefix
-      if (profileData.phone && selectedCountry) {
+      // Handle phone number update - combine country code with phone number if phone is provided
+      if (phoneChanged && profileData.phone && selectedCountry) {
         // Remove any existing country code prefix from the phone number
         const phoneWithoutPrefix = extractPhoneWithoutCountryCode(profileData.phone);
-        // Now add the selected country code
-        profileData.phone = `${selectedCountry.dialCode}${phoneWithoutPrefix}`;
+        // Add the selected country code
+        const fullPhoneNumber = `${selectedCountry.dialCode}${phoneWithoutPrefix}`;
+        // Set userPhone and updateUserPhone flag for backend
+        profileData.userPhone = fullPhoneNumber;
+        profileData.updateUserPhone = true;
       }
       
       // Convert empty strings to undefined for optional fields
@@ -1625,7 +1618,17 @@ const CollegeDashboard = () => {
       setEmailChanged(false);
       setPhoneChanged(false);
       setOriginalEmail(profileData.email);
-      setOriginalPhone(profileData.phone);
+      
+      // Update original phone and user object with new phone if it was changed
+      if (phoneChanged && profileData.userPhone && user) {
+        setOriginalPhone(profileData.userPhone);
+        const updatedUser = { ...user, phone: profileData.userPhone, isPhoneVerified: true };
+        setUser(updatedUser);
+      } else {
+        setOriginalPhone(user?.phone || profileData.phone || '');
+      }
+      
+      showToast('success', 'Profile updated successfully!');
       
       showToast('success', 'Profile updated successfully!');
       const statsData = await apiService.getCollegeDashboardStats();
@@ -3225,21 +3228,6 @@ const ProfileTab = ({
                         : 'Please enter a valid phone number (7-15 digits)'}
                     </span>
                   )}
-                  
-                  {/* Phone Verification Modal - Inline */}
-                  <PhoneVerificationModal
-                    isOpen={showPhoneVerification}
-                    phone={profileForm.phone && selectedCountry 
-                      ? `${selectedCountry.dialCode}${extractPhoneWithoutCountryCode(profileForm.phone)}` 
-                      : (profileForm.phone ? extractPhoneWithoutCountryCode(profileForm.phone) : user?.phone)}
-                    isVerifying={isPhoneVerifying}
-                    onVerify={onPhoneVerification}
-                    onClose={() => setShowPhoneVerification(false)}
-                    onSendOtp={onSendPhoneOtp}
-                    isVerified={currentPhoneVerified}
-                    isSending={isPhoneSending}
-                    otpSent={phoneOtpSent}
-                  />
                 </div>
               ) : (
                 <div className="flex flex-1">

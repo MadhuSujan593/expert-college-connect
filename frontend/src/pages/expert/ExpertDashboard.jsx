@@ -1004,17 +1004,6 @@ const ExpertDashboard = () => {
   // Profile management functions
 
   const handleProfileUpdate = async () => {
-    // Check if email or phone has changed and needs verification
-    if (emailChanged && !currentEmailVerified) {
-      showToast('error', 'Please verify your new email address before saving');
-      return;
-    }
-    
-    if (phoneChanged && !currentPhoneVerified) {
-      showToast('error', 'Please verify your new phone number before saving');
-      return;
-    }
-
     // Email verification requirement removed - email is now non-editable
     
     // Validate phone number before saving
@@ -1032,13 +1021,27 @@ const ExpertDashboard = () => {
     try {
       // Combine country code with phone number before saving
       const profileToSave = { ...editedProfile };
-      if (profileToSave.phone && selectedCountry) {
-        profileToSave.phone = `${selectedCountry.dialCode}${profileToSave.phone}`;
+      if (phoneChanged && profileToSave.phone && selectedCountry) {
+        // Remove any existing country code prefix from the phone number
+        const phoneWithoutPrefix = extractPhoneWithoutCountryCode(profileToSave.phone);
+        // Add the selected country code
+        profileToSave.phone = `${selectedCountry.dialCode}${phoneWithoutPrefix}`;
       }
       
       const response = await api.updateExpertProfile(profileToSave);
       setProfile(response);
       setIsEditingProfile(false);
+      
+      // Reset change tracking
+      setEmailChanged(false);
+      setPhoneChanged(false);
+      
+      // Update user object with new phone if it was changed
+      if (phoneChanged && profileToSave.phone && user) {
+        const updatedUser = { ...user, phone: profileToSave.phone, isPhoneVerified: true };
+        setUser(updatedUser);
+      }
+      
       showToast('success', 'Profile updated successfully!');
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -1277,28 +1280,19 @@ const ExpertDashboard = () => {
     }
     
     if (name === 'phone') {
-      // Strip country code if user types it (keep only digits)
-      const phoneDigits = extractPhoneDigits(value);
-      processedValue = phoneDigits;
+      // Strip country code if user types it (keep only digits without country code)
+      // First extract all digits, then remove country code
+      const allDigits = extractPhoneDigits(value);
+      const phoneWithoutCountryCode = extractPhoneWithoutCountryCode(allDigits);
+      processedValue = phoneWithoutCountryCode;
       
       // Compare with original phone (also extract digits for comparison)
       const originalPhoneDigits = extractPhoneWithoutCountryCode(originalPhone);
-      if (phoneDigits !== originalPhoneDigits) {
+      if (phoneWithoutCountryCode !== originalPhoneDigits) {
         setPhoneChanged(true);
-        setCurrentPhoneVerified(false);
-        // Hide OTP modal when phone changes
-        setShowPhoneVerification(false);
-        setPhoneOtpSent(false);
-      } else if (phoneDigits === originalPhoneDigits) {
+        // No verification required - just track the change
+      } else if (phoneWithoutCountryCode === originalPhoneDigits) {
         setPhoneChanged(false);
-        setCurrentPhoneVerified(user?.isPhoneVerified || false);
-        // Hide OTP modal when phone is set back to original
-        setShowPhoneVerification(false);
-        setPhoneOtpSent(false);
-        // Reset verification states when phone is set back to original verified phone
-        if (user?.isPhoneVerified) {
-          setCurrentPhoneVerified(true);
-        }
       }
     }
   };
@@ -2609,19 +2603,6 @@ const ExpertDashboard = () => {
                                      : 'Please enter a valid phone number (7-15 digits)'}
                                  </span>
                                )}
-                               
-                               {/* Phone Verification Modal - Inline */}
-                               <PhoneVerificationModal
-                                 isOpen={showPhoneVerification}
-                                 phone={editedProfile.phone}
-                                 isVerifying={isPhoneVerifying}
-                                 onVerify={handlePhoneVerification}
-                                 onClose={() => setShowPhoneVerification(false)}
-                                 onSendOtp={handleSendPhoneOtpForUpdate}
-                                 isVerified={currentPhoneVerified}
-                                 isSending={isPhoneSending}
-                                 otpSent={phoneOtpSent}
-                               />
                              </div>
                            ) : (
                              <div className="flex flex-1">

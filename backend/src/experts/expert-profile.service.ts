@@ -125,9 +125,15 @@ export class ExpertProfileService {
     // Update user table if user fields are provided
     if (Object.keys(userFields).length > 0) {
       console.log('Updating user table...');
+      // If phone is being updated, set it as verified
+      const userUpdateData: any = { ...userFields };
+      if (userUpdateData.phone) {
+        userUpdateData.isPhoneVerified = true;
+        userUpdateData.phoneVerifiedAt = new Date();
+      }
       await this.prisma.user.update({
         where: { id: userId },
-        data: userFields,
+        data: userUpdateData,
       });
       console.log('User table updated successfully');
     }
