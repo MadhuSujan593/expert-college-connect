@@ -309,9 +309,10 @@ const ForgotPassword = () => {
                         required
                         value={formData.otp}
                         onChange={handleInputChange}
-                      className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200 transition-colors text-sm text-center tracking-widest text-lg font-mono"
+                      className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-md bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200 transition-colors text-sm text-center tracking-widest text-lg font-mono"
                         placeholder="000000"
                         maxLength="6"
+                        style={{ color: '#111827' }}
                       />
                     </div>
                   </div>

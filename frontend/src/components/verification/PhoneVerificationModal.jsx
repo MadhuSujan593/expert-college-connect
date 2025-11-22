@@ -55,10 +55,17 @@ const PhoneVerificationModal = ({
             <input
               type="text"
               value={otp}
-              onChange={(e) => setOtp(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, ''); // Only allow numeric input
+                if (value.length <= 6) {
+                  setOtp(value);
+                }
+              }}
               placeholder="Enter 6-digit code"
-              className="w-full pl-10 pr-4 py-2 bg-white/80 backdrop-blur-sm border border-indigo-300/50 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 focus:bg-white focus:shadow-lg focus:shadow-indigo-500/20 text-center tracking-widest font-mono"
+              className="w-full pl-10 pr-4 py-2 bg-white/80 backdrop-blur-sm border border-indigo-300/50 rounded-lg text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 focus:bg-white focus:shadow-lg focus:shadow-indigo-500/20 text-center tracking-widest font-mono"
               maxLength="6"
+              inputMode="numeric"
+              style={{ color: '#111827' }}
             />
           </div>
         )}

@@ -178,7 +178,7 @@ export class ContactService {
         <body>
           <div class="container">
             <div class="header">
-              <div class="logo">📧 Expert College Connect</div>
+              <div class="logo">📧 VMS Techhub</div>
               <div class="subtitle">New Contact Form Submission</div>
             </div>
             <div class="content">
@@ -207,7 +207,7 @@ export class ContactService {
               </div>
             </div>
             <div class="footer">
-              <p>This is an automated notification from the Expert College Connect contact form.</p>
+              <p>This is an automated notification from the VMS Techhub contact form.</p>
               <div class="timestamp">Received on {{timestamp}}</div>
             </div>
           </div>
@@ -226,7 +226,7 @@ export class ContactService {
       });
 
       const mailOptions = {
-        from: `"Expert College Connect Contact Form" <${process.env.SMTP_USER}>`,
+        from: `"VMS Techhub Contact Form" <${process.env.SMTP_USER}>`,
         to: adminEmail,
         subject: `New Contact Form Submission: ${contactData.subject}`,
         html: htmlContent,

@@ -87,7 +87,7 @@ export class SmsService {
         return true;
       }
 
-      const message = `Your Expert College Connect verification code is: ${otp}
+      const message = `Your VMS Techhub verification code is: ${otp}
 
 Valid for 10 minutes. Do not share.`;
 
@@ -120,7 +120,7 @@ Valid for 10 minutes. Do not share.`;
         return true;
       }
 
-      const message = `Welcome to Expert College Connect, ${userName}! Your account has been successfully verified. You're now ready to connect with experts and colleges.`;
+      const message = `Welcome to VMS Techhub, ${userName}! Your account has been successfully verified. You're now ready to connect with experts and colleges.`;
 
       const result = await this.client.messages.create({
         body: message,
@@ -146,7 +146,7 @@ Valid for 10 minutes. Do not share.`;
         return true;
       }
 
-      const message = `Hello ${userName}! Your Expert College Connect password reset code is: ${resetToken}. This code will expire in 1 hour. If you didn't request this, please ignore this message.`;
+      const message = `Hello ${userName}! Your VMS Techhub password reset code is: ${resetToken}. This code will expire in 1 hour. If you didn't request this, please ignore this message.`;
 
       const result = await this.client.messages.create({
         body: message,

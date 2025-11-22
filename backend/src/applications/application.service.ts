@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import { EmailService } from '../services/email.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { UpdateApplicationStatusDto } from './dto/update-application-status.dto';
 import { GetApplicationsDto } from './dto/get-applications.dto';
@@ -9,7 +10,8 @@ import { GetApplicationsDto } from './dto/get-applications.dto';
 export class ApplicationService {
   constructor(
     private prisma: PrismaService,
-    private subscriptionsService: SubscriptionsService
+    private subscriptionsService: SubscriptionsService,
+    private emailService: EmailService
   ) {}
 
   // Create a new application
@@ -79,10 +81,47 @@ export class ApplicationService {
         userId: requirement.collegeprofile.userId,
         applicationId: application.id,
         type: 'APPLICATION_SUBMITTED',
-        title: 'New Expert Application',
-        message: `A new expert has applied for your requirement: "${requirement.title}"`
+        title: 'New Application',
+        message: `Great news! A new expert has submitted an application for your requirement: "${requirement.title}"`
       }
     });
+
+    // Send email notification to college admin
+    const collegeUser = requirement.collegeprofile.user;
+    if (collegeUser && collegeUser.email) {
+      try {
+        // Get expert user data - expert relation points to user table
+        const expertUser = application.expert;
+        const expertName = expertUser?.fullName || 'Expert';
+        const expertExpertise = application.expert.expertprofile?.primaryExpertise || 'Expert';
+        
+        await this.emailService.sendNewApplicationEmail(
+          collegeUser.email,
+          collegeUser.fullName || collegeUser.email,
+          expertName,
+          expertExpertise,
+          requirement.title,
+          application.id
+        );
+      } catch (error) {
+        console.error('Failed to send new application email:', error);
+        console.error('Error details:', {
+          collegeEmail: collegeUser?.email,
+          collegeName: collegeUser?.fullName,
+          expertId: application.expertId,
+          applicationId: application.id,
+          errorMessage: error?.message,
+          errorStack: error?.stack
+        });
+        // Don't throw error, just log it
+      }
+    } else {
+      console.warn('Cannot send email: college user or email not found', {
+        collegeUserId: requirement.collegeprofile.userId,
+        hasCollegeUser: !!collegeUser,
+        hasEmail: !!collegeUser?.email
+      });
+    }
 
     // Increment expert application usage
     await this.subscriptionsService.incrementExpertApplicationUsage(expertId);
@@ -336,6 +375,26 @@ export class ApplicationService {
         message: `Your application for "${application.requirement.title}" has been ${status.toLowerCase()}`
       }
     });
+
+    // Send email notification to expert for SHORTLISTED or REJECTED status
+    if (status === 'SHORTLISTED' || status === 'REJECTED') {
+      const expertUser = updatedApplication.expert;
+      if (expertUser && expertUser.email) {
+        try {
+          await this.emailService.sendApplicationStatusUpdateEmail(
+            expertUser.email,
+            expertUser.fullName,
+            application.requirement.title,
+            application.requirement.collegeprofile.institutionName,
+            status,
+            reviewNotes || undefined
+          );
+        } catch (error) {
+          console.error('Failed to send application status update email:', error);
+          // Don't throw error, just log it
+        }
+      }
+    }
 
     return updatedApplication;
   }

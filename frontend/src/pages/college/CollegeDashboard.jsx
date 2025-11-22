@@ -1102,9 +1102,11 @@ const CollegeDashboard = () => {
       console.log('🔄 Starting phone OTP process...');
       
       // Combine country code with phone number
-      const fullPhoneNumber = profileForm.phone && selectedCountry 
-        ? `${selectedCountry.dialCode}${profileForm.phone}` 
-        : profileForm.phone;
+      // Ensure phone doesn't already have country code prefix
+      const phoneWithoutPrefix = profileForm.phone ? extractPhoneWithoutCountryCode(profileForm.phone) : '';
+      const fullPhoneNumber = phoneWithoutPrefix && selectedCountry 
+        ? `${selectedCountry.dialCode}${phoneWithoutPrefix}` 
+        : (phoneWithoutPrefix || profileForm.phone);
       
       // For profile updates, we need to check if the phone is different from current user's phone
       // If it's the same phone, allow verification. If it's different, check availability.
@@ -1215,17 +1217,17 @@ const CollegeDashboard = () => {
   // Phone validation function for phone numbers without country code
   const isValidPhoneNumber = (phoneNumber) => {
     if (!phoneNumber) return false;
-    // Remove all non-digit characters
-    const cleanPhone = phoneNumber.replace(/[^\d]/g, '');
+    // First extract phone without country code to handle cases where phone might have prefix
+    const phoneWithoutCountryCode = extractPhoneWithoutCountryCode(phoneNumber);
     
     // For Indian numbers (default), validate exactly 10 digits
     if (selectedCountry?.code === 'IN' || !selectedCountry) {
       // Indian phone number: exactly 10 digits
-      return /^\d{10}$/.test(cleanPhone);
+      return /^\d{10}$/.test(phoneWithoutCountryCode);
     }
     
     // For other countries, validate 7-15 digits
-    return cleanPhone.length >= 7 && cleanPhone.length <= 15;
+    return phoneWithoutCountryCode.length >= 7 && phoneWithoutCountryCode.length <= 15;
   };
 
   // Handle input changes and track modifications
@@ -1252,18 +1254,20 @@ const CollegeDashboard = () => {
     }
     
     if (name === 'phone') {
-      // Strip country code if user types it (keep only digits)
-      const phoneDigits = extractPhoneDigits(value);
-      const processedValue = phoneDigits;
+      // Strip country code if user types it (keep only digits without country code)
+      // First extract all digits, then remove country code
+      const allDigits = extractPhoneDigits(value);
+      const phoneWithoutCountryCode = extractPhoneWithoutCountryCode(allDigits);
+      const processedValue = phoneWithoutCountryCode;
       
       // Compare with original phone (also extract digits for comparison)
       const originalPhoneDigits = extractPhoneWithoutCountryCode(originalPhone);
-      if (phoneDigits !== originalPhoneDigits) {
+      if (phoneWithoutCountryCode !== originalPhoneDigits) {
         setPhoneChanged(true);
         // Hide OTP modal when phone changes
         setShowPhoneVerification(false);
         setPhoneOtpSent(false);
-      } else if (phoneDigits === originalPhoneDigits) {
+      } else if (phoneWithoutCountryCode === originalPhoneDigits) {
         setPhoneChanged(false);
         // Hide OTP modal when phone is set back to original
         setShowPhoneVerification(false);
@@ -1595,8 +1599,12 @@ const CollegeDashboard = () => {
       const profileData = { ...profileForm };
       
       // Combine country code with phone number if phone is provided
+      // First, ensure phone doesn't already have a country code prefix
       if (profileData.phone && selectedCountry) {
-        profileData.phone = `${selectedCountry.dialCode}${profileData.phone}`;
+        // Remove any existing country code prefix from the phone number
+        const phoneWithoutPrefix = extractPhoneWithoutCountryCode(profileData.phone);
+        // Now add the selected country code
+        profileData.phone = `${selectedCountry.dialCode}${phoneWithoutPrefix}`;
       }
       
       // Convert empty strings to undefined for optional fields
@@ -3202,7 +3210,7 @@ const ProfileTab = ({
                         <input
                           type="tel"
                           name="phone"
-                          value={profileForm.phone ? extractPhoneDigits(profileForm.phone) : ''}
+                          value={profileForm.phone ? extractPhoneWithoutCountryCode(profileForm.phone) : ''}
                           onChange={handleProfileInputChange}
                           className="w-full px-4 py-2.5 border border-gray-300 rounded-r-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm border-l-0"
                           placeholder="1234567890"
@@ -3222,8 +3230,8 @@ const ProfileTab = ({
                   <PhoneVerificationModal
                     isOpen={showPhoneVerification}
                     phone={profileForm.phone && selectedCountry 
-                      ? `${selectedCountry.dialCode}${profileForm.phone}` 
-                      : (profileForm.phone || user?.phone)}
+                      ? `${selectedCountry.dialCode}${extractPhoneWithoutCountryCode(profileForm.phone)}` 
+                      : (profileForm.phone ? extractPhoneWithoutCountryCode(profileForm.phone) : user?.phone)}
                     isVerifying={isPhoneVerifying}
                     onVerify={onPhoneVerification}
                     onClose={() => setShowPhoneVerification(false)}
@@ -4803,11 +4811,11 @@ const ExpertsTab = ({ user, mySubscription, showPlanLimitationModal, setLimitati
                 transition={{ duration: 0.3 }}
                 className="group bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-300 transition-all duration-200"
               >
-                {/* Expert Header - Compact */}
-                <div className="p-3 pb-2">
-                  <div className="flex items-center space-x-2 mb-2">
+                {/* Expert Header */}
+                <div className="p-4">
+                  <div className="flex items-center space-x-3 mb-3">
                     {expert.profilePicture ? (
-                      <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-200">
+                      <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-gray-200 flex-shrink-0">
                         <img
                           src={expert.profilePicture}
                           alt={`${expert.user?.fullName}'s profile`}
@@ -4817,107 +4825,55 @@ const ExpertsTab = ({ user, mySubscription, showPlanLimitationModal, setLimitati
                             e.target.nextSibling.style.display = 'flex';
                           }}
                         />
-                        <div className="w-full h-full bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full flex items-center justify-center text-white font-semibold text-xs" style={{display: 'none'}}>
-                      {expert.user?.fullName?.charAt(0) || 'E'}
-                    </div>
+                        <div className="w-full h-full bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full flex items-center justify-center text-white font-semibold text-base" style={{display: 'none'}}>
+                          {expert.user?.fullName?.charAt(0) || 'E'}
+                        </div>
                       </div>
                     ) : (
-                      <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full flex items-center justify-center text-white font-semibold text-xs">
+                      <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full flex items-center justify-center text-white font-semibold text-base flex-shrink-0">
                         {expert.user?.fullName?.charAt(0) || 'E'}
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors">
+                      <h4 className="font-semibold text-gray-900 text-base truncate group-hover:text-blue-600 transition-colors">
                         {expert.user?.fullName || 'Expert Name'}
                       </h4>
-                      <p className="text-xs text-gray-600 truncate">
+                      <p className="text-sm text-gray-600 truncate">
                         {expert.jobTitle || 'Professional'}
                       </p>
                     </div>
                     {expert.isVerified && (
-                      <div className="bg-blue-100 p-1 rounded-full group-hover:bg-blue-200 transition-colors flex-shrink-0">
-                        <Shield className="w-3 h-3 text-blue-600" />
+                      <div className="bg-blue-100 p-1.5 rounded-full group-hover:bg-blue-200 transition-colors flex-shrink-0">
+                        <Shield className="w-4 h-4 text-blue-600" />
                       </div>
                     )}
                   </div>
 
-                  {/* Company & Location - Compact */}
-                  <div className="space-y-1 mb-2">
-                    <p className="text-xs text-gray-600 flex items-center">
-                      <Building2 className="w-3 h-3 mr-1 flex-shrink-0" />
+                  {/* Company */}
+                  <div className="mb-3">
+                    <p className="text-sm text-gray-600 flex items-center">
+                      <Building2 className="w-4 h-4 mr-1.5 flex-shrink-0" />
                       <span className="truncate">{expert.company || 'Company not specified'}</span>
                     </p>
-                    {expert.location && (
-                      <p className="text-xs text-gray-600 flex items-center">
-                        <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
-                        <span className="truncate">{expert.location}</span>
-                      </p>
-                    )}
                   </div>
 
-                  {/* Rating - Compact */}
+                  {/* Rating */}
                   {expert.averageRating > 0 && (
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2">
                       <div className="flex items-center">
                         {[...Array(5)].map((_, i) => (
                           <Star 
                             key={i} 
-                            className={`w-3 h-3 ${i < Math.floor(expert.averageRating || 0) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
+                            className={`w-4 h-4 ${i < Math.floor(expert.averageRating || 0) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
                           />
                         ))}
                       </div>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-sm font-medium text-gray-700">
                         {expert.averageRating.toFixed(1)}
                       </span>
                     </div>
                   )}
-
-                  {/* Hourly Rate - Compact */}
-                  {expert.hourlyRate && (
-                    <div className="mb-2">
-                      <p className="text-sm font-semibold text-gray-900">
-                        ₹{parseFloat(expert.hourlyRate).toFixed(0)}<span className="text-xs font-normal text-gray-600">/hr</span>
-                      </p>
-                    </div>
-                  )}
                 </div>
-
-                {/* Skills - Compact */}
-                {expert.expertskill && expert.expertskill.length > 0 && (
-                  <div className="px-4 pb-3">
-                    <div className="flex flex-wrap gap-1.5">
-                      {expert.expertskill.slice(0, 2).map(skill => (
-                        <span key={skill.id} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-md border border-blue-200">
-                          {skill.skillName}
-                        </span>
-                      ))}
-                      {expert.expertskill.length > 2 && (
-                        <span className="px-2 py-1 bg-gray-50 text-gray-600 text-xs rounded-md border border-gray-200">
-                          +{expert.expertskill.length - 2}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Available For - Compact */}
-                {expert.availableFor && Array.isArray(expert.availableFor) && expert.availableFor.length > 0 && (
-                  <div className="px-4 pb-3">
-                    <div className="flex flex-wrap gap-1.5">
-                      {expert.availableFor.slice(0, 1).map(service => (
-                        <span key={service} className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded-md border border-green-200">
-                          {service}
-                        </span>
-                      ))}
-                      {expert.availableFor.length > 1 && (
-                        <span className="px-2 py-1 bg-gray-50 text-gray-600 text-xs rounded-md border border-gray-200">
-                          +{expert.availableFor.length - 1} more
-                        </span>
-                      )}
-                    </div>
-
-                  </div>
-                )}
 
                 {/* Action Buttons - Compact */}
                 <div className="px-4 pb-4">

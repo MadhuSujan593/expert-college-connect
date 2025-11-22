@@ -15,7 +15,7 @@ const SubscriptionPlans = () => {
   const [mySubscription, setMySubscription] = useState(null);
   const [selectedPlanId, setSelectedPlanId] = useState(null);
   const [subsLoading, setSubsLoading] = useState(false);
-  const [selectedBillingPeriod, setSelectedBillingPeriod] = useState('MONTHLY');
+  const [selectedBillingPeriod, setSelectedBillingPeriod] = useState('SEMIANNUAL');
 
   // Toast state
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });

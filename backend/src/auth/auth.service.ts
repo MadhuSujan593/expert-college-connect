@@ -68,13 +68,14 @@ export class AuthService {
       postalCode
     } = registerDto;
 
-    // Check if user already exists
+    // Check if user already exists (excluding deleted users)
     const existingUser = await this.prisma.user.findFirst({
       where: {
         OR: [
           { email },
           { phone: phone || undefined }
-        ]
+        ],
+        isDeleted: false
       }
     });
 
@@ -87,15 +88,32 @@ export class AuthService {
       }
     }
 
+    // Check if there's a deleted user with the same email/phone that we need to update
+    const deletedUser = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { email },
+          { phone: phone || undefined }
+        ],
+        isDeleted: true
+      }
+    });
+
     // Hash password
     const hashedPassword = await this.hashPassword(password);
 
     // Check if email and phone were verified before registration
+    // Only consider verifications that were used recently (within last 2 hours) and are pre-registration (no userId)
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
     const emailVerification = await this.prisma.emailverification.findFirst({
       where: { 
         email, 
         isUsed: true,
-        usedAt: { not: null }
+        usedAt: { 
+          not: null,
+          gte: twoHoursAgo // Only recent verifications
+        },
+        userId: null // Pre-registration verification (no userId means it was done before account creation)
       },
       orderBy: { usedAt: 'desc' }
     });
@@ -104,14 +122,44 @@ export class AuthService {
       where: { 
         phone, 
         isUsed: true,
-        usedAt: { not: null }
+        usedAt: { 
+          not: null,
+          gte: twoHoursAgo // Only recent verifications
+        },
+        userId: null // Pre-registration verification
       },
       orderBy: { usedAt: 'desc' }
     }) : null;
 
-    // Create user with profile in a transaction
+    // Create new user with profile in a transaction
     const result = await this.prisma.$transaction(async (prisma) => {
-      // Create user
+      // If deleted user exists, update their email/phone to free up unique constraint
+      if (deletedUser) {
+        const timestamp = Date.now();
+        const updateData: any = {
+          updatedAt: new Date()
+        };
+        
+        // Update email if it matches (ensure it fits within 255 chars)
+        if (deletedUser.email === email) {
+          const newEmail = `deleted_${timestamp}_${email}`;
+          // Truncate to 255 characters if needed
+          updateData.email = newEmail.length > 255 ? newEmail.substring(0, 255) : newEmail;
+        }
+        
+        // Update phone if it matches - set to null since phone column is only 20 chars
+        // Setting to null is safe since phone is nullable and unique constraint allows null
+        if (phone && deletedUser.phone === phone) {
+          updateData.phone = null;
+        }
+        
+        await prisma.user.update({
+          where: { id: deletedUser.id },
+          data: updateData
+        });
+      }
+
+      // Always create a new user record
       const user = await prisma.user.create({
         data: {
           id: uuidv4(),
@@ -172,12 +220,12 @@ export class AuthService {
         }
       }
 
-             // Create College Profile if role is COLLEGE_ADMIN
-       if (role === 'COLLEGE_ADMIN') {
-         // Validate and set institution type
-         const validInstitutionType = this.validateInstitutionType(institutionType);
-         
-                 await prisma.collegeprofile.create({
+      // Create College Profile if role is COLLEGE_ADMIN
+      if (role === 'COLLEGE_ADMIN') {
+        // Validate and set institution type
+        const validInstitutionType = this.validateInstitutionType(institutionType);
+        
+        await prisma.collegeprofile.create({
           data: {
             id: uuidv4(),
             userId: user.id,
@@ -193,7 +241,7 @@ export class AuthService {
             updatedAt: new Date(),
           }
         });
-       }
+      }
 
       return user;
     });
@@ -1059,9 +1107,13 @@ export class AuthService {
    */
   async sendEmailOtp(email: string, userName?: string): Promise<{ message: string; success: boolean }> {
     try {
-      // Check if user exists
-      const user = await this.prisma.user.findUnique({
-        where: { email, isActive: true, isDeleted: false }
+      // Check if user exists (excluding deleted users)
+      const user = await this.prisma.user.findFirst({
+        where: { 
+          email, 
+          isActive: true, 
+          isDeleted: false 
+        }
       });
 
       // If user exists and email is already verified, throw error
@@ -1129,9 +1181,13 @@ export class AuthService {
    */
   async sendPhoneOtp(phone: string, userName?: string): Promise<{ message: string; success: boolean }> {
     try {
-      // Check if user exists
-      const user = await this.prisma.user.findUnique({
-        where: { phone, isActive: true, isDeleted: false }
+      // Check if user exists (excluding deleted users)
+      const user = await this.prisma.user.findFirst({
+        where: { 
+          phone, 
+          isActive: true, 
+          isDeleted: false 
+        }
       });
 
       // If user exists and phone is already verified, throw error
@@ -1199,15 +1255,23 @@ export class AuthService {
    */
   async checkAvailability(type: 'email' | 'phone', value: string): Promise<{ available: boolean; message: string }> {
     try {
-      // Check if user already exists with this email/phone
+      // Check if user already exists with this email/phone (excluding deleted users)
       let existingUser;
       if (type === 'email') {
-        existingUser = await this.prisma.user.findUnique({
-          where: { email: value, isActive: true, isDeleted: false }
+        existingUser = await this.prisma.user.findFirst({
+          where: { 
+            email: value, 
+            isActive: true, 
+            isDeleted: false 
+          }
         });
       } else {
-        existingUser = await this.prisma.user.findUnique({
-          where: { phone: value, isActive: true, isDeleted: false }
+        existingUser = await this.prisma.user.findFirst({
+          where: { 
+            phone: value, 
+            isActive: true, 
+            isDeleted: false 
+          }
         });
       }
 

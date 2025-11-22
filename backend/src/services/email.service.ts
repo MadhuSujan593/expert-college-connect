@@ -252,13 +252,13 @@ export class EmailService {
         <body>
           <div class="container">
             <div class="header">
-              <div class="logo">🎓 Expert College Connect</div>
+              <div class="logo">🎓 VMS Techhub</div>
               <div class="subtitle">Email Verification</div>
             </div>
             <div class="content">
               <div class="greeting">Hello {{userName}}! 👋</div>
               <div class="description">
-                Thank you for joining <strong>Expert College Connect</strong>! To complete your registration and unlock all features, please use the verification code below.
+                Thank you for joining <strong>VMS Techhub</strong>! To complete your registration and unlock all features, please use the verification code below.
               </div>
               
               <div class="otp-container">
@@ -279,7 +279,7 @@ export class EmailService {
               
               <div class="closing">
                 <p>Ready to start your educational journey?</p>
-                <p class="team-name">The Expert College Connect Team</p>
+                <p class="team-name">The VMS Techhub Team</p>
               </div>
             </div>
             <div class="footer">
@@ -290,7 +290,7 @@ export class EmailService {
               </div>
               <p>This is an automated message, please do not reply to this email.</p>
               <p style="margin-top: 10px; font-size: 12px; color: #a0aec0;">
-                © 2025 Expert College Connect. All rights reserved.
+                © 2025 VMS Techhub. All rights reserved.
               </p>
             </div>
           </div>
@@ -304,11 +304,11 @@ export class EmailService {
 
       this.logger.log('Preparing mail options...');
       const mailOptions = {
-        from: `"Expert College Connect" <${this.configService.get('SMTP_USER')}>`,
+        from: `"VMS Techhub" <${this.configService.get('SMTP_USER')}>`,
         to: email,
-        subject: 'Verify Your Email Address - Expert College Connect',
+        subject: 'Verify Your Email Address - VMS Techhub',
         html: htmlContent,
-        text: `Hello ${userName}!\n\nYour verification code is: ${otp}\n\nThis code will expire in 10 minutes.\n\nBest regards,\nThe Expert College Connect Team`,
+        text: `Hello ${userName}!\n\nYour verification code is: ${otp}\n\nThis code will expire in 10 minutes.\n\nBest regards,\nThe VMS Techhub Team`,
       };
 
       this.logger.log('Mail options prepared:', {
@@ -351,7 +351,7 @@ export class EmailService {
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Welcome to Expert College Connect</title>
+          <title>Welcome to VMS Techhub</title>
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body { 
@@ -519,13 +519,13 @@ export class EmailService {
         <body>
           <div class="container">
             <div class="header">
-              <div class="logo">🎉 Expert College Connect</div>
+              <div class="logo">🎉 VMS Techhub</div>
               <div class="subtitle">Welcome to Your Educational Journey!</div>
             </div>
             <div class="content">
               <div class="greeting">Hello {{userName}}! 🎓</div>
               <div class="description">
-                Welcome to <strong>Expert College Connect</strong>! Your account has been successfully verified and you're now ready to connect with experts and colleges worldwide.
+                Welcome to <strong>VMS Techhub</strong>! Your account has been successfully verified and you're now ready to connect with experts and colleges worldwide.
               </div>
               
               <div class="features-section">
@@ -556,7 +556,7 @@ export class EmailService {
               
               <div class="closing">
                 <p>If you have any questions, our support team is here to help!</p>
-                <p class="team-name">The Expert College Connect Team</p>
+                <p class="team-name">The VMS Techhub Team</p>
               </div>
             </div>
             <div class="footer">
@@ -567,7 +567,7 @@ export class EmailService {
               </div>
               <p>This is an automated message, please do not reply to this email.</p>
               <p style="margin-top: 10px; font-size: 12px; color: #a0aec0;">
-                © 2025 Expert College Connect. All rights reserved.
+                © 2025 VMS Techhub. All rights reserved.
               </p>
             </div>
           </div>
@@ -582,11 +582,11 @@ export class EmailService {
       });
 
       const mailOptions = {
-        from: `"Expert College Connect" <${this.configService.get('SMTP_USER')}>`,
+        from: `"VMS Techhub" <${this.configService.get('SMTP_USER')}>`,
         to: email,
-        subject: 'Welcome to Expert College Connect! 🎉',
+        subject: 'Welcome to VMS Techhub! 🎉',
         html: htmlContent,
-        text: `Hello ${userName}!\n\nWelcome to Expert College Connect! Your account has been successfully verified.\n\nGet started by visiting our platform and completing your profile.\n\nBest regards,\nThe Expert College Connect Team`,
+        text: `Hello ${userName}!\n\nWelcome to VMS Techhub! Your account has been successfully verified.\n\nGet started by visiting our platform and completing your profile.\n\nBest regards,\nThe VMS Techhub Team`,
       };
 
       const result = await this.transporter.sendMail(mailOptions);
@@ -735,13 +735,13 @@ export class EmailService {
         <body>
           <div class="container">
             <div class="header">
-              <div class="logo">🔐 Expert College Connect</div>
+              <div class="logo">🔐 VMS Techhub</div>
               <div class="subtitle">Password Reset Code</div>
             </div>
             <div class="content">
               <div class="greeting">Hello {{userName}}! 🔑</div>
               <div class="description">
-                We received a request to reset your password for your <strong>Expert College Connect</strong> account. Use the verification code below to proceed with resetting your password.
+                We received a request to reset your password for your <strong>VMS Techhub</strong> account. Use the verification code below to proceed with resetting your password.
               </div>
               
               <div class="otp-container">
@@ -762,13 +762,13 @@ export class EmailService {
               
               <div class="closing">
                 <p>Need help? Contact our support team.</p>
-                <p class="team-name">The Expert College Connect Team</p>
+                <p class="team-name">The VMS Techhub Team</p>
               </div>
             </div>
             <div class="footer">
               <p>This is an automated message, please do not reply to this email.</p>
               <p style="margin-top: 10px; font-size: 12px; color: #a0aec0;">
-                © 2025 Expert College Connect. All rights reserved.
+                © 2025 VMS Techhub. All rights reserved.
               </p>
             </div>
           </div>
@@ -780,11 +780,11 @@ export class EmailService {
       const htmlContent = template({ userName, otp });
 
       const mailOptions = {
-        from: `"Expert College Connect" <${this.configService.get('SMTP_USER')}>`,
+        from: `"VMS Techhub" <${this.configService.get('SMTP_USER')}>`,
         to: email,
-        subject: 'Password Reset Code - Expert College Connect',
+        subject: 'Password Reset Code - VMS Techhub',
         html: htmlContent,
-        text: `Hello ${userName}!\n\nYour password reset verification code is: ${otp}\n\nThis code will expire in 10 minutes.\n\nBest regards,\nThe Expert College Connect Team`,
+        text: `Hello ${userName}!\n\nYour password reset verification code is: ${otp}\n\nThis code will expire in 10 minutes.\n\nBest regards,\nThe VMS Techhub Team`,
       };
 
       const result = await this.transporter.sendMail(mailOptions);
@@ -831,7 +831,7 @@ export class EmailService {
             </div>
             <div class="content">
               <h2>Hello {{userName}}!</h2>
-              <p>We received a request to reset your password for your Expert College Connect account.</p>
+              <p>We received a request to reset your password for your VMS Techhub account.</p>
               
               <p>Click the button below to reset your password:</p>
               
@@ -847,7 +847,7 @@ export class EmailService {
               <p>If the button doesn't work, copy and paste this link into your browser:</p>
               <p style="word-break: break-all; color: #4F46E5;">{{resetUrl}}</p>
               
-              <p>Best regards,<br>The Expert College Connect Team</p>
+              <p>Best regards,<br>The VMS Techhub Team</p>
             </div>
             <div class="footer">
               <p>This is an automated message, please do not reply to this email.</p>
@@ -861,11 +861,11 @@ export class EmailService {
       const htmlContent = template({ userName, resetUrl });
 
       const mailOptions = {
-        from: `"Expert College Connect" <${this.configService.get('SMTP_USER')}>`,
+        from: `"VMS Techhub" <${this.configService.get('SMTP_USER')}>`,
         to: email,
-        subject: 'Password Reset Request - Expert College Connect',
+        subject: 'Password Reset Request - VMS Techhub',
         html: htmlContent,
-        text: `Hello ${userName}!\n\nWe received a request to reset your password.\n\nClick this link to reset your password: ${resetUrl}\n\nThis link will expire in 1 hour.\n\nBest regards,\nThe Expert College Connect Team`,
+        text: `Hello ${userName}!\n\nWe received a request to reset your password.\n\nClick this link to reset your password: ${resetUrl}\n\nThis link will expire in 1 hour.\n\nBest regards,\nThe VMS Techhub Team`,
       };
 
       const result = await this.transporter.sendMail(mailOptions);
@@ -898,6 +898,558 @@ export class EmailService {
       return true;
     } catch (error) {
       this.logger.error(`Failed to send contact email to ${to}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Send New Application Email to College Admin
+   */
+  async sendNewApplicationEmail(
+    collegeEmail: string,
+    collegeName: string,
+    expertName: string,
+    expertExpertise: string,
+    requirementTitle: string,
+    applicationId: string
+  ): Promise<boolean> {
+    try {
+      this.logger.log(`[sendNewApplicationEmail] Called with params:`, {
+        collegeEmail,
+        collegeName,
+        expertName,
+        expertExpertise,
+        requirementTitle,
+        applicationId,
+        nodeEnv: this.configService.get('NODE_ENV'),
+        hasTransporter: !!this.transporter
+      });
+
+      if (this.configService.get('NODE_ENV') === 'development' || !this.transporter) {
+        this.logger.log(`[DEV MODE] New application email would be sent to: ${collegeEmail}`);
+        return true;
+      }
+
+      const frontendUrl = this.configService.get('CORS_ORIGIN') || 'http://localhost:5173';
+      const applicationUrl = `${frontendUrl}/dashboard/college?tab=applications&applicationId=${applicationId}`;
+
+      const emailTemplate = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>New Expert Application - VMS Techhub</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { 
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+              line-height: 1.6; 
+              color: #1a202c; 
+              background-color: #f7fafc;
+              padding: 0;
+              margin: 0;
+            }
+            .email-wrapper {
+              background-color: #f7fafc;
+              padding: 40px 20px;
+            }
+            .container { 
+              max-width: 600px; 
+              margin: 0 auto; 
+              background: #ffffff; 
+              border-radius: 8px; 
+              box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+              overflow: hidden;
+            }
+            .header { 
+              background: #1a202c;
+              color: #ffffff; 
+              padding: 32px 40px; 
+              text-align: left;
+              border-bottom: 3px solid #4f46e5;
+            }
+            .logo { 
+              font-size: 20px; 
+              font-weight: 700; 
+              letter-spacing: -0.5px;
+              margin-bottom: 4px;
+            }
+            .subtitle { 
+              font-size: 13px; 
+              color: #cbd5e0;
+              font-weight: 400;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+            }
+            .content { 
+              padding: 40px;
+              background: #ffffff;
+            }
+            .greeting { 
+              font-size: 20px; 
+              font-weight: 600; 
+              color: #1a202c; 
+              margin-bottom: 16px;
+              line-height: 1.4;
+            }
+            .description { 
+              font-size: 15px; 
+              color: #4a5568; 
+              margin-bottom: 32px; 
+              line-height: 1.7;
+            }
+            .info-card {
+              background: #f7fafc;
+              border: 1px solid #e2e8f0;
+              border-radius: 6px;
+              padding: 24px;
+              margin: 32px 0;
+            }
+            .info-item {
+              margin-bottom: 16px;
+              padding-bottom: 16px;
+              border-bottom: 1px solid #e2e8f0;
+            }
+            .info-item:last-child {
+              margin-bottom: 0;
+              padding-bottom: 0;
+              border-bottom: none;
+            }
+            .info-label {
+              font-size: 12px;
+              font-weight: 600;
+              color: #718096;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              margin-bottom: 6px;
+            }
+            .info-value {
+              font-size: 16px;
+              color: #1a202c;
+              font-weight: 500;
+            }
+            .cta-section {
+              text-align: center;
+              margin: 32px 0;
+            }
+            .cta-button { 
+              display: inline-block; 
+              background: #3b82f6 !important;
+              color: #ffffff !important; 
+              padding: 14px 32px; 
+              text-decoration: none; 
+              border-radius: 6px; 
+              font-weight: 700;
+              font-size: 16px;
+              transition: background-color 0.2s;
+              box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+              letter-spacing: 0.3px;
+            }
+            .cta-button:hover {
+              background: #2563eb !important;
+              color: #ffffff !important;
+              box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
+            }
+            .footer { 
+              background: #f7fafc;
+              border-top: 1px solid #e2e8f0;
+              padding: 24px 40px; 
+              text-align: center;
+            }
+            .footer-text {
+              color: #718096; 
+              font-size: 13px;
+              line-height: 1.6;
+            }
+            .footer-copyright {
+              color: #a0aec0;
+              font-size: 12px;
+              margin-top: 12px;
+            }
+            @media (max-width: 600px) {
+              .email-wrapper { padding: 20px 10px; }
+              .container { border-radius: 4px; }
+              .header { padding: 24px 24px; }
+              .content { padding: 32px 24px; }
+              .footer { padding: 20px 24px; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="email-wrapper">
+            <div class="container">
+              <div class="header">
+                <div class="logo">VMS Techhub</div>
+                <div class="subtitle">New Application</div>
+              </div>
+              <div class="content">
+                <div class="greeting">Dear {{collegeName}},</div>
+                <div class="description">
+                  Great news! A new expert has submitted an application for your requirement.
+                </div>
+                
+                <div class="info-card">
+                  <div class="info-item">
+                    <div class="info-label">Name</div>
+                    <div class="info-value">{{expertName}}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Requirement Title</div>
+                    <div class="info-value">{{requirementTitle}}</div>
+                  </div>
+                </div>
+                
+                <div class="cta-section">
+                  <a href="{{applicationUrl}}" class="cta-button">View Application</a>
+                </div>
+                
+                <div class="description" style="margin-top: 32px; font-size: 14px; color: #718096;">
+                  Please log in to your dashboard to view the complete application details and take appropriate action.
+                </div>
+              </div>
+              <div class="footer">
+                <div class="footer-text">
+                  This is an automated notification from VMS Techhub.
+                </div>
+                <div class="footer-copyright">
+                  © 2025 VMS Techhub. All rights reserved.
+                </div>
+              </div>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      const template = handlebars.compile(emailTemplate);
+      const htmlContent = template({
+        collegeName,
+        expertName,
+        expertExpertise,
+        requirementTitle,
+        applicationUrl
+      });
+
+      const mailOptions = {
+        from: `"VMS Techhub" <${this.configService.get('SMTP_USER')}>`,
+        to: collegeEmail,
+        subject: `New Application from ${expertName} - ${requirementTitle}`,
+        html: htmlContent,
+        text: `Hello ${collegeName}!\n\nGreat news! A new expert has submitted an application for your requirement: "${requirementTitle}".\n\nView the application: ${applicationUrl}\n\nBest regards,\nThe VMS Techhub Team`,
+        headers: {
+          'X-Entity-Ref-ID': applicationId,
+          'Message-ID': `<application-${applicationId}-${Date.now()}@vms-techhub.com>`,
+          'X-Prevent-Threading': '1'
+        }
+      };
+
+      const result = await this.transporter.sendMail(mailOptions);
+      this.logger.log(`New application email sent successfully to ${collegeEmail}. Message ID: ${result.messageId}`);
+      return true;
+    } catch (error) {
+      this.logger.error(`Failed to send new application email to ${collegeEmail}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Send Application Status Update Email to Expert
+   */
+  async sendApplicationStatusUpdateEmail(
+    expertEmail: string,
+    expertName: string,
+    requirementTitle: string,
+    collegeName: string,
+    status: string,
+    reviewNotes?: string
+  ): Promise<boolean> {
+    try {
+      if (this.configService.get('NODE_ENV') === 'development' || !this.transporter) {
+        this.logger.log(`[DEV MODE] Application status update email would be sent to: ${expertEmail}`);
+        return true;
+      }
+
+      const frontendUrl = this.configService.get('CORS_ORIGIN') || 'http://localhost:5173';
+      const isShortlisted = status === 'SHORTLISTED';
+      const statusColor = isShortlisted ? '#10b981' : '#ef4444';
+      const statusEmoji = isShortlisted ? '🎉' : '📋';
+      const statusText = isShortlisted ? 'Shortlisted' : 'Rejected';
+
+      const emailTemplate = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Application Status Update - VMS Techhub</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { 
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+              line-height: 1.6; 
+              color: #1a202c; 
+              background-color: #f7fafc;
+              padding: 0;
+              margin: 0;
+            }
+            .email-wrapper {
+              background-color: #f7fafc;
+              padding: 40px 20px;
+            }
+            .container { 
+              max-width: 600px; 
+              margin: 0 auto; 
+              background: #ffffff; 
+              border-radius: 8px; 
+              box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+              overflow: hidden;
+            }
+            .header { 
+              background: #1a202c;
+              color: #ffffff; 
+              padding: 32px 40px; 
+              text-align: left;
+              border-bottom: 3px solid ${statusColor};
+            }
+            .logo { 
+              font-size: 20px; 
+              font-weight: 700; 
+              letter-spacing: -0.5px;
+              margin-bottom: 4px;
+            }
+            .subtitle { 
+              font-size: 13px; 
+              color: #cbd5e0;
+              font-weight: 400;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+            }
+            .content { 
+              padding: 40px;
+              background: #ffffff;
+            }
+            .greeting { 
+              font-size: 20px; 
+              font-weight: 600; 
+              color: #1a202c; 
+              margin-bottom: 16px;
+              line-height: 1.4;
+            }
+            .description { 
+              font-size: 15px; 
+              color: #4a5568; 
+              margin-bottom: 32px; 
+              line-height: 1.7;
+            }
+            .status-badge {
+              background: ${isShortlisted ? '#f0fdf4' : '#fef2f2'};
+              border: 2px solid ${statusColor};
+              border-radius: 6px;
+              padding: 16px 24px;
+              margin: 32px 0;
+              text-align: center;
+            }
+            .status-text {
+              font-size: 18px;
+              font-weight: 700;
+              color: ${statusColor};
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+            }
+            .info-card {
+              background: #f7fafc;
+              border: 1px solid #e2e8f0;
+              border-radius: 6px;
+              padding: 24px;
+              margin: 32px 0;
+            }
+            .info-item {
+              margin-bottom: 16px;
+              padding-bottom: 16px;
+              border-bottom: 1px solid #e2e8f0;
+            }
+            .info-item:last-child {
+              margin-bottom: 0;
+              padding-bottom: 0;
+              border-bottom: none;
+            }
+            .info-label {
+              font-size: 12px;
+              font-weight: 600;
+              color: #718096;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              margin-bottom: 6px;
+            }
+            .info-value {
+              font-size: 16px;
+              color: #1a202c;
+              font-weight: 500;
+            }
+            .notes-card {
+              background: #fffbeb;
+              border: 1px solid #fde68a;
+              border-left: 4px solid #f59e0b;
+              border-radius: 6px;
+              padding: 20px;
+              margin: 32px 0;
+            }
+            .notes-title {
+              font-size: 13px;
+              font-weight: 600;
+              color: #92400e;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              margin-bottom: 12px;
+            }
+            .notes-content {
+              font-size: 15px;
+              color: #78350f;
+              line-height: 1.7;
+            }
+            .cta-section {
+              text-align: center;
+              margin: 32px 0;
+            }
+            .cta-button { 
+              display: inline-block; 
+              background: ${statusColor};
+              color: #ffffff; 
+              padding: 14px 32px; 
+              text-decoration: none; 
+              border-radius: 6px; 
+              font-weight: 600;
+              font-size: 15px;
+              transition: background-color 0.2s;
+            }
+            .cta-button:hover {
+              opacity: 0.9;
+            }
+            .message-box {
+              background: ${isShortlisted ? '#f0fdf4' : '#f7fafc'};
+              border-left: 3px solid ${statusColor};
+              padding: 20px;
+              border-radius: 6px;
+              margin: 32px 0;
+            }
+            .message-text {
+              font-size: 14px;
+              color: ${isShortlisted ? '#065f46' : '#4a5568'};
+              line-height: 1.7;
+            }
+            .footer { 
+              background: #f7fafc;
+              border-top: 1px solid #e2e8f0;
+              padding: 24px 40px; 
+              text-align: center;
+            }
+            .footer-text {
+              color: #718096; 
+              font-size: 13px;
+              line-height: 1.6;
+            }
+            .footer-copyright {
+              color: #a0aec0;
+              font-size: 12px;
+              margin-top: 12px;
+            }
+            @media (max-width: 600px) {
+              .email-wrapper { padding: 20px 10px; }
+              .container { border-radius: 4px; }
+              .header { padding: 24px 24px; }
+              .content { padding: 32px 24px; }
+              .footer { padding: 20px 24px; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="email-wrapper">
+            <div class="container">
+              <div class="header">
+                <div class="logo">VMS Techhub</div>
+                <div class="subtitle">Application Status Update</div>
+              </div>
+              <div class="content">
+                <div class="greeting">Dear {{expertName}},</div>
+                <div class="description">
+                  We are writing to inform you that the status of your application has been updated by the college.
+                </div>
+                
+                <div class="status-badge">
+                  <div class="status-text">${statusText}</div>
+                </div>
+                
+                <div class="info-card">
+                  <div class="info-item">
+                    <div class="info-label">Requirement Title</div>
+                    <div class="info-value">{{requirementTitle}}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Institution</div>
+                    <div class="info-value">{{collegeName}}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Application Status</div>
+                    <div class="info-value">${statusText}</div>
+                  </div>
+                </div>
+                
+                {{#if reviewNotes}}
+                <div class="notes-card">
+                  <div class="notes-title">Review Notes</div>
+                  <div class="notes-content">{{reviewNotes}}</div>
+                </div>
+                {{/if}}
+                
+                <div class="cta-section">
+                  <a href="{{frontendUrl}}/dashboard/expert?tab=applications" class="cta-button">View My Applications</a>
+                </div>
+                
+                <div class="message-box">
+                  <div class="message-text">
+                    ${isShortlisted 
+                      ? 'Congratulations! Your application has been shortlisted. The college may contact you directly for the next steps in the selection process.' 
+                      : 'Thank you for your interest in this opportunity. We encourage you to explore other requirements that align with your expertise and continue applying.'}
+                  </div>
+                </div>
+              </div>
+              <div class="footer">
+                <div class="footer-text">
+                  This is an automated notification from VMS Techhub.
+                </div>
+                <div class="footer-copyright">
+                  © 2025 VMS Techhub. All rights reserved.
+                </div>
+              </div>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      const template = handlebars.compile(emailTemplate);
+      const htmlContent = template({
+        expertName,
+        requirementTitle,
+        collegeName,
+        reviewNotes: reviewNotes || null,
+        frontendUrl
+      });
+
+      const mailOptions = {
+        from: `"VMS Techhub" <${this.configService.get('SMTP_USER')}>`,
+        to: expertEmail,
+        subject: `Application ${statusText} - ${requirementTitle}`,
+        html: htmlContent,
+        text: `Hello ${expertName}!\n\nYour application for "${requirementTitle}" at ${collegeName} has been ${statusText.toLowerCase()}.\n\n${reviewNotes ? `Review Notes: ${reviewNotes}\n\n` : ''}View your applications: ${frontendUrl}/dashboard/expert?tab=applications\n\nBest regards,\nThe VMS Techhub Team`
+      };
+
+      const result = await this.transporter.sendMail(mailOptions);
+      this.logger.log(`Application status update email sent successfully to ${expertEmail}. Message ID: ${result.messageId}`);
+      return true;
+    } catch (error) {
+      this.logger.error(`Failed to send application status update email to ${expertEmail}:`, error);
       return false;
     }
   }
