@@ -11,7 +11,6 @@ import ExpertProfileTab from './components/ExpertProfileTab';
 import ExpertOpportunitiesTab from './components/ExpertOpportunitiesTab';
 import ExpertApplicationsTab from './components/ExpertApplicationsTab';
 import ExpertRatingsTab from './components/ExpertRatingsTab';
-import ExpertSettingsTab from './components/ExpertSettingsTab';
 import ExpertRatingRequestsList from '../../components/expert/ExpertRatingRequestsList'; // Review this import path if needed
 
 // Modals
@@ -218,14 +217,7 @@ const ExpertDashboard = () => {
             loading={loading}
           />
         );
-      case 'settings':
-        return (
-          <ExpertSettingsTab
-            user={user}
-            logout={logout}
-            showToast={showToast}
-          />
-        );
+
       default:
         return <ExpertOverview stats={stats} user={user} profile={profile} workExperiences={workExperiences} onTabChange={setActiveTab} />;
     }

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     User, Edit3, Plus, Trash2, Save, Download,
     CheckCircle, Briefcase, MapPin, Mail, Phone,
-    X, Globe, Award, Shield, FileText
+    X, Globe, Award, Shield, FileText, AlertCircle
 } from 'lucide-react';
 import FileUpload from '../../../components/common/FileUpload';
 import CountrySelector from '../../../components/common/CountrySelector';
@@ -203,6 +203,153 @@ const ExpertProfileTab = ({ profile, user, onProfileUpdate, showToast }) => {
     return (
         <div className="space-y-6">
             {/* Header Card */}
+            {/* Profile Completeness Section */}
+            {(() => {
+                const getProfileStats = () => {
+                    let score = 0;
+                    const missing = [];
+
+                    // Helper to safely access nested properties
+                    const p = profile || {};
+                    const u = user || {};
+                    // Check various possible locations for expert profile data
+                    const ep = p.expertProfile || p.expertprofile || p.data || p;
+
+                    // Basic Info (30%)
+                    if (u.fullName || u.displayName) {
+                        score += 10;
+                    } else {
+                        missing.push("Full Name");
+                    }
+
+                    if (u.email) {
+                        score += 10;
+                    } else {
+                        missing.push("Email");
+                    }
+
+                    if (u.phone || u.phoneNumber || ep.phone) {
+                        score += 10;
+                    } else {
+                        missing.push("Phone Number");
+                    }
+
+                    // Professional Info (20%)
+                    const jobTitle = p.jobTitle || ep.jobTitle || p.title;
+                    const hourlyRate = p.hourlyRate || ep.hourlyRate;
+
+                    if (jobTitle) {
+                        score += 15;
+                    } else {
+                        missing.push("Job Title");
+                    }
+
+                    if (hourlyRate) {
+                        score += 5;
+                    } else {
+                        missing.push("Hourly Rate");
+                    }
+
+                    // Content (35%)
+                    const bio = p.bio || ep.bio;
+                    // Handle skills array which might be directly on profile or nested
+                    const skills = p.expertskill || p.skills || ep.expertskill || ep.skills || ep.expertSkills || [];
+
+                    if (bio) {
+                        score += 15;
+                    } else {
+                        missing.push("Bio");
+                    }
+
+                    if (skills.length > 0) {
+                        score += 15;
+                    } else {
+                        missing.push("Skills");
+                    }
+
+                    // Experience logic
+                    const hasExperience = (p.experience && p.experience.length > 0) ||
+                        (p.workExperience && p.workExperience.length > 0) ||
+                        (ep.experience && ep.experience.length > 0) ||
+                        (ep.workExperience && ep.workExperience.length > 0) ||
+                        (workExperiences && workExperiences.length > 0);
+
+                    if (hasExperience) {
+                        score += 5;
+                    } else {
+                        missing.push("Work Experience");
+                    }
+
+                    // Assets & Verification (15%)
+                    const hasPic = p.profilePicture || ep.profilePicture || u.profilePicture;
+                    if (hasPic) {
+                        score += 5;
+                    } else {
+                        missing.push("Profile Picture");
+                    }
+
+                    if (u.isEmailVerified || u.isPhoneVerified) {
+                        score += 10;
+                    } else {
+                        missing.push("Verification (Email/Phone)");
+                    }
+
+                    return {
+                        score: Math.min(score, 100),
+                        missing
+                    };
+                };
+
+                const { score: profileCompletion, missing: missingFields } = getProfileStats();
+
+                if (profileCompletion === 100) return null;
+
+                return (
+                    <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-5 mb-6">
+                        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                            <div className="flex items-center gap-4">
+                                <div className="relative w-16 h-16 flex-shrink-0">
+                                    <div className="w-16 h-16 rounded-full border-4 border-white bg-indigo-100 flex items-center justify-center">
+                                        <span className="text-sm font-bold text-indigo-700">{profileCompletion}%</span>
+                                    </div>
+                                    <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 36 36">
+                                        <path
+                                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                            fill="none"
+                                            stroke="#E0E7FF"
+                                            strokeWidth="3"
+                                        />
+                                        <path
+                                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                            fill="none"
+                                            stroke="#4F46E5"
+                                            strokeWidth="3"
+                                            strokeDasharray={`${profileCompletion}, 100`}
+                                        />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-slate-800 text-lg">Your profile is {profileCompletion}% complete</h3>
+                                    <p className="text-slate-600 text-sm">Complete your profile to increase your chances of being hired.</p>
+                                </div>
+                            </div>
+
+                            {/* Missing Details List */}
+                            {missingFields.length > 0 && (
+                                <div className="flex flex-wrap gap-2 justify-center md:justify-end max-w-md">
+                                    {missingFields.map((field, idx) => (
+                                        <span key={idx} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white text-indigo-700 border border-indigo-100 shadow-sm">
+                                            <AlertCircle className="w-3 h-3" />
+                                            {field}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
+            })()}
+
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 relative overflow-hidden">
 
 

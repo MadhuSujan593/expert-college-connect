@@ -17,106 +17,7 @@ import StatsCard from '../../../components/common/StatsCard';
 const ExpertOverview = ({ stats, applicationStats, user, profile, subscription, workExperiences, onTabChange }) => {
     const navigate = useNavigate();
 
-    // Calculate profile completion (simplified logic)
-    // Calculate profile completion
-    // Calculate profile completion
-    // Calculate profile completion and missing fields
-    const getProfileStats = () => {
-        let score = 0;
-        const missing = [];
 
-        // Helper to safely access nested properties
-        const p = profile || {};
-        const u = user || {};
-        // Check various possible locations for expert profile data
-        const ep = p.expertProfile || p.expertprofile || p.data || p;
-
-        // Basic Info (30%)
-        if (u.fullName || u.displayName) {
-            score += 10;
-        } else {
-            missing.push("Full Name");
-        }
-
-        if (u.email) {
-            score += 10;
-        } else {
-            missing.push("Email");
-        }
-
-        if (u.phone || u.phoneNumber || ep.phone) {
-            score += 10;
-        } else {
-            missing.push("Phone Number");
-        }
-
-        // Professional Info (20%)
-        const jobTitle = p.jobTitle || ep.jobTitle || p.title;
-        const hourlyRate = p.hourlyRate || ep.hourlyRate;
-
-        if (jobTitle) {
-            score += 15;
-        } else {
-            missing.push("Job Title");
-        }
-
-        if (hourlyRate) {
-            score += 5;
-        } else {
-            missing.push("Hourly Rate");
-        }
-
-        // Content (35%)
-        const bio = p.bio || ep.bio;
-        // Handle skills array which might be directly on profile or nested
-        const skills = p.expertskill || p.skills || ep.expertskill || ep.skills || ep.expertSkills || [];
-
-        if (bio) {
-            score += 15;
-        } else {
-            missing.push("Bio");
-        }
-
-        if (skills.length > 0) {
-            score += 15;
-        } else {
-            missing.push("Skills");
-        }
-
-        // Experience logic
-        const hasExperience = (p.experience && p.experience.length > 0) ||
-            (p.workExperience && p.workExperience.length > 0) ||
-            (ep.experience && ep.experience.length > 0) ||
-            (ep.workExperience && ep.workExperience.length > 0) ||
-            (workExperiences && workExperiences.length > 0);
-
-        if (hasExperience) {
-            score += 5;
-        } else {
-            missing.push("Work Experience");
-        }
-
-        // Assets & Verification (15%)
-        const hasPic = p.profilePicture || ep.profilePicture || u.profilePicture;
-        if (hasPic) {
-            score += 5;
-        } else {
-            missing.push("Profile Picture");
-        }
-
-        if (u.isEmailVerified || u.isPhoneVerified) {
-            score += 10;
-        } else {
-            missing.push("Verification (Email/Phone)");
-        }
-
-        return {
-            score: Math.min(score, 100),
-            missing
-        };
-    };
-
-    const { score: profileCompletion, missing: missingFields } = getProfileStats();
 
 
 
@@ -151,37 +52,11 @@ const ExpertOverview = ({ stats, applicationStats, user, profile, subscription, 
                     <p className="text-slate-500 mt-1">Here's what's happening with your profile today.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <div className="text-right hidden md:block">
-                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Profile Status</p>
-                        <p className="font-bold text-indigo-600">{profileCompletion}% Complete</p>
-                    </div>
-                    <div className="w-12 h-12 rounded-full border-4 border-indigo-100 flex items-center justify-center bg-white relative">
-                        <div
-                            className="absolute inset-0 rounded-full border-4 border-indigo-600"
-                            style={{
-                                clipPath: `inset(0 ${100 - profileCompletion}% 0 0)` // Simple progress visualization
-                            }}
-                        />
-                        <span className="text-xs font-bold text-indigo-700 relative z-10">{profileCompletion}%</span>
-                    </div>
+                    {/* Removed Profile Completion Indicator */}
                 </div>
 
                 {/* Missing Fields Tooltip/List */}
-                {missingFields.length > 0 && profileCompletion < 100 && (
-                    <div className="w-full md:w-auto mt-2 md:mt-0 bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm">
-                        <p className="font-semibold text-amber-800 mb-1 flex items-center gap-1">
-                            <AlertCircle className="w-4 h-4" />
-                            Missing Details:
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                            {missingFields.map((field, idx) => (
-                                <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
-                                    {field}
-                                </span>
-                            ))}
-                        </div>
-                    </div>
-                )}
+
             </motion.div>
 
             {/* Stats Grid */}

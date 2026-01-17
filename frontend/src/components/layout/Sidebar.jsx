@@ -6,7 +6,6 @@ import {
     FileText,
     Users,
     LogOut,
-    Settings,
     Menu,
     X,
     ChevronRight,
@@ -48,7 +47,6 @@ const Sidebar = ({ user, logout, isOpen, toggleSidebar, mobile, activeTab, setAc
         { id: 'applications', label: 'Applications', icon: ClipboardCheck, path: '/dashboard/expert?tab=applications' },
         { id: 'requests', label: 'Rating Requests', icon: Menu, path: '/dashboard/expert?tab=requests' },
         { id: 'ratings', label: 'Reviews', icon: Star, path: '/dashboard/expert?tab=ratings' },
-        { id: 'settings', label: 'Settings', icon: Settings, path: '/dashboard/expert?tab=settings' },
     ];
 
     // Determine which nav items to use
