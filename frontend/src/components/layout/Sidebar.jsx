@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { useLocation, Link } from 'react-router-dom';
 
-const Sidebar = ({ user, logout, isOpen, toggleSidebar, mobile, activeTab, setActiveTab }) => {
+const Sidebar = ({ user, logout, isOpen, toggleSidebar, mobile, activeTab, setActiveTab, logoUrl }) => {
     const location = useLocation();
 
     // Always derive state from URL to ensure sync
@@ -74,10 +74,18 @@ const Sidebar = ({ user, logout, isOpen, toggleSidebar, mobile, activeTab, setAc
             {/* User Quick Info */}
             <div className="px-4 py-6">
                 <div className="p-4 rounded-sm bg-slate-900/50 border border-slate-800/50 flex items-center gap-3 relative overflow-hidden group">
-                    <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700">
-                        <span className="text-sm font-bold text-white">
-                            {user?.fullName?.charAt(0) || 'U'}
-                        </span>
+                    <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700 overflow-hidden">
+                        {logoUrl || user?.profileImage ? (
+                            <img
+                                src={logoUrl || user.profileImage}
+                                alt="Profile"
+                                className="w-full h-full object-cover"
+                            />
+                        ) : (
+                            <span className="text-sm font-bold text-white">
+                                {user?.fullName?.charAt(0) || 'U'}
+                            </span>
+                        )}
                     </div>
                     <div className="flex-1 overflow-hidden">
                         <h4 className="text-sm font-medium text-white truncate">{user?.fullName || 'User'}</h4>

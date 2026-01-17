@@ -3,19 +3,19 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Star, CheckCircle } from 'lucide-react';
 import api from '../../utils/api';
 
-const SimpleRatingModal = ({ 
-  isOpen, 
-  onClose, 
-  expert, 
-  requirement, 
-  application, 
+const SimpleRatingModal = ({
+  isOpen,
+  onClose,
+  expert,
+  requirement,
+  application,
   onRatingSubmitted,
-  ratingRequestId 
+  ratingRequestId
 }) => {
   const [rating, setRating] = useState(0);
   const [review, setReview] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  
+
   // Basic required questions
   const [questions, setQuestions] = useState({
     communication: 0,
@@ -32,16 +32,16 @@ const SimpleRatingModal = ({
   };
 
   const isFormValid = () => {
-    return rating > 0 && 
-           questions.communication > 0 && 
-           questions.expertise > 0 && 
-           questions.timeliness > 0 && 
-           questions.professionalism > 0;
+    return rating > 0 &&
+      questions.communication > 0 &&
+      questions.expertise > 0 &&
+      questions.timeliness > 0 &&
+      questions.professionalism > 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!isFormValid()) {
       // Show toast instead of alert
       if (typeof window !== 'undefined' && window.showToast) {
@@ -53,7 +53,7 @@ const SimpleRatingModal = ({
     }
 
     setSubmitting(true);
-    
+
     try {
       const ratingData = {
         expertProfileId: expert.id,
@@ -74,23 +74,23 @@ const SimpleRatingModal = ({
       console.log('Submitting rating data:', ratingData);
       const response = await api.post('/ratings', ratingData);
       console.log('Rating submission response:', response);
-      
+
       // Show success toast
       if (typeof window !== 'undefined' && window.showToast) {
         window.showToast('Rating submitted successfully!', 'success');
       } else {
         console.log('Rating submitted successfully!');
       }
-      
+
       onRatingSubmitted();
       onClose();
     } catch (error) {
       console.error('Error submitting rating:', error);
       console.error('Error details:', error.response?.data);
-      
+
       // Show specific error message
       let errorMessage = 'Failed to submit rating. Please try again.';
-      
+
       if (error.response?.data?.message) {
         if (error.response.data.message.includes('already rated')) {
           errorMessage = 'You have already rated this expert for this project.';
@@ -98,7 +98,7 @@ const SimpleRatingModal = ({
           errorMessage = error.response.data.message;
         }
       }
-      
+
       // Show error toast instead of alert
       if (typeof window !== 'undefined' && window.showToast) {
         window.showToast(errorMessage, 'error');
@@ -149,7 +149,7 @@ const SimpleRatingModal = ({
             {/* Required Questions */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-900">Required Ratings *</h3>
-              
+
               {/* Communication */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -164,11 +164,10 @@ const SimpleRatingModal = ({
                       className="p-2 hover:bg-gray-100 rounded-md transition-colors"
                     >
                       <Star
-                        className={`w-6 h-6 ${
-                          star <= questions.communication
+                        className={`w-6 h-6 ${star <= questions.communication
                             ? 'text-yellow-400 fill-current'
                             : 'text-gray-300'
-                        }`}
+                          }`}
                       />
                     </button>
                   ))}
@@ -189,11 +188,10 @@ const SimpleRatingModal = ({
                       className="p-2 hover:bg-gray-100 rounded-md transition-colors"
                     >
                       <Star
-                        className={`w-6 h-6 ${
-                          star <= questions.expertise
+                        className={`w-6 h-6 ${star <= questions.expertise
                             ? 'text-yellow-400 fill-current'
                             : 'text-gray-300'
-                        }`}
+                          }`}
                       />
                     </button>
                   ))}
@@ -214,11 +212,10 @@ const SimpleRatingModal = ({
                       className="p-2 hover:bg-gray-100 rounded-md transition-colors"
                     >
                       <Star
-                        className={`w-6 h-6 ${
-                          star <= questions.timeliness
+                        className={`w-6 h-6 ${star <= questions.timeliness
                             ? 'text-yellow-400 fill-current'
                             : 'text-gray-300'
-                        }`}
+                          }`}
                       />
                     </button>
                   ))}
@@ -239,11 +236,10 @@ const SimpleRatingModal = ({
                       className="p-2 hover:bg-gray-100 rounded-md transition-colors"
                     >
                       <Star
-                        className={`w-6 h-6 ${
-                          star <= questions.professionalism
+                        className={`w-6 h-6 ${star <= questions.professionalism
                             ? 'text-yellow-400 fill-current'
                             : 'text-gray-300'
-                        }`}
+                          }`}
                       />
                     </button>
                   ))}
@@ -265,34 +261,33 @@ const SimpleRatingModal = ({
                     className="p-2 hover:bg-gray-100 rounded-md transition-colors"
                   >
                     <Star
-                      className={`w-8 h-8 ${
-                        star <= rating
+                      className={`w-8 h-8 ${star <= rating
                           ? 'text-yellow-400 fill-current'
                           : 'text-gray-300'
-                      }`}
+                        }`}
                     />
                   </button>
                 ))}
               </div>
               <p className="text-sm text-gray-600 mt-2">
-                {rating === 0 ? 'Not rated' : 
-                 rating === 1 ? 'Poor' :
-                 rating === 2 ? 'Fair' :
-                 rating === 3 ? 'Good' :
-                 rating === 4 ? 'Very Good' : 'Excellent'}
+                {rating === 0 ? 'Not rated' :
+                  rating === 1 ? 'Poor' :
+                    rating === 2 ? 'Fair' :
+                      rating === 3 ? 'Good' :
+                        rating === 4 ? 'Very Good' : 'Excellent'}
               </p>
             </div>
 
             {/* Review */}
             <div>
-              <label className="block text-lg font-semibold text-gray-900 mb-3">
+              <label className="block text-lg font-semibold text-slate-900 mb-3">
                 Review (Optional)
               </label>
               <textarea
                 value={review}
                 onChange={(e) => setReview(e.target.value)}
                 placeholder="Share your experience working with this expert..."
-                className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm resize-none"
+                className="w-full px-4 py-3 border border-slate-200 rounded-[3px] text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 hover:border-indigo-200 transition-colors text-sm resize-none"
                 rows={4}
               />
             </div>
@@ -302,14 +297,14 @@ const SimpleRatingModal = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-6 py-3 bg-white text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors border border-gray-300 shadow-sm hover:shadow-md"
+                className="px-6 py-2.5 bg-white text-slate-700 font-bold text-sm rounded-[3px] hover:bg-slate-50 transition-colors border border-slate-200 shadow-sm hover:border-slate-300"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={submitting || !isFormValid()}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-medium rounded-md transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-[3px] transition-all duration-200 shadow-sm hover:shadow hover:ring-1 hover:ring-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
                 {submitting ? (
                   <>

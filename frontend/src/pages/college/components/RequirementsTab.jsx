@@ -1,7 +1,14 @@
 import React, { useState, useRef } from 'react';
 import {
     FileText,
-    X
+    X,
+    Search,
+    Plus,
+    Filter,
+    ChevronDown,
+    Briefcase,
+    Globe,
+    AlertCircle
 } from 'lucide-react';
 import RequirementCard from '../../../components/common/RequirementCard';
 import { formatCurrency } from '../../../utils/currency';
@@ -65,29 +72,7 @@ const RequirementsTab = ({
     const [showEditForm, setShowEditForm] = useState(false);
     const editFormRef = useRef(null);
 
-    // setRecentRequirements was passed as first arg in original but here it is a prop?
-    // In original code: const RequirementsTab = ({ recentRequirements... })
-    // But inside loadRecentRequirements it called setRecentRequirements(data...).
-    // Wait, recentRequirements was passed as a prop, meaning it came from parent state.
-    // The function loadRecentRequirements inside RequirementsTab attempted to set it?
-    // If setRecentRequirements was NOT passed as a prop, then loadRecentRequirements inside RequirementsTab would fail 
-    // unless setRecentRequirements was also passed.
-    // Looking at Step 115 line 3400: setRecentRequirements is NOT in the props list!
-    // But line 3442 calls setRecentRequirements override?
-    // Ah, lines 3429-3447 define `loadRecentRequirements` but it is NEVER CALLED in the visible code?
-    // It seems unused logic or I missed a useEffect.
-    // I will check if loadRecentRequirements is called. 
-    // If not, I can ignore the missing setter.
-    // Actually, I'll comment it out or keep it but with a warning comment.
-
-    /* 
-    const loadRecentRequirements = async () => {
-       // ... logic requiring setRecentRequirements which is missing from props ...
-    };
-    */
-
     const handleInputChange = (e) => {
-        // console.log('Input change triggered:', e.target.name, e.target.value);
         const { name, value, type, checked } = e.target;
 
         // Handle category selection
@@ -112,7 +97,6 @@ const RequirementsTab = ({
                     ...prev,
                     [name]: type === 'checkbox' ? checked : value
                 };
-                // console.log('Updated form:', newForm);
                 return newForm;
             });
         }
@@ -175,8 +159,6 @@ const RequirementsTab = ({
             });
 
             if (response.ok) {
-                // const result = await response.json();
-
                 setShowForm(false);
                 setShowCustomCategoryInput(false);
                 setCustomCategory('');
@@ -298,8 +280,6 @@ const RequirementsTab = ({
             });
 
             if (response.ok) {
-                // const result = await response.json();
-
                 setShowEditForm(false);
                 setEditingRequirement(null);
                 setShowCustomCategoryInput(false);
@@ -330,623 +310,336 @@ const RequirementsTab = ({
         }
     };
 
-    return (
-        <div className="min-h-screen bg-white">
-            {/* Layout */}
-            <div className="max-w-4xl mx-auto px-8 py-6">
-                {!showForm && !showEditForm && (
-                    <div className="mb-6">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-                            <div className="flex-1">
-                                <h2 className="text-lg font-medium text-gray-900 mb-1">All Requirements ({totalRequirements})</h2>
-                            </div>
-                            <div className="flex w-full sm:w-auto items-center gap-3">
-                                <div className="relative w-full sm:w-72">
-                                    <input
-                                        type="text"
-                                        value={requirementsSearch}
-                                        onChange={(e) => (onRequirementsSearchChange ? onRequirementsSearchChange(e.target.value) : setRequirementsSearch(e.target.value))}
-                                        placeholder="Search by title, description, skills..."
-                                        className="w-full pl-3 pr-3 py-2.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    />
-                                </div>
-                                <button
-                                    onClick={() => onCreateRequirementClick(setShowForm)}
-                                    className="px-6 py-3 text-sm font-semibold transition-all duration-300 shadow-lg hover:shadow-xl bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-700 hover:to-cyan-700 rounded-md whitespace-nowrap"
-                                >
-                                    Create requirement
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
+    // Reusable Form Input Component within Tab
+    const FormInput = ({ label, type = "text", name, value, onChange, placeholder, required = false, ...props }) => (
+        <div>
+            <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">
+                {label} {required && <span className="text-red-500">*</span>}
+            </label>
+            <input
+                type={type}
+                name={name}
+                value={value}
+                onChange={onChange}
+                placeholder={placeholder}
+                required={required}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-[3px] text-sm text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900 focus:border-slate-900 transition-all placeholder:text-slate-400"
+                {...props}
+            />
+        </div>
+    );
 
-                {showEditForm && (
-                    <div className="mb-6">
-                        <div className="flex items-center justify-between mb-4">
+    const FormTextarea = ({ label, name, value, onChange, placeholder, required = false, rows = 4 }) => (
+        <div>
+            <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">
+                {label} {required && <span className="text-red-500">*</span>}
+            </label>
+            <textarea
+                name={name}
+                value={value}
+                onChange={onChange}
+                placeholder={placeholder}
+                required={required}
+                rows={rows}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-[3px] text-sm text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900 focus:border-slate-900 transition-all placeholder:text-slate-400 resize-none"
+            />
+        </div>
+    );
+
+    return (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+            {/* Header / Actions Section */}
+            {!showForm && !showEditForm && (
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                    <div>
+                        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Requirement Management</h2>
+                        <p className="text-slate-500 text-sm mt-1">Create and manage your expert requirements</p>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+                        <div className="relative w-full sm:w-80 group">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                            <input
+                                type="text"
+                                value={requirementsSearch}
+                                onChange={(e) => (onRequirementsSearchChange ? onRequirementsSearchChange(e.target.value) : setRequirementsSearch(e.target.value))}
+                                placeholder="Search requirements..."
+                                className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
+                            />
+                        </div>
+                        <button
+                            onClick={() => onCreateRequirementClick(setShowForm)}
+                            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-[3px] text-sm font-bold hover:bg-slate-800 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0"
+                        >
+                            <Plus className="w-4 h-4" />
+                            New Requirement
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit / Create Forms */}
+            {(showForm || showEditForm) && (
+                <div className="max-w-3xl mx-auto">
+                    <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 sm:p-8" ref={editFormRef}>
+                        <div className="flex items-center justify-between mb-8 pb-4 border-b border-slate-100">
                             <div>
-                                <h2 className="text-lg font-medium text-gray-900 mb-1">All Requirements ({totalRequirements})</h2>
+                                <h2 className="text-xl font-bold text-slate-900">
+                                    {showEditForm ? 'Edit Requirement' : 'Create New Requirement'}
+                                </h2>
+                                <p className="text-slate-500 text-sm mt-1">
+                                    Fill in the details below to find the perfect expert.
+                                </p>
                             </div>
                             <button
-                                onClick={handleCancelEdit}
-                                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors shadow-sm hover:shadow-md"
-                                title="Cancel Edit"
+                                onClick={showEditForm ? handleCancelEdit : () => setShowForm(false)}
+                                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
                             >
-                                <X className="w-4 h-4" />
-                                Cancel
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
-                    </div>
-                )}
 
-                {showForm && (
-                    <div className="mb-8">
-                        <form onSubmit={handleSubmit} className="space-y-5">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Title *
-                                </label>
-                                <input
-                                    type="text"
+                        <form onSubmit={showEditForm ? handleUpdate : handleSubmit} className="space-y-6">
+                            <div className="space-y-6">
+                                <FormInput
+                                    label="Requirement Title"
                                     name="title"
                                     value={requirementForm.title || ''}
                                     onChange={handleInputChange}
+                                    placeholder="e.g. Guest Lecture on AI Trends"
                                     required
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
-                                    placeholder="Enter the title of your requirement"
-                                    autoComplete="off"
                                 />
-                            </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Category *
-                                </label>
-                                <select
-                                    name="category"
-                                    value={requirementForm.category}
-                                    onChange={handleInputChange}
-                                    required
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
-                                >
-                                    <option value="">Select Category</option>
-                                    <optgroup label="Technology & Innovation">
-                                        <option value="DATA_SCIENCE_AI">Data Science & AI</option>
-                                        <option value="CYBERSECURITY">Cybersecurity</option>
-                                        <option value="SOFTWARE_DEVELOPMENT">Software Development</option>
-                                        <option value="INNOVATION">Innovation & Design</option>
-                                    </optgroup>
-                                    <optgroup label="Business & Marketing">
-                                        <option value="DIGITAL_MARKETING">Digital Marketing</option>
-                                        <option value="BUSINESS_STRATEGY">Business Strategy</option>
-                                        <option value="FINANCE">Finance</option>
-                                        <option value="CONSULTING">Consulting</option>
-                                    </optgroup>
-                                    <optgroup label="Academic & Professional">
-                                        <option value="EDUCATION">Education</option>
-                                        <option value="RESEARCH">Research Collaboration</option>
-                                        <option value="WORKSHOP">Workshop</option>
-                                        <option value="GUEST_LECTURE">Guest Lecture</option>
-                                        <option value="MENTORING">Mentoring</option>
-                                        <option value="CURRICULUM_REVIEW">Curriculum Review</option>
-                                        <option value="INDUSTRY_PROJECT">Industry Project</option>
-                                        <option value="QUESTION_PAPER_SETTING">Question Paper Setting</option>
-                                        <option value="QUESTION_PAPER_EVALUATION">Question Paper Evaluation</option>
-                                    </optgroup>
-                                    <optgroup label="Training & Development">
-                                        <option value="TRAINING">Training & Development</option>
-                                        <option value="PUBLIC_SPEAKING">Public Speaking</option>
-                                        <option value="LEADERSHIP">Leadership Development</option>
-                                    </optgroup>
-                                    <optgroup label="Specialized Fields">
-                                        <option value="HEALTHCARE">Healthcare</option>
-                                        <option value="ENGINEERING">Engineering</option>
-                                        <option value="SUSTAINABILITY">Sustainability</option>
-                                    </optgroup>
-                                    <optgroup label="Other">
-                                        <option value="OTHERS">Others (Custom)</option>
-                                    </optgroup>
-                                </select>
-                            </div>
-
-                            {/* Custom Category Input */}
-                            {showCustomCategoryInput && (
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Custom Category *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={customCategory}
-                                        onChange={handleCustomCategoryChange}
-                                        placeholder="Enter your custom category..."
-                                        required
-                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
-                                    />
-                                </div>
-                            )}
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Description *
-                                </label>
-                                <textarea
-                                    name="description"
-                                    value={requirementForm.description || ''}
-                                    onChange={handleInputChange}
-                                    required
-                                    rows={4}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm resize-none"
-                                    placeholder="Describe the requirement in detail..."
-                                    autoComplete="off"
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Budget (₹)
-                                    </label>
-                                    <div className="relative">
-                                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
-                                        <input
-                                            type="number"
-                                            name="budget"
-                                            value={requirementForm.budget}
-                                            onChange={handleInputChange}
-                                            className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
-                                            placeholder="0"
-                                        />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">
+                                            Category <span className="text-red-500">*</span>
+                                        </label>
+                                        <div className="relative">
+                                            <select
+                                                name="category"
+                                                value={requirementForm.category}
+                                                onChange={handleInputChange}
+                                                required
+                                                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-[3px] text-sm text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900 focus:border-slate-900 transition-all appearance-none cursor-pointer"
+                                            >
+                                                <option value="">Select Category</option>
+                                                <optgroup label="Technology & Innovation">
+                                                    <option value="DATA_SCIENCE_AI">Data Science & AI</option>
+                                                    <option value="CYBERSECURITY">Cybersecurity</option>
+                                                    <option value="SOFTWARE_DEVELOPMENT">Software Development</option>
+                                                    <option value="INNOVATION">Innovation & Design</option>
+                                                </optgroup>
+                                                <optgroup label="Business & Marketing">
+                                                    <option value="DIGITAL_MARKETING">Digital Marketing</option>
+                                                    <option value="BUSINESS_STRATEGY">Business Strategy</option>
+                                                    <option value="FINANCE">Finance</option>
+                                                    <option value="CONSULTING">Consulting</option>
+                                                </optgroup>
+                                                <optgroup label="Academic & Professional">
+                                                    <option value="EDUCATION">Education</option>
+                                                    <option value="RESEARCH">Research Collaboration</option>
+                                                    <option value="WORKSHOP">Workshop</option>
+                                                    <option value="GUEST_LECTURE">Guest Lecture</option>
+                                                    <option value="MENTORING">Mentoring</option>
+                                                    <option value="CURRICULUM_REVIEW">Curriculum Review</option>
+                                                    <option value="INDUSTRY_PROJECT">Industry Project</option>
+                                                    <option value="QUESTION_PAPER_SETTING">Question Paper Setting</option>
+                                                    <option value="QUESTION_PAPER_EVALUATION">Question Paper Evaluation</option>
+                                                </optgroup>
+                                                <optgroup label="Training & Development">
+                                                    <option value="TRAINING">Training & Development</option>
+                                                    <option value="PUBLIC_SPEAKING">Public Speaking</option>
+                                                    <option value="LEADERSHIP">Leadership Development</option>
+                                                </optgroup>
+                                                <optgroup label="Specialized Fields">
+                                                    <option value="HEALTHCARE">Healthcare</option>
+                                                    <option value="ENGINEERING">Engineering</option>
+                                                    <option value="SUSTAINABILITY">Sustainability</option>
+                                                </optgroup>
+                                                <optgroup label="Other">
+                                                    <option value="OTHERS">Others (Custom)</option>
+                                                </optgroup>
+                                            </select>
+                                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                                        </div>
                                     </div>
+
+                                    {showCustomCategoryInput && (
+                                        <FormInput
+                                            label="Custom Category"
+                                            name="customCategory"
+                                            value={customCategory}
+                                            onChange={handleCustomCategoryChange}
+                                            placeholder="Enter category name"
+                                            required
+                                        />
+                                    )}
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Deadline
-                                    </label>
-                                    <input
-                                        type="date"
-                                        name="deadline"
-                                        value={requirementForm.deadline}
-                                        onChange={handleInputChange}
-                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
-                                    />
-                                </div>
-
-                            </div>
-
-                            <div className="flex items-center">
-                                <input
-                                    type="checkbox"
-                                    name="isUrgent"
-                                    checked={requirementForm.isUrgent}
-                                    onChange={handleInputChange}
-                                    className="h-4 w-4 text-gray-600 focus:ring-gray-500 border-gray-300 rounded"
-                                />
-                                <label className="ml-2 text-sm text-gray-700">
-                                    Mark as Urgent
-                                </label>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Required Skills
-                                </label>
-                                <textarea
-                                    name="requiredSkills"
-                                    value={requirementForm.requiredSkills || ''}
-                                    onChange={handleInputChange}
-                                    rows={3}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm resize-none"
-                                    placeholder="Specify any particular skills needed for the project..."
-                                    autoComplete="off"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Experience
-                                </label>
-                                <textarea
-                                    name="experience"
-                                    value={requirementForm.experience || ''}
-                                    onChange={handleInputChange}
-                                    rows={3}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm resize-none"
-                                    placeholder="Specify required experience level or qualifications..."
-                                    autoComplete="off"
-                                />
-                            </div>
-
-                            <div className="flex items-center gap-3">
-                                <button
-                                    type="submit"
-                                    className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white py-3 px-6 rounded-md font-semibold transition-all duration-300 shadow-lg hover:shadow-xl"
-                                >
-                                    Create Requirement
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowForm(false)}
-                                    className="px-6 py-3 bg-white text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors border border-gray-300 shadow-sm hover:shadow-md"
-                                >
-                                    Back to Requirements
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                )}
-
-                {/* Requirements Edit Form */}
-                {showEditForm && (
-                    <div className="mb-8" ref={editFormRef}>
-                        <div className="mb-4">
-                            <h1 className="text-xl font-bold text-gray-900">Edit Requirement</h1>
-                        </div>
-
-                        <form onSubmit={handleUpdate} className="space-y-5">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Title *
-                                </label>
-                                <input
-                                    type="text"
-                                    name="title"
-                                    value={requirementForm.title || ''}
-                                    onChange={handleInputChange}
-                                    required
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
-                                    placeholder="Enter the title of your requirement"
-                                    autoComplete="off"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Category *
-                                </label>
-                                <select
-                                    name="category"
-                                    value={requirementForm.category || ''}
-                                    onChange={handleInputChange}
-                                    required
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
-                                >
-                                    <option value="">Select Category</option>
-                                    <option value="DATA_SCIENCE_AI">Data Science & AI</option>
-                                    <option value="CYBERSECURITY">Cybersecurity</option>
-                                    <option value="SOFTWARE_DEVELOPMENT">Software Development</option>
-                                    <option value="INNOVATION">Innovation & Design</option>
-                                    <option value="DIGITAL_MARKETING">Digital Marketing</option>
-                                    <option value="BUSINESS_STRATEGY">Business Strategy</option>
-                                    <option value="FINANCE">Finance</option>
-                                    <option value="CONSULTING">Consulting</option>
-                                    <option value="EDUCATION">Education</option>
-                                    <option value="RESEARCH">Research Collaboration</option>
-                                    <option value="WORKSHOP">Workshop</option>
-                                    <option value="GUEST_LECTURE">Guest Lecture</option>
-                                    <option value="MENTORING">Mentoring</option>
-                                    <option value="CURRICULUM_REVIEW">Curriculum Review</option>
-                                    <option value="INDUSTRY_PROJECT">Industry Project</option>
-                                    <option value="QUESTION_PAPER_SETTING">Question Paper Setting</option>
-                                    <option value="QUESTION_PAPER_EVALUATION">Question Paper Evaluation</option>
-                                    <option value="TRAINING">Training & Development</option>
-                                    <option value="PUBLIC_SPEAKING">Public Speaking</option>
-                                    <option value="LEADERSHIP">Leadership Development</option>
-                                    <option value="HEALTHCARE">Healthcare</option>
-                                    <option value="ENGINEERING">Engineering</option>
-                                    <option value="SUSTAINABILITY">Sustainability</option>
-                                    <option value="OTHERS">Others</option>
-                                </select>
-                            </div>
-
-                            {/* Custom Category Input for Edit Form */}
-                            {showCustomCategoryInput && (
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Custom Category *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={customCategory}
-                                        onChange={handleCustomCategoryChange}
-                                        placeholder="Enter your custom category..."
-                                        required
-                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
-                                    />
-                                </div>
-                            )}
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Description
-                                </label>
-                                <textarea
+                                <FormTextarea
+                                    label="Description"
                                     name="description"
                                     value={requirementForm.description || ''}
                                     onChange={handleInputChange}
-                                    rows={4}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm resize-none"
                                     placeholder="Describe your requirement in detail..."
-                                    autoComplete="off"
+                                    required
+                                    rows={5}
                                 />
-                            </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Budget (₹)
-                                    </label>
-                                    <div className="relative">
-                                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">₹</span>
-                                        <input
-                                            type="number"
-                                            name="budget"
-                                            value={requirementForm.budget || ''}
-                                            onChange={handleInputChange}
-                                            className="w-full pl-8 pr-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
-                                            placeholder="0"
-                                            min="0"
-                                            autoComplete="off"
-                                        />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">
+                                            Budget (₹)
+                                        </label>
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">₹</span>
+                                            <input
+                                                type="number"
+                                                name="budget"
+                                                value={requirementForm.budget}
+                                                onChange={handleInputChange}
+                                                className="w-full pl-8 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-[3px] text-sm text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900 focus:border-slate-900 transition-all placeholder:text-slate-400"
+                                                placeholder="0"
+                                                min="0"
+                                            />
+                                        </div>
                                     </div>
-                                </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Deadline
-                                    </label>
-                                    <input
+                                    <FormInput
+                                        label="Deadline"
                                         type="date"
                                         name="deadline"
                                         value={requirementForm.deadline || ''}
                                         onChange={handleInputChange}
-                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
-                                        autoComplete="off"
                                     />
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <FormTextarea
+                                        label="Required Skills"
+                                        name="requiredSkills"
+                                        value={requirementForm.requiredSkills || ''}
+                                        onChange={handleInputChange}
+                                        placeholder="E.g. Python, Machine Learning, Public Speaking"
+                                        rows={3}
+                                    />
+                                    <FormTextarea
+                                        label="Experience Required"
+                                        name="experience"
+                                        value={requirementForm.experience || ''}
+                                        onChange={handleInputChange}
+                                        placeholder="E.g. 5+ years in Industry, PhD preferred"
+                                        rows={3}
+                                    />
+                                </div>
+
+                                <div className="flex items-center gap-2 p-4 bg-slate-50 rounded border border-slate-100">
+                                    <input
+                                        type="checkbox"
+                                        id="isUrgent"
+                                        name="isUrgent"
+                                        checked={requirementForm.isUrgent}
+                                        onChange={handleInputChange}
+                                        className="h-4 w-4 text-slate-900 focus:ring-slate-900 border-slate-300 rounded cursor-pointer"
+                                    />
+                                    <label htmlFor="isUrgent" className="text-sm font-medium text-slate-700 cursor-pointer select-none">
+                                        Mark this requirement as Urgent
+                                    </label>
+                                    <span className="text-xs text-slate-400 ml-auto">Prioritizes visibility</span>
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-3">
-                                <input
-                                    type="checkbox"
-                                    name="isUrgent"
-                                    checked={requirementForm.isUrgent || false}
-                                    onChange={handleInputChange}
-                                    className="h-4 w-4 text-gray-600 focus:ring-gray-500 border-gray-300 rounded"
-                                />
-                                <label className="text-sm text-gray-700">Mark as Urgent</label>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Required Skills
-                                </label>
-                                <textarea
-                                    name="requiredSkills"
-                                    value={requirementForm.requiredSkills || ''}
-                                    onChange={handleInputChange}
-                                    rows={3}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm resize-none"
-                                    placeholder="List the skills and expertise required..."
-                                    autoComplete="off"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Experience
-                                </label>
-                                <textarea
-                                    name="experience"
-                                    value={requirementForm.experience || ''}
-                                    onChange={handleInputChange}
-                                    rows={3}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm resize-none"
-                                    placeholder="Specify required experience level or qualifications..."
-                                    autoComplete="off"
-                                />
-                            </div>
-
-                            <div className="flex items-center gap-3">
-                                <button
-                                    type="submit"
-                                    className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white py-3 px-6 rounded-md font-semibold transition-all duration-300 shadow-lg hover:shadow-xl"
-                                >
-                                    Update Requirement
-                                </button>
+                            <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-100 mt-6">
                                 <button
                                     type="button"
-                                    onClick={handleCancelEdit}
-                                    className="px-6 py-3 bg-white text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors border border-gray-300 shadow-sm hover:shadow-md"
+                                    onClick={showEditForm ? handleCancelEdit : () => setShowForm(false)}
+                                    className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-[3px] text-sm font-bold hover:bg-slate-50 transition-all"
                                 >
-                                    Back to Requirements
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-6 py-2.5 bg-slate-900 text-white rounded-[3px] text-sm font-bold hover:bg-slate-800 transition-all shadow-sm hover:shadow-md"
+                                >
+                                    {showEditForm ? 'Update Requirement' : 'Create Requirement'}
                                 </button>
                             </div>
                         </form>
                     </div>
-                )}
+                </div>
+            )}
 
-                {/* Requirements List */}
+            {/* List View */}
+            {!showForm && !showEditForm && (
                 <div className="space-y-6">
-
                     {loading && requirements.length === 0 ? (
-                        <div className="text-center py-12">
-                            <div className="w-8 h-8 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-                            <p className="text-gray-500 text-sm">Loading requirements...</p>
+                        <div className="flex flex-col items-center justify-center py-20">
+                            <div className="animate-spin rounded-full h-10 w-10 border-2 border-indigo-600 border-t-transparent mb-4"></div>
+                            <p className="text-slate-500 font-medium">Loading your requirements...</p>
                         </div>
                     ) : requirements.length === 0 ? (
-                        <div className="text-center py-16">
-                            <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                                <FileText className="w-6 h-6 text-gray-400" />
+                        <div className="text-center py-20 bg-white rounded-xl border border-slate-200/60 shadow-sm">
+                            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100">
+                                <Briefcase className="w-8 h-8 text-slate-400" />
                             </div>
-                            <h3 className="text-lg font-medium text-gray-900 mb-2">No requirements yet</h3>
-                            <p className="text-gray-500 mb-6 text-sm">Create your first requirement to connect with experts</p>
+                            <h3 className="text-lg font-bold text-slate-900 mb-2">No requirements yet</h3>
+                            <p className="text-slate-500 max-w-sm mx-auto mb-6 text-sm">
+                                Create your first requirement to start connecting with top industry experts.
+                            </p>
                             <button
                                 onClick={() => onCreateRequirementClick(setShowForm)}
-                                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white text-sm font-semibold hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 shadow-lg hover:shadow-xl rounded-md"
+                                className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-[3px] text-sm font-bold hover:bg-slate-800 transition-all shadow-sm"
                             >
-                                Create requirement
+                                <Plus className="w-4 h-4" />
+                                Create Requirement
                             </button>
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {loading ? (
-                                <div className="text-center py-8">
-                                    <div className="w-8 h-8 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-                                    <p className="text-gray-500 text-sm">Loading...</p>
-                                </div>
-                            ) : requirements.length === 0 ? (
-                                <div className="text-center py-8">
-                                    <p className="text-gray-500 text-sm">No requirements found.</p>
-                                </div>
-                            ) : (
-                                requirements.map((requirement, index) => (
-                                    <RequirementCard
-                                        key={requirement.id}
-                                        requirement={requirement}
-                                        variant="college"
-                                        showActions={true}
-                                        onView={() => handleView(requirement)}
-                                        onEdit={() => handleEdit(requirement)}
-                                        onDelete={() => onDelete(requirement.id)}
-                                        onToggle={() => onToggleActive(requirement)}
-                                        mySubscription={mySubscription}
-                                        subsLoading={subsLoading}
-                                        getLimitationDetails={getLimitationDetails}
-                                        showPlanLimitationModal={showPlanLimitationModal}
-                                        setLimitationType={setLimitationType}
-                                        apiService={apiService}
-                                        revealedExpertIds={revealedExpertIds}
-                                        setRevealedExpertIds={setRevealedExpertIds}
-                                    />
-                                ))
-                            )}
+                            {requirements.map((req) => (
+                                <RequirementCard
+                                    key={req.id}
+                                    requirement={req}
+                                    variant="college"
+                                    showActions={true}
+                                    onView={() => handleView(req)}
+                                    onEdit={() => handleEdit(req)}
+                                    onDelete={onDelete}
+                                    onToggle={onToggleActive}
+                                    onClick={() => handleView(req)}
+                                    mySubscription={mySubscription}
+                                    subsLoading={subsLoading}
+                                    getLimitationDetails={getLimitationDetails}
+                                    showPlanLimitationModal={showPlanLimitationModal}
+                                    setLimitationType={setLimitationType}
+                                    apiService={apiService}
+                                    revealedExpertIds={revealedExpertIds}
+                                    setRevealedExpertIds={setRevealedExpertIds}
+                                />
+                            ))}
 
-                            {/* Infinite Scroll Load More Button */}
+                            {/* Load More Trigger */}
                             {hasMore && (
-                                <div className="text-center pt-4 sm:pt-6">
+                                <div className="text-center pt-6 pb-2">
                                     <button
                                         onClick={loadMoreRequirements}
                                         disabled={loadingMore}
-                                        className="group relative w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-slate-100 to-slate-200 text-slate-700 rounded-xl font-semibold hover:from-slate-200 hover:to-slate-300 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed border border-slate-300/50 hover:border-slate-400/50 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                                        className="px-6 py-2 bg-white border border-slate-200 text-slate-600 rounded-[3px] text-sm font-semibold hover:bg-slate-50 disabled:opacity-50 transition-all shadow-sm"
                                     >
                                         {loadingMore ? (
-                                            <div className="flex items-center justify-center gap-2">
-                                                <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
-                                                <span className="text-sm">Loading more...</span>
-                                            </div>
-                                        ) : (
-                                            <span className="flex items-center justify-center gap-2 text-sm">
-                                                <svg className="w-4 h-4 group-hover:rotate-180 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                                </svg>
-                                                Load More Requirements
+                                            <span className="flex items-center gap-2">
+                                                <div className="w-3 h-3 border-2 border-slate-500 border-t-transparent rounded-full animate-spin" />
+                                                Loading...
                                             </span>
-                                        )}
+                                        ) : 'Load More Requirements'}
                                     </button>
                                 </div>
                             )}
                         </div>
                     )}
                 </div>
-
-                {/* View Requirement Page */}
-                {showViewModal && viewingRequirement && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                        <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-                            <div className="mb-4 flex justify-between items-center">
-                                <h1 className="text-xl font-bold text-gray-900">View Requirement</h1>
-                                <button
-                                    onClick={() => {
-                                        setShowViewModal(false);
-                                        setViewingRequirement(null);
-                                    }}
-                                    className="text-gray-500 hover:text-gray-700 text-2xl"
-                                >
-                                    ×
-                                </button>
-                            </div>
-                            <div className="space-y-5">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                                        <p className="text-gray-900 font-medium">{viewingRequirement.title}</p>
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                                        <p className="text-gray-900">{viewingRequirement.category?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                                    <p className="text-gray-900 leading-relaxed">{viewingRequirement.description}</p>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Budget</label>
-                                        <p className="text-gray-900">{viewingRequirement.budget ? formatCurrency(viewingRequirement.budget) : 'Not specified'}</p>
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Deadline</label>
-                                        <p className="text-gray-900">
-                                            {viewingRequirement.deadline
-                                                ? new Date(viewingRequirement.deadline).toLocaleDateString('en-US', {
-                                                    month: 'short',
-                                                    day: 'numeric',
-                                                    year: 'numeric'
-                                                })
-                                                : 'No deadline'
-                                            }
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-3">
-                                    <label className="text-sm font-medium text-gray-700">Urgent:</label>
-                                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${viewingRequirement.isUrgent
-                                            ? 'bg-red-100 text-red-800'
-                                            : 'bg-gray-100 text-gray-800'
-                                        }`}>
-                                        {viewingRequirement.isUrgent ? 'Yes' : 'No'}
-                                    </span>
-                                </div>
-
-                                {viewingRequirement.requiredSkills && (
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Required Skills</label>
-                                        <p className="text-gray-900 leading-relaxed">{viewingRequirement.requiredSkills}</p>
-                                    </div>
-                                )}
-
-                                {viewingRequirement.experience && (
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Experience</label>
-                                        <p className="text-gray-900 leading-relaxed">{viewingRequirement.experience}</p>
-                                    </div>
-                                )}
-
-                                <div className="flex items-center gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setShowViewModal(false);
-                                            setViewingRequirement(null);
-                                        }}
-                                        className="px-6 py-3 bg-white text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors border border-gray-300 shadow-sm hover:shadow-md"
-                                    >
-                                        Back to Requirements
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-            </div>
+            )}
         </div>
     );
 };

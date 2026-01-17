@@ -1,12 +1,12 @@
 import React, { useState, useRef } from 'react';
-import { Upload, X, File, Image, CheckCircle, AlertCircle } from 'lucide-react';
+import { Upload, X, File, Image, CheckCircle, AlertCircle, CloudUpload } from 'lucide-react';
 
 // Helper function to validate file types
 const isValidFileType = (fileType, acceptString) => {
   if (!acceptString) return true;
-  
+
   const acceptedTypes = acceptString.split(',').map(type => type.trim());
-  
+
   return acceptedTypes.some(acceptedType => {
     if (acceptedType === '*/*') return true;
     if (acceptedType.endsWith('/*')) {
@@ -36,14 +36,6 @@ const FileUpload = ({
   className = '',
   isEditing = false
 }) => {
-  console.log('🖼️ FileUpload Component Debug - Props received:', {
-    type,
-    currentFile,
-    isEditing,
-    accept,
-    maxSize
-  });
-  
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -64,7 +56,7 @@ const FileUpload = ({
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFileSelect(e.dataTransfer.files[0]);
     }
@@ -72,7 +64,7 @@ const FileUpload = ({
 
   const handleFileSelect = (file) => {
     setError('');
-    
+
     // Validate file size
     if (file.size > maxSize * 1024 * 1024) {
       setError(`File size must be less than ${maxSize}MB`);
@@ -89,7 +81,7 @@ const FileUpload = ({
     if (onFileSelect) {
       // If onFileSelect is provided, upload immediately and don't show upload buttons
       setUploading(true);
-      
+
       // Handle async upload
       Promise.resolve(onFileSelect(file))
         .then(() => {
@@ -140,77 +132,64 @@ const FileUpload = ({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const getFileIcon = () => {
-    if (type === 'image') {
-      return <Image className="w-8 h-8 text-blue-500" />;
-    }
-    return <File className="w-8 h-8 text-green-500" />;
-  };
-
   return (
     <div className={`space-y-4 ${className}`}>
       {label && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-bold text-slate-900 mb-1">
             {label}
           </label>
           {description && (
-            <p className="text-sm text-gray-500">{description}</p>
+            <p className="text-xs text-slate-500">{description}</p>
           )}
         </div>
       )}
 
-      {/* Current File Display */}
+      {/* Current File Display (Preview) */}
       {currentFile && !selectedFile && (
         <div className="space-y-4">
-          {console.log('🖼️ FileUpload Display Debug - Showing current file:', currentFile)}
-          {/* Image Preview for Image Type */}
           {type === 'image' && (
-            <div className="relative w-full max-w-40 h-40">
-              {console.log('🖼️ FileUpload Image Debug - Rendering image with src:', currentFile)}
-              <div className="relative overflow-hidden rounded-lg border border-gray-200 shadow-lg w-full h-full group">
-                <img 
-                  src={currentFile} 
-                  alt="Profile Picture" 
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  onLoad={() => console.log('🖼️ FileUpload Image Debug - Image loaded successfully:', currentFile)}
-                  onError={(e) => console.error('🖼️ FileUpload Image Debug - Image failed to load:', currentFile, e)}
+            <div className={`relative group w-full ${type === 'image' ? 'max-w-[180px] h-[180px]' : 'max-w-md h-40'} mx-auto`}>
+              <div className="relative overflow-hidden rounded-md border border-slate-200 shadow-sm w-full h-full bg-slate-50 flex items-center justify-center">
+                <img
+                  src={currentFile}
+                  alt="Preview"
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              </div>
-              
-                              {/* Remove Button Overlay - Only Visible When Editing */}
+
+                {/* Hover overlay for editing/removing */}
                 {isEditing && (
-                  <button
-                    onClick={handleRemove}
-                    className="absolute top-2 right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110 z-10"
-                    title="Remove profile picture"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
+                  <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-2">
+                    <p className="text-white text-xs font-medium translate-y-2 group-hover:translate-y-0 transition-transform duration-200">Change Logo</p>
+                    <button
+                      onClick={handleRemove}
+                      className="p-2 bg-white text-rose-500 rounded-full shadow-lg hover:bg-rose-50 transition-colors"
+                      title="Remove"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                 )}
+              </div>
             </div>
           )}
-          
-          {/* Document Preview for Document Type */}
+
           {type === 'document' && (
-            <div className="relative w-full max-w-56 h-40">
-              <div className="relative overflow-hidden rounded-lg border border-gray-200 shadow-lg bg-gradient-to-br from-gray-50 to-white w-full h-full group">
-                <div className="flex flex-col items-center justify-center h-full space-y-3">
-                  <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <File className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="text-sm font-semibold text-gray-800 text-center">Resume Uploaded</h3>
+            <div className="relative w-full max-w-sm h-32 mx-auto">
+              <div className="relative overflow-hidden rounded-md border border-slate-200 bg-white p-4 flex items-center gap-4 shadow-sm group">
+                <div className="w-12 h-12 bg-indigo-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <File className="w-6 h-6 text-indigo-600" />
                 </div>
-                
-                {/* Remove Button Overlay - Only Visible When Editing */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-bold text-slate-900 truncate">Document Uploaded</h3>
+                  <p className="text-xs text-slate-500">Resume/CV</p>
+                </div>
                 {isEditing && (
                   <button
                     onClick={handleRemove}
-                    className="absolute top-2 right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110 z-10"
-                    title="Remove resume"
+                    className="text-slate-400 hover:text-rose-500 transition-colors p-1"
                   >
-                    <X className="w-3 h-3" />
+                    <X className="w-4 h-4" />
                   </button>
                 )}
               </div>
@@ -221,24 +200,22 @@ const FileUpload = ({
 
       {/* Error Display */}
       {error && (
-        <div className="flex items-center space-x-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-          <AlertCircle className="w-5 h-5 text-red-600" />
-          <p className="text-sm text-red-700">{error}</p>
+        <div className="flex items-center space-x-2 p-3 bg-rose-50 border border-rose-200 rounded-md">
+          <AlertCircle className="w-5 h-5 text-rose-600" />
+          <p className="text-xs font-medium text-rose-700">{error}</p>
         </div>
       )}
 
       {/* File Upload Area */}
       {(!currentFile || selectedFile) && (
         <div
-          className={`relative border-2 border-solid rounded-lg p-8 transition-all duration-200 ${
-            type === 'document' ? 'w-full max-w-md h-40' : 'w-full max-w-sm h-40'
-          } ${
-            dragActive
-              ? 'border-blue-500 bg-blue-50 shadow-lg'
+          className={`relative border border-dashed rounded-lg p-8 transition-all duration-200 text-center ${type === 'document' ? 'w-full max-w-md h-40' : 'w-full max-w-[280px] h-[180px]' // Fixed dimensions for consistency
+            } mx-auto flex flex-col items-center justify-center bg-slate-50/50 ${dragActive
+              ? 'border-indigo-500 bg-indigo-50/30'
               : selectedFile
-              ? 'border-green-500 bg-green-50 shadow-lg'
-              : 'border-gray-300 hover:border-blue-300 hover:bg-blue-50/50 hover:shadow-md'
-          }`}
+                ? 'border-slate-300 bg-white' // REMOVED green styling here
+                : 'border-slate-300 hover:border-indigo-400 hover:bg-slate-50'
+            }`}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
@@ -249,72 +226,58 @@ const FileUpload = ({
             type="file"
             accept={accept}
             onChange={handleInputChange}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+            disabled={uploading}
           />
 
           {selectedFile ? (
-            <div className="text-center h-full flex flex-col items-center justify-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center mb-4 shadow-lg">
-                {getFileIcon()}
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm font-semibold text-gray-900 truncate">{selectedFile.name}</p>
-                <p className="text-xs text-gray-500">{formatFileSize(selectedFile.size)}</p>
-              </div>
-              
-              {/* Only show manual upload buttons if onFileSelect is not provided (manual upload mode) */}
-              {!onFileSelect && (
-                <div className="flex justify-center space-x-2 mt-4">
-                  <button
-                    onClick={handleUpload}
-                    disabled={uploading}
-                    className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {uploading ? (
-                      <div className="flex items-center space-x-2">
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        <span>Uploading...</span>
-                      </div>
-                    ) : (
-                      'Upload'
-                    )}
-                  </button>
-                  <button
-                    onClick={handleRemove}
-                    className="px-4 py-2 bg-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-400 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              )}
+            <div className="w-full h-full flex flex-col items-center justify-center space-y-3">
+              {uploading ? (
+                <>
+                  <div className="w-10 h-10 border-2 border-slate-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-bold text-slate-900">Uploading...</p>
+                    <p className="text-xs text-slate-500">{selectedFile.name}</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600 mb-1">
+                    {type === 'image' ? <Image className="w-5 h-5" /> : <File className="w-5 h-5" />}
+                  </div>
+                  <div className="space-y-1 max-w-full px-4">
+                    <p className="text-sm font-bold text-slate-900 truncate">{selectedFile.name}</p>
+                    <p className="text-xs text-slate-500">{formatFileSize(selectedFile.size)}</p>
+                  </div>
 
-              {/* Show uploading status for automatic upload */}
-              {onFileSelect && uploading && (
-                <div className="flex justify-center items-center space-x-2 mt-4">
-                  <div className="w-4 h-4 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin"></div>
-                  <span className="text-sm text-blue-600">Uploading...</span>
-                </div>
+                  {!onFileSelect && (
+                    <div className="flex gap-2 mt-2 z-10 relative">
+                      {/* z-10 to be above the file input if needed, but in this structure input covers all. 
+                             Actually, since input covers all, we can't click buttons inside. 
+                             For manual upload mode, we need to hide the input or position buttons above it.
+                             However, based on usage in profile, we usually use auto-upload (onFileSelect).
+                         */}
+                      <button onClick={(e) => { e.stopPropagation(); handleUpload(); }} className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded hover:bg-indigo-700">Upload</button>
+                      <button onClick={(e) => { e.stopPropagation(); handleRemove(); }} className="px-3 py-1.5 bg-white border border-slate-200 text-slate-600 text-xs font-bold rounded hover:bg-slate-50">Cancel</button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           ) : (
-            <div className="text-center h-full flex flex-col items-center justify-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-4 shadow-lg">
-                <Upload className="h-6 w-6 text-white" />
+            <div className="pointer-events-none"> {/* Prevent blocking the file input clicks */}
+              <div className="w-12 h-12 rounded-full bg-white border border-slate-200 flex items-center justify-center mx-auto mb-3 shadow-sm">
+                <CloudUpload className="w-5 h-5 text-indigo-600" />
               </div>
-              <div className="space-y-2">
-                <p className="text-sm font-semibold text-gray-900">
-                  <span className="text-blue-600 hover:text-blue-700 cursor-pointer transition-colors">
-                    Click to upload
-                  </span>
+              <div className="space-y-1">
+                <p className="text-sm font-bold text-slate-900">
+                  Click or drag to upload
                 </p>
-                <p className="text-xs text-gray-500">
-                  {type === 'image' 
-                    ? `PNG, JPG, GIF up to ${maxSize}MB`
+                <p className="text-[10px] text-slate-500 uppercase tracking-wide font-medium">
+                  {type === 'image'
+                    ? `PNG, JPG, WebP, AVIF up to ${maxSize}MB`
                     : `PDF, DOC, DOCX up to ${maxSize}MB`
                   }
-                </p>
-                <p className="text-xs text-gray-400">
-                  or drag and drop
                 </p>
               </div>
             </div>

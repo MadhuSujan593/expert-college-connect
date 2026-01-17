@@ -128,12 +128,12 @@ const RatingRequestsList = ({ ratingRequests, onUpdate, hasMore, loadingMore, on
                       e.target.nextSibling.style.display = 'flex';
                     }}
                   />
-                  <div className="w-full h-full bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full flex items-center justify-center text-white font-semibold text-sm" style={{display: 'none'}}>
+                  <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-sm" style={{ display: 'none' }}>
                     {request.expertprofile.user.fullName?.charAt(0) || 'E'}
                   </div>
                 </div>
               ) : (
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 font-bold text-sm border border-slate-200">
                   {request.expertprofile?.user?.fullName?.charAt(0) || 'E'}
                 </div>
               )}
@@ -147,8 +147,8 @@ const RatingRequestsList = ({ ratingRequests, onUpdate, hasMore, loadingMore, on
                 {request.message && (
                   <div className="mt-1">
                     <p className="text-xs text-gray-500">
-                      {expandedMessages.has(request.id) 
-                        ? request.message 
+                      {expandedMessages.has(request.id)
+                        ? request.message
                         : truncateMessage(request.message)
                       }
                     </p>
@@ -183,24 +183,24 @@ const RatingRequestsList = ({ ratingRequests, onUpdate, hasMore, loadingMore, on
                     <button
                       onClick={() => handleReject(request.id)}
                       disabled={updating === request.id}
-                      className="px-3 py-1.5 bg-white text-red-600 border border-red-300 rounded-md hover:bg-red-50 text-xs font-medium transition-colors shadow-sm hover:shadow-md disabled:opacity-50"
+                      className="px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-[3px] hover:bg-slate-50 hover:text-rose-600 hover:border-rose-200 text-xs font-bold transition-all shadow-sm disabled:opacity-50"
                     >
                       {updating === request.id ? 'Rejecting...' : 'Reject'}
                     </button>
                     <button
                       onClick={() => handleApprove(request.id)}
                       disabled={updating === request.id}
-                      className="px-3 py-1.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-md text-xs font-medium transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50"
+                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-[3px] text-xs font-bold transition-all shadow-sm hover:shadow hover:ring-1 hover:ring-indigo-200 disabled:opacity-50"
                     >
                       {updating === request.id ? 'Approving...' : 'Approve & Rate'}
                     </button>
                   </>
                 )}
-                
+
                 {request.status === 'APPROVED' && (!request.ratings || request.ratings.length === 0) && (
                   <button
                     onClick={() => handleRateExpert(request)}
-                    className="px-3 py-1.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-md text-xs font-medium transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-1"
+                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-[3px] text-xs font-bold transition-all shadow-sm hover:shadow hover:ring-1 hover:ring-indigo-200 flex items-center gap-1"
                   >
                     <Star className="w-3 h-3" />
                     Rate Expert
@@ -209,15 +209,15 @@ const RatingRequestsList = ({ ratingRequests, onUpdate, hasMore, loadingMore, on
 
                 {request.ratings && request.ratings.length > 0 && (
                   <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1 text-yellow-600">
-                      <Star className="w-4 h-4 fill-current" />
-                      <span className="text-xs font-semibold">
+                    <div className="flex items-center gap-1 bg-amber-50 px-2 py-1 rounded-[3px] border border-amber-100">
+                      <Star className="w-3.5 h-3.5 text-amber-500 fill-current" />
+                      <span className="text-xs font-bold text-amber-700">
                         {request.ratings[0].overallRating}/5
                       </span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                      <span className="text-xs text-green-600 font-medium">
+                    <div className="flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded-[3px] border border-emerald-100">
+                      <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="text-xs text-emerald-700 font-bold">
                         Rated
                       </span>
                     </div>
@@ -235,11 +235,11 @@ const RatingRequestsList = ({ ratingRequests, onUpdate, hasMore, loadingMore, on
           <button
             onClick={onLoadMore}
             disabled={loadingMore}
-            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-medium rounded-md transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-6 py-2.5 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-200 font-bold text-sm rounded-[3px] transition-all shadow-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loadingMore ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-slate-400 border-t-indigo-600"></div>
                 Loading more...
               </>
             ) : (

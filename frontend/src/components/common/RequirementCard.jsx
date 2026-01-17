@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  MapPin, 
+import {
+  MapPin,
   IndianRupee,
   Briefcase,
   FileText,
@@ -12,15 +12,13 @@ import {
   Users,
   X,
   Target,
-  User,
-  Star,
   Sparkles
 } from 'lucide-react';
 import { formatCurrency } from '../../utils/currency';
 import ExpertProfileModal from './ExpertProfileModal';
 
-const RequirementCard = ({ 
-  requirement, 
+const RequirementCard = ({
+  requirement,
   variant = 'default', // 'default', 'college', 'expert', 'application'
   showActions = false,
   onEdit,
@@ -50,7 +48,7 @@ const RequirementCard = ({
   const [experts, setExperts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [expertCount, setExpertCount] = useState(null);
-  
+
   // Expert profile modal state
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [selectedExpert, setSelectedExpert] = useState(null);
@@ -65,19 +63,21 @@ const RequirementCard = ({
   // Function to fetch expert count
   const fetchExpertCount = async () => {
     if (expertCount !== null) return; // Already fetched
-    
+
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/recommendations/college?page=1&limit=100&minScore=10`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
         }
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         const matchingRequirement = data.requirements?.find(req => req.requirement.id === requirement.id);
         if (matchingRequirement) {
           setExpertCount(matchingRequirement.totalMatches || 0);
+        } else {
+          setExpertCount(0);
         }
       }
     } catch (error) {
@@ -89,7 +89,7 @@ const RequirementCard = ({
   // Simple function to show experts
   const handleViewExperts = async (e) => {
     e.stopPropagation();
-    
+
     if (experts.length > 0) {
       setShowExpertModal(true);
       return;
@@ -102,7 +102,7 @@ const RequirementCard = ({
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
         }
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         const matchingRequirement = data.requirements?.find(req => req.requirement.id === requirement.id);
@@ -128,7 +128,7 @@ const RequirementCard = ({
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
         }
       });
-      
+
       if (response.ok) {
         const completeExpertData = await response.json();
         setSelectedExpert(completeExpertData);
@@ -218,7 +218,7 @@ const RequirementCard = ({
     if (typeof skills === 'string') {
       return skills.split(',').slice(0, 8).join(' · ');
     }
-    return skills.slice(0, 8).map(skill => 
+    return skills.slice(0, 8).map(skill =>
       typeof skill === 'string' ? skill : skill.skill
     ).join(' · ');
   };
@@ -272,472 +272,291 @@ const RequirementCard = ({
 
   // Get score color
   const getScoreColor = (score) => {
-    if (score >= 80) return 'text-green-600 bg-green-100';
-    if (score >= 60) return 'text-blue-600 bg-blue-100';
-    if (score >= 40) return 'text-orange-600 bg-orange-100';
-    return 'text-red-600 bg-red-100';
+    if (score >= 80) return 'text-emerald-600 bg-emerald-100';
+    if (score >= 60) return 'text-indigo-600 bg-indigo-100';
+    if (score >= 40) return 'text-amber-600 bg-amber-100';
+    return 'text-rose-600 bg-rose-100';
   };
 
   return (
     <>
       <div
-        className={`bg-white border border-gray-200 hover:border-gray-300 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 rounded-lg cursor-pointer group shadow-sm relative ${className}`}
-      onClick={onClick}
-    >
-      <div className="p-4">
-        <div className="flex items-start justify-between">
-          {/* Left Side - Main Content */}
-          <div className="flex-1 min-w-0">
-            {/* Top Section - Job Title & Company */}
-            <div className="mb-3">
-              <h3 className="text-lg font-bold text-gray-900 group-hover:text-gray-900 transition-colors mb-1 line-clamp-1">
-              {requirement.title}
-            </h3>
-              <p className="text-gray-900 text-sm mb-1">
-                {collegeData.name}
-              </p>
-            {/* Inline badges for expert variant */}
-            {variant === 'expert' && (
-              <div className="flex flex-wrap items-center gap-2 mt-1">
-                {isRecommended && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md bg-emerald-50 text-emerald-700 border border-emerald-100">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    Recommended
-                  </span>
-                )}
-                {requirement.isUrgent && (
-                  <span className="px-2.5 py-1 bg-red-50 text-red-600 text-xs font-medium rounded-md border border-red-100">
-                    Urgent
-                  </span>
-                )}
-                {matchScore && (
-                  <span className={`px-2.5 py-1 text-xs font-medium rounded-md ${
-                    getScoreColor(matchScore)
-                  }`}>
-                    {matchScore}% Match
-                  </span>
-                )}
-              </div>
-            )}
-            </div>
+        className={`group bg-white rounded-lg border border-slate-200/60 shadow-sm hover:shadow-md hover:border-indigo-500/30 transition-all duration-300 relative overflow-hidden ${className}`}
+        onClick={onClick}
+      >
+        <div className="p-5">
+          <div className="flex items-start justify-between gap-4">
+            {/* Left Side - Main Content */}
+            <div className="flex-1 min-w-0">
+              {/* Header Section */}
+              <div className="mb-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900 group-hover:text-indigo-600 transition-colors mb-1.5 line-clamp-1">
+                      {requirement.title}
+                    </h3>
+                    <div className="flex items-center gap-2 text-sm text-slate-500">
+                      <span className="font-medium text-slate-700">{collegeData.name}</span>
+                    </div>
+                  </div>
 
-            {/* Middle Section - Job Details in ONE ROW */}
-            <div className="mb-3">
-              <div className="flex items-center gap-6 text-sm text-gray-900">
-                <span className="flex items-center gap-1 min-w-0">
-                  <Briefcase className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                  <span className="truncate">{requirement.experience || 'Not specified'}</span>
-                </span>
-                <span className="flex items-center gap-1 min-w-0">
-                  <IndianRupee className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                  <span className="truncate">{formatCurrency(requirement.budget)}</span>
-                </span>
-                <span className="flex items-center gap-1 min-w-0">
-                  <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                  <span className="truncate">{collegeData.city}</span>
-                </span>
-              </div>
-      {/* Bottom-right Request Rating (application variant) */}
-      {variant === 'application' && (
-        <div className="absolute bottom-4 right-4">
-          {hasRequested ? (
-            <span className="px-3 py-1 bg-gray-50 text-gray-600 text-xs font-medium rounded-md border border-gray-200">
-              Rating requested
-            </span>
-          ) : (
-            canRequestRating && onRequestRating && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRequestRating();
-                }}
-                className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
-              >
-                <Star className="w-3.5 h-3.5 text-white" />
-                Request Rating
-              </button>
-            )
-          )}
-        </div>
-      )}
-    </div>
-
-            {/* Description - Separate Line */}
-            <div className="mb-3">
-              <div className="flex items-center gap-2 text-sm text-gray-900">
-                <FileText className="w-4 h-4 text-gray-400" />
-                <span className="line-clamp-1">
-                  {requirement.description ? 
-                    (requirement.description.length > 60 ? 
-                      requirement.description.substring(0, 60) + '...' : 
-                      requirement.description
-                    ) : 
-                    'Not specified'
-                  }
-              </span>
-              </div>
-          </div>
-
-            {/* Skills - Separate Line */}
-            <div className="mb-3">
-              <div className="flex flex-wrap gap-1">
-                {skills && skills.length > 0 ? (
-                  <span className="text-sm text-gray-900">
-                    {formatSkills(skills)}
-              </span>
-                ) : (
-                  <span className="text-sm text-gray-500">Not specified</span>
-            )}
-          </div>
-        </div>
-        
-            {/* Time Posted */}
-            <div className="text-sm text-gray-500">
-              {(() => {
-                const daysAgo = Math.floor((new Date() - new Date(requirement.createdAt)) / (1000 * 60 * 60 * 24));
-                return daysAgo === 0 ? 'Today' : daysAgo === 1 ? '1 day ago' : `${daysAgo} days ago`;
-              })()}
-            </div>
-        </div>
-        
-          {/* Right Side - Logo & Status */}
-          <div className="flex flex-col items-end gap-3 ml-4">
-            {/* Company Logo */}
-            {/* College Logo - Hide for college variant */}
-            {variant !== 'college' && (
-              <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden bg-blue-50">
-                {collegeData.logoUrl ? (
-                  <img 
-                    src={collegeData.logoUrl} 
-                    alt={collegeData.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'flex';
-                    }}
-                  />
-                ) : null}
-                <div 
-                  className={`w-full h-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center ${collegeData.logoUrl ? 'hidden' : 'flex'}`}
-                  style={{ display: collegeData.logoUrl ? 'none' : 'flex' }}
-                >
-                  <span className="text-white font-bold text-lg">
-                    {(collegeData.name || 'C')[0].toUpperCase()}
-          </span>
-                </div>
-              </div>
-            )}
-
-            {/* Status Badges (non-expert variants keep right-side badges) */}
-            <div className="flex flex-col gap-1">
-              {variant !== 'expert' && requirement.isUrgent && (
-                <span className="px-3 py-1 bg-red-50 text-red-600 text-xs font-medium rounded-md border border-red-100">
-                  Urgent
-                </span>
-              )}
-              {variant !== 'expert' && matchScore && (
-                <span className={`px-3 py-1 text-xs font-medium rounded-md ${getScoreColor(matchScore)}`}>
-                  {matchScore}% Match
-                </span>
-              )}
-
-              {/* Application Status for Application variant */}
-              {variant === 'application' && applicationStatus && (
-                (() => {
-                  const getStatusStyle = (status) => {
-                    switch (status?.toUpperCase()) {
-                      case 'PENDING':
-                        return 'px-3 py-1 bg-yellow-50 text-yellow-600 text-xs font-medium rounded-md border border-yellow-100';
-                      case 'SHORTLISTED':
-                        return 'px-3 py-1 bg-green-50 text-green-600 text-xs font-medium rounded-md border border-green-100';
-                      case 'REJECTED':
-                        return 'px-3 py-1 bg-red-50 text-red-600 text-xs font-medium rounded-md border border-red-100';
-                      case 'ACCEPTED':
-                        return 'px-3 py-1 bg-blue-50 text-blue-600 text-xs font-medium rounded-md border border-blue-100';
-                      default:
-                        return 'px-3 py-1 bg-gray-50 text-gray-600 text-xs font-medium rounded-md border border-gray-100';
-                    }
-                  };
-                  const getStatusText = (status) => {
-                    switch (status?.toUpperCase()) {
-                      case 'PENDING': return 'Under Review';
-                      case 'SHORTLISTED': return 'Shortlisted';
-                      case 'REJECTED': return 'Not Selected';
-                      case 'ACCEPTED': return 'Selected';
-                      default: return 'Applied';
-                    }
-                  };
-                  return (
-                    <span className={getStatusStyle(applicationStatus)}>
-                      {getStatusText(applicationStatus)}
+                  {/* Status Badges */}
+                  <div className="flex flex-col items-end gap-1.5 shrink-0">
+                    {variant === 'expert' && isRecommended && (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100">
+                        <Sparkles className="w-3 h-3" />
+                        Recommended
                       </span>
-                  );
-                })()
-              )}
-
-              {/* Action Buttons for College variant */}
-              {showActions && variant === 'college' && (
-                <div className="flex gap-1">
-                  {onView && (
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onView(requirement);
-                      }}
-                      className="p-1 text-gray-500 hover:text-blue-600 transition-colors"
-                      title="View Details"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </button>
-                  )}
-                  {onEdit && (
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEdit(requirement);
-                      }}
-                      className="p-1 text-gray-500 hover:text-green-600 transition-colors"
-                      title="Edit"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                    </button>
-                  )}
-                  {onToggle && (
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                        onToggle(requirement);
-                      }}
-                      className="p-1 text-gray-500 hover:text-orange-600 transition-colors"
-                      title={requirement.isActive ? 'Deactivate' : 'Activate'}
-                    >
-                      {requirement.isActive ? (
-                        <ToggleRight className="w-4 h-4" />
-                      ) : (
-                        <ToggleLeft className="w-4 h-4" />
-                      )}
-                      </button>
                     )}
-                  {onDelete && (
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDelete(requirement);
-                      }}
-                      className="p-1 text-gray-500 hover:text-red-600 transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Recommended Experts Section for College variant */}
-        {variant === 'college' && (
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Users className="w-3 h-3 text-blue-600" />
-                </div>
-                <span className="text-sm font-medium text-gray-700">
-                  Recommended Experts
-                  {expertCount !== null && (
-                    <span className="ml-2 text-xs text-gray-500">
-                      ({expertCount === 0 ? 'No experts found' : `${expertCount} expert${expertCount === 1 ? '' : 's'} found`})
-                    </span>
-                  )}
-                </span>
-              </div>
-              <button
-                onClick={handleViewExperts}
-                disabled={loading}
-                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors disabled:opacity-50"
-              >
-                {loading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-3 w-3 border border-blue-600 border-t-transparent"></div>
-                    <span>Loading...</span>
-                  </>
-                ) : (
-                  <>
-                    <Eye className="w-3 h-3" />
-                    <span>View Experts</span>
-                  </>
-                )}
-                    </button>
+                    {requirement.isUrgent && (
+                      <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full bg-rose-50 text-rose-600 border border-rose-100">
+                        Urgent
+                      </span>
+                    )}
+                    {matchScore && (
+                      <span className={`px-2.5 py-1 text-xs font-semibold rounded-full border ${matchScore >= 80 ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                        matchScore >= 60 ? 'bg-indigo-50 text-indigo-600 border-indigo-100' :
+                          matchScore >= 40 ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                            'bg-slate-50 text-slate-600 border-slate-100'
+                        }`}>
+                        {matchScore}% Match
+                      </span>
+                    )}
                   </div>
                 </div>
-              )}
-            </div>
-    </div>
+              </div>
 
-    {/* Expert Modal */}
-    {showExpertModal && (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-          {/* Header */}
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between">
+              {/* Key Details Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-2 gap-x-6 mb-4">
+                <div className="flex items-center gap-2 text-sm text-slate-600">
+                  <Briefcase className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span className="truncate">{requirement.experience || 'Exp. Not specified'}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-slate-600">
+                  <IndianRupee className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span className="truncate">{formatCurrency(requirement.budget)}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-slate-600">
+                  <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span className="truncate">{collegeData.city || 'Remote'}</span>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="mb-4">
+                <p className="text-sm text-slate-600 line-clamp-2 leading-relaxed">
+                  {requirement.description || 'No description provided.'}
+                </p>
+              </div>
+
+              {/* Skills & Actions Footer */}
+              <div className="flex items-end justify-between gap-4 pt-4 border-t border-slate-100">
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap gap-1.5">
+                    {skills && skills.length > 0 ? (
+                      formatSkills(skills).split(' · ').map((skill, idx) => (
+                        <span key={idx} className="inline-flex items-center px-2 py-1 rounded bg-slate-50 text-slate-600 text-xs font-medium border border-slate-200 hover:bg-slate-100 transition-colors">
+                          {skill}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-sm text-slate-400 italic">No skills specified</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                {showActions && variant === 'college' && (
+                  <div className="flex items-center gap-1 shrink-0 ml-2">
+                    {onView && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onView(requirement); }}
+                        className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-[3px] transition-all"
+                        title="View Details"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                    )}
+                    {onEdit && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onEdit(requirement); }}
+                        className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-[3px] transition-all"
+                        title="Edit Requirement"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+                    )}
+                    {onToggle && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onToggle(requirement); }}
+                        className={`p-2 rounded-[3px] transition-all ${requirement.isActive
+                          ? 'text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50'
+                          : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+                          }`}
+                        title={requirement.isActive ? 'Deactivate' : 'Activate'}
+                      >
+                        {requirement.isActive ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
+                      </button>
+                    )}
+                    {onDelete && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onDelete(requirement); }}
+                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-[3px] transition-all"
+                        title="Delete Requirement"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* View Experts Banner for College Variant */}
+        {variant === 'college' && (
+          <div className="bg-slate-50 px-5 py-3 border-t border-slate-100 flex items-center justify-between group-hover:bg-indigo-50/30 transition-colors">
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4 text-indigo-500" />
+              <span className="text-xs font-semibold text-slate-600">
+                {expertCount !== null ? (
+                  expertCount === 0 ? 'No experts matched yet' : `${expertCount} matches found`
+                ) : 'Checking for matches...'}
+              </span>
+            </div>
+            <button
+              onClick={handleViewExperts}
+              disabled={loading}
+              className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 transition-colors bg-blue-50 hover:bg-blue-100 rounded-[3px] px-2 py-1"
+            >
+              {loading ? 'Loading...' : 'View Matches'}
+              <Target className="w-3 h-3" />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Expert Modal */}
+      {showExpertModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[85vh] flex flex-col overflow-hidden border border-slate-200">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10">
               <div>
-                <h2 className="text-xl font-bold text-gray-900">{requirement.title}</h2>
-                <p className="text-gray-600 text-sm mt-1">
-                  {experts.length} experts found
+                <h2 className="text-xl font-bold text-slate-900">{requirement.title}</h2>
+                <p className="text-slate-500 text-sm mt-0.5">
+                  {experts.length} qualified experts found
                 </p>
               </div>
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowExpertModal(false);
-                }}
-                className="text-gray-400 hover:text-gray-600"
+                onClick={(e) => { e.stopPropagation(); setShowExpertModal(false); }}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-[3px] transition-colors"
               >
-                <X className="h-6 w-6" />
+                <X className="h-5 w-5" />
               </button>
             </div>
-          </div>
 
-          {/* Expert List */}
-          <div className="p-6 overflow-y-auto max-h-[60vh]">
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                <span className="ml-3 text-gray-600">Loading experts...</span>
-              </div>
-            ) : experts.length === 0 ? (
-              <div className="text-center py-8">
-                <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">No experts found matching this requirement</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {experts.map((expertMatch, index) => (
-                  <div 
-                    key={index} 
-                    className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors"
-                    onClick={() => handleViewProfile(expertMatch)}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start space-x-4">
-                        <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
-                          {expertMatch.expert.profileImage ? (
-                            <img
-                              src={expertMatch.expert.profileImage}
-                              alt={expertMatch.expert.name}
-                              className="w-12 h-12 rounded-full object-cover"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                                e.target.nextSibling.style.display = 'flex';
-                              }}
-                            />
-                          ) : (
-                            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
-                              <span className="text-white font-bold text-lg">
-                                {(expertMatch.expert.name || 'E')[0].toUpperCase()}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900">{expertMatch.expert.name}</h3>
-                          <p className="text-sm text-gray-600">{expertMatch.expert.email}</p>
-                          
-                          {/* Skills */}
-                          <div className="mt-2">
-                            <div className="flex items-center space-x-2 mb-2">
-                              <Target className="h-4 w-4 text-blue-600" />
-                              <span className="text-sm font-medium text-gray-700">Skills:</span>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              {expertMatch.expert.skills?.map((skill, skillIndex) => (
-                                <span
-                                  key={skillIndex}
-                                  className={`px-2 py-1 text-xs rounded-full ${
-                                    expertMatch.recommendation?.matchedSkills?.some(ms => {
-                                      const matchedSkill = ms.skill.toLowerCase().trim();
-                                      const expertSkill = skill.name.toLowerCase().trim();
-                                      
-                                      if (matchedSkill === expertSkill) return true;
-                                      if (matchedSkill.includes(expertSkill) || expertSkill.includes(matchedSkill)) return true;
-                                      
-                                      const matchedSingular = matchedSkill.replace(/s$/, '');
-                                      const expertSingular = expertSkill.replace(/s$/, '');
-                                      if (matchedSingular === expertSingular && matchedSingular.length > 2) return true;
-                                      
-                                      return false;
-                                    })
-                                      ? 'bg-green-100 text-green-800' 
-                                      : 'bg-gray-100 text-gray-600'
-                                  }`}
-                                >
+            <div className="p-5 overflow-y-auto min-h-[300px] bg-slate-50/50">
+              {loading ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-indigo-600 border-t-white/0 mb-3"></div>
+                  <span className="text-sm font-medium text-slate-500">Finding the best experts...</span>
+                </div>
+              ) : experts.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Users className="h-8 w-8 text-slate-400" />
+                  </div>
+                  <h3 className="text-slate-900 font-semibold mb-1">No experts found yet</h3>
+                  <p className="text-slate-500 text-sm">We're still looking for the perfect match.</p>
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {experts.map((expertMatch, index) => (
+                    <div
+                      key={index}
+                      className="bg-white border border-slate-200 rounded-xl p-4 hover:border-indigo-300 hover:shadow-md cursor-pointer transition-all group"
+                      onClick={() => handleViewProfile(expertMatch)}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start gap-4">
+                          <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
+                            {expertMatch.expert.profileImage ? (
+                              <img
+                                src={expertMatch.expert.profileImage}
+                                alt={expertMatch.expert.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-slate-900 flex items-center justify-center text-white font-bold">
+                                {(expertMatch.expert.name || 'E')[0]}
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                              {expertMatch.expert.name}
+                            </h3>
+                            <p className="text-sm text-slate-500 mb-2">{expertMatch.expert.email}</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {expertMatch.expert.skills?.slice(0, 5).map((skill, i) => (
+                                <span key={i} className="px-2 py-0.5 text-[10px] font-medium bg-slate-100 text-slate-600 rounded border border-slate-200">
                                   {skill.name}
                                 </span>
                               ))}
                             </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          expertMatch.recommendation?.score >= 80 ? 'text-green-600 bg-green-100' :
-                          expertMatch.recommendation?.score >= 60 ? 'text-blue-600 bg-blue-100' :
-                          expertMatch.recommendation?.score >= 40 ? 'text-orange-600 bg-orange-100' :
-                          'text-red-600 bg-red-100'
-                        }`}>
-                          {expertMatch.recommendation?.score || 0}% Match
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          {expertMatch.recommendation?.matchedSkills?.length || 0} skills matched
+                        <div className="text-right shrink-0">
+                          <div className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${expertMatch.recommendation?.score >= 80 ? 'bg-emerald-100 text-emerald-700' :
+                            'bg-indigo-100 text-indigo-700'
+                            }`}>
+                            {expertMatch.recommendation?.score || 0}% Match
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        )}
-      </div>
         </div>
-      </div>
-    )}
+      )}
 
-    {/* Expert Profile Modal */}
-    <ExpertProfileModal
-      isOpen={showProfileModal}
-      expert={selectedExpert}
-      onClose={closeProfileModal}
-      onContactExpert={() => {
-        if (revealedExpertIds.has(selectedExpert?.id) && selectedExpert?.user?.email) {
-          const subject = `Expert Inquiry - ${selectedExpert.user.fullName}`;
-          const body = `Dear ${selectedExpert.user.fullName},\n\nI hope this email finds you well. I am reaching out regarding your expertise.\n\nBest regards,`;
-          const mailtoLink = `mailto:${selectedExpert.user.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-          window.open(mailtoLink);
-          closeProfileModal();
-        }
-      }}
-      revealedExpertIds={revealedExpertIds}
-      onRevealContact={(expertId) => {
-        if (setRevealedExpertIds) {
-          setRevealedExpertIds(prev => {
-            const newSet = new Set([...prev, expertId]);
-            return newSet;
-          });
-        }
-        if (window.refreshSubscriptionData) {
-          window.refreshSubscriptionData();
-        }
-      }}
-      mySubscription={mySubscription}
-      getLimitationDetails={getLimitationDetails}
-      showPlanLimitationModal={showPlanLimitationModal}
-      setLimitationType={setLimitationType}
-      apiService={apiService}
-      subsLoading={subsLoading}
-    />
+      {/* Details of Expert Profile Modal kept as is */}
+      <ExpertProfileModal
+        isOpen={showProfileModal}
+        expert={selectedExpert}
+        onClose={closeProfileModal}
+        onContactExpert={() => {
+          if (revealedExpertIds.has(selectedExpert?.id) && selectedExpert?.user?.email) {
+            const subject = `Expert Inquiry - ${selectedExpert.user.fullName}`;
+            const body = `Dear ${selectedExpert.user.fullName},\n\nI hope this email finds you well. I am reaching out regarding your expertise.\n\nBest regards,`;
+            const mailtoLink = `mailto:${selectedExpert.user.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            window.open(mailtoLink);
+            closeProfileModal();
+          }
+        }}
+        revealedExpertIds={revealedExpertIds}
+        onRevealContact={(expertId) => {
+          if (setRevealedExpertIds) {
+            setRevealedExpertIds(prev => {
+              const newSet = new Set([...prev, expertId]);
+              return newSet;
+            });
+          }
+          if (window.refreshSubscriptionData) {
+            window.refreshSubscriptionData();
+          }
+        }}
+        mySubscription={mySubscription}
+        getLimitationDetails={getLimitationDetails}
+        showPlanLimitationModal={showPlanLimitationModal}
+        setLimitationType={setLimitationType}
+        apiService={apiService}
+        subsLoading={subsLoading}
+      />
     </>
   );
 };

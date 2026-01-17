@@ -249,73 +249,84 @@ const ExpertsTab = ({
 
     // Loading skeleton
     const ExpertSkeleton = () => (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 animate-pulse">
-            <div className="flex items-start space-x-4 mb-4">
-                <div className="w-16 h-16 bg-gray-200 rounded-full"></div>
-                <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-0 animate-pulse overflow-hidden">
+            <div className="p-5">
+                <div className="flex items-start space-x-4 mb-4">
+                    <div className="w-14 h-14 bg-slate-200 rounded-full shrink-0"></div>
+                    <div className="flex-1 space-y-2 min-w-0">
+                        <div className="h-4 bg-slate-200 rounded w-3/4"></div>
+                        <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+                    </div>
+                </div>
+                <div className="space-y-3">
+                    <div className="h-3 bg-slate-200 rounded w-full"></div>
+                    <div className="h-3 bg-slate-200 rounded w-2/3"></div>
                 </div>
             </div>
-            <div className="space-y-3">
-                <div className="h-3 bg-gray-200 rounded"></div>
-                <div className="h-3 bg-gray-200 rounded w-2/3"></div>
-                <div className="h-8 bg-gray-200 rounded"></div>
-            </div>
+            <div className="h-12 bg-slate-50 border-t border-slate-100"></div>
         </div>
     );
 
     return (
         <div className="space-y-8">
             {/* Search and Filters */}
-            <div className="flex flex-col sm:flex-row gap-4">
-                {/* Search Input */}
-                <div className="flex-1">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-600" />
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search experts by name, expertise, skills, or company..."
-                            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
-                        />
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row gap-4">
+                    {/* Search Input */}
+                    <div className="flex-1">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Search experts by name, expertise, skills, or company..."
+                                className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-[3px] text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 hover:border-indigo-300 transition-colors text-sm"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Category Filter */}
+                    <div className="sm:w-64">
+                        <select
+                            value={selectedCategory}
+                            onChange={(e) => handleCategoryChange(e.target.value)}
+                            className="w-full px-3 py-2.5 border border-slate-200 rounded-[3px] text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 hover:border-indigo-300 transition-colors text-sm bg-white"
+                        >
+                            {categories.map(category => (
+                                <option key={category} value={category}>{category}</option>
+                            ))}
+                        </select>
                     </div>
                 </div>
 
-                {/* Category Filter */}
-                <div className="sm:w-48">
-                    <select
-                        value={selectedCategory}
-                        onChange={(e) => handleCategoryChange(e.target.value)}
-                        className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 hover:border-blue-300 transition-colors text-sm"
-                    >
-                        {categories.map(category => (
-                            <option key={category} value={category}>{category}</option>
-                        ))}
-                    </select>
-                </div>
-            </div>
-
-            {/* Active Filters Indicator */}
-            {(searchQuery || selectedCategory !== 'All Categories') && (
-                <div className="mt-3 pt-3 border-t border-gray-100">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Filter className="w-4 h-4" />
-                        <span className="font-medium">Active filters:</span>
+                {/* Active Filters Indicator */}
+                {(searchQuery || selectedCategory !== 'All Categories') && (
+                    <div className="pt-3 border-t border-slate-100 flex items-center gap-2 text-sm text-slate-600">
+                        <Filter className="w-4 h-4 text-slate-400" />
+                        <span className="font-bold text-slate-700">Active filters:</span>
                         {searchQuery && (
-                            <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                            <span className="inline-flex items-center px-2.5 py-1 bg-indigo-50 text-indigo-700 text-xs font-bold rounded-full border border-indigo-100">
                                 Search: {searchQuery}
                             </span>
                         )}
                         {selectedCategory !== 'All Categories' && (
-                            <span className="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
+                            <span className="inline-flex items-center px-2.5 py-1 bg-purple-50 text-purple-700 text-xs font-bold rounded-full border border-purple-100">
                                 Category: {selectedCategory}
                             </span>
                         )}
+                        <button
+                            onClick={() => {
+                                setSearchQuery('');
+                                setSelectedCategory('All Categories');
+                            }}
+                            className="ml-auto text-xs font-bold text-slate-500 hover:text-slate-800 underline"
+                        >
+                            Clear All
+                        </button>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
 
             {/* Results Section */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -405,83 +416,77 @@ const ExpertsTab = ({
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.3 }}
-                                className="group bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-300 transition-all duration-200"
+                                className="group bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-lg hover:border-indigo-200 transition-all duration-300 flex flex-col overflow-hidden"
                             >
                                 {/* Expert Header */}
-                                <div className="p-4">
-                                    <div className="flex items-center space-x-3 mb-3">
-                                        {expert.profilePicture ? (
-                                            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-gray-200 flex-shrink-0">
-                                                <img
-                                                    src={expert.profilePicture}
-                                                    alt={`${expert.user?.fullName}'s profile`}
-                                                    className="w-full h-full object-cover"
-                                                    onError={(e) => {
-                                                        e.target.style.display = 'none';
-                                                        e.target.nextSibling.style.display = 'flex';
-                                                    }}
-                                                />
-                                                <div className="w-full h-full bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full flex items-center justify-center text-white font-semibold text-base" style={{ display: 'none' }}>
+                                <div className="p-3 flex-1">
+                                    <div className="flex items-start gap-3 mb-3">
+                                        <div className="relative shrink-0">
+                                            {expert.profilePicture ? (
+                                                <div className="w-12 h-12 rounded-full overflow-hidden border border-slate-200 shrink-0">
+                                                    <img
+                                                        src={expert.profilePicture}
+                                                        alt={`${expert.user?.fullName}'s profile`}
+                                                        className="w-full h-full object-cover"
+                                                        onError={(e) => {
+                                                            e.target.style.display = 'none';
+                                                            e.target.nextSibling.style.display = 'flex';
+                                                        }}
+                                                    />
+                                                    <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-sm" style={{ display: 'none' }}>
+                                                        {expert.user?.fullName?.charAt(0) || 'E'}
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 font-bold text-sm border border-slate-200 shrink-0">
                                                     {expert.user?.fullName?.charAt(0) || 'E'}
                                                 </div>
-                                            </div>
-                                        ) : (
-                                            <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full flex items-center justify-center text-white font-semibold text-base flex-shrink-0">
-                                                {expert.user?.fullName?.charAt(0) || 'E'}
-                                            </div>
-                                        )}
-                                        <div className="flex-1 min-w-0">
-                                            <h4 className="font-semibold text-gray-900 text-base truncate group-hover:text-blue-600 transition-colors">
+                                            )}
+                                            {expert.isVerified && (
+                                                <div className="absolute -bottom-1 -right-1 bg-white p-0.5 rounded-full border border-white shadow-sm">
+                                                    <div className="bg-indigo-50 p-0.5 rounded-full">
+                                                        <Shield className="w-3 h-3 text-indigo-600" />
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="flex-1 min-w-0 pt-0.5">
+                                            <h4 className="font-bold text-slate-900 text-sm truncate group-hover:text-indigo-600 transition-colors" title={expert.user?.fullName}>
                                                 {expert.user?.fullName || 'Expert Name'}
                                             </h4>
-                                            <p className="text-sm text-gray-600 truncate">
-                                                {expert.jobTitle || 'Professional'}
-                                            </p>
+                                            <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-1">
+                                                <Building2 className="w-3 h-3 shrink-0" />
+                                                <span className="truncate max-w-[120px]">{expert.company || 'Not specified'}</span>
+                                            </div>
                                         </div>
-                                        {expert.isVerified && (
-                                            <div className="bg-blue-100 p-1.5 rounded-full group-hover:bg-blue-200 transition-colors flex-shrink-0">
-                                                <Shield className="w-4 h-4 text-blue-600" />
+                                    </div>
+
+                                    {/* Job Title & Rating */}
+                                    <div className="mt-2 flex items-center justify-between gap-2">
+                                        <div className="text-xs text-slate-700 font-medium truncate" title={expert.jobTitle}>
+                                            {expert.jobTitle || 'Professional'}
+                                        </div>
+
+                                        {/* Rating - Only show if > 0 */}
+                                        {expert.averageRating > 0 && (
+                                            <div className="flex items-center gap-1 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 shrink-0">
+                                                <Star className="w-3 h-3 text-amber-500 fill-current" />
+                                                <span className="text-[10px] font-bold text-amber-700">
+                                                    {expert.averageRating.toFixed(1)}
+                                                </span>
                                             </div>
                                         )}
                                     </div>
-
-                                    {/* Company */}
-                                    <div className="mb-3">
-                                        <p className="text-sm text-gray-600 flex items-center">
-                                            <Building2 className="w-4 h-4 mr-1.5 flex-shrink-0" />
-                                            <span className="truncate">{expert.company || 'Company not specified'}</span>
-                                        </p>
-                                    </div>
-
-                                    {/* Rating */}
-                                    {expert.averageRating > 0 && (
-                                        <div className="flex items-center space-x-2">
-                                            <div className="flex items-center">
-                                                {[...Array(5)].map((_, i) => (
-                                                    <Star
-                                                        key={i}
-                                                        className={`w-4 h-4 ${i < Math.floor(expert.averageRating || 0) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
-                                                    />
-                                                ))}
-                                            </div>
-                                            <span className="text-sm font-medium text-gray-700">
-                                                {expert.averageRating.toFixed(1)}
-                                            </span>
-                                        </div>
-                                    )}
                                 </div>
 
-                                {/* Action Buttons - Compact */}
-                                <div className="px-4 pb-4">
-                                    <div className="flex justify-center">
-                                        <button
-                                            onClick={() => handleViewProfile(expert)}
-                                            className="px-6 py-2 bg-white text-gray-700 text-xs font-medium rounded-md hover:bg-gray-50 transition-colors border border-gray-300 shadow-sm hover:shadow-md"
-                                        >
-                                            View Profile
-                                        </button>
-                                    </div>
-                                </div>
+                                {/* Action Buttons - Bottom Full Width */}
+                                <button
+                                    onClick={() => handleViewProfile(expert)}
+                                    className="w-full py-2.5 bg-white text-slate-600 text-xs font-bold border-t border-slate-100 hover:bg-slate-50 hover:text-indigo-600 transition-colors flex items-center justify-center gap-2"
+                                >
+                                    View Profile
+                                </button>
                             </motion.div>
                         ))}
                     </div>

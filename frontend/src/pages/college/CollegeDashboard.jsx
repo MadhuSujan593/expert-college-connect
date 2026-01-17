@@ -1751,6 +1751,7 @@ const CollegeDashboard = () => {
       logout={handleLogout}
       activeTab={activeTab}
       setActiveTab={handleTabChange}
+      logoUrl={profile?.logoUrl || profileForm?.logoUrl}
     >
       <AnimatePresence mode="wait">
         {activeTab === 'overview' && (
@@ -1890,6 +1891,13 @@ const CollegeDashboard = () => {
               requirementId={null}
               user={user}
               onRefreshSubscription={loadMySubscription}
+              mySubscription={mySubscription}
+              showPlanLimitationModal={setShowPlanLimitationModal}
+              setLimitationType={setLimitationType}
+              getLimitationDetails={getLimitationDetails}
+              subsLoading={subsLoading}
+              revealedExpertIds={revealedExpertIds}
+              setRevealedExpertIds={setRevealedExpertIds}
             />
           </motion.div>
         )}

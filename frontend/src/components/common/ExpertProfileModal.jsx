@@ -1,20 +1,26 @@
 import React from 'react';
-import { motion } from 'framer-motion';
-import { 
-  X, 
-  Clock, 
-  MapPin, 
-  TrendingUp, 
-  Mail, 
-  Phone, 
-  Building2, 
-  FileText 
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  X,
+  Clock,
+  MapPin,
+  TrendingUp,
+  Mail,
+  Phone,
+  Building2,
+  FileText,
+  Briefcase,
+  Award,
+  Shield,
+  Layers,
+  Globe,
+  User
 } from 'lucide-react';
 
-const ExpertProfileModal = ({ 
-  isOpen, 
-  expert, 
-  onClose, 
+const ExpertProfileModal = ({
+  isOpen,
+  expert,
+  onClose,
   onContactExpert,
   revealedExpertIds = new Set(),
   onRevealContact,
@@ -25,8 +31,6 @@ const ExpertProfileModal = ({
   apiService = null,
   subsLoading = false
 }) => {
-  if (!isOpen || !expert) return null;
-
   // Always show contact information as masked initially
   const [isContactRevealed, setIsContactRevealed] = React.useState(false);
 
@@ -39,31 +43,25 @@ const ExpertProfileModal = ({
     }
   }, [isOpen, expert, revealedExpertIds]);
 
+  if (!isOpen || !expert) return null;
+
   const handleRevealContact = async () => {
     if (!apiService) return;
-    
-    // Debug subscription data
-    console.log('ExpertProfileModal - mySubscription:', mySubscription);
-    console.log('ExpertProfileModal - mySubscription?.plan:', mySubscription?.plan);
-    console.log('ExpertProfileModal - subsLoading:', subsLoading);
-    
+
     // Check if subscription data is still loading
     if (subsLoading) {
       console.log('Subscription data is still loading, please wait...');
       return;
     }
-    
+
     // Use the same logic as requirements - check limitations first
     const limitation = getLimitationDetails?.();
     if (limitation) {
-      console.log('Limitation found, showing modal:', limitation);
       setLimitationType?.(limitation.type);
       showPlanLimitationModal?.(true);
       return;
     }
-    
-    console.log('No limitations found, proceeding with reveal');
-    
+
     try {
       const response = await apiService.revealExpertContact(expert.id);
       if (response.success && response.contactDetails) {
@@ -96,313 +94,317 @@ const ExpertProfileModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden"
-      >
-        {/* Header */}
-        <div className="bg-white border-b border-gray-200 p-6 flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              {expert.profilePicture ? (
-                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-200">
-                  <img
-                    src={expert.profilePicture}
-                    alt={`${expert.user?.fullName}'s profile`}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      console.log('❌ Profile picture failed to load:', expert.profilePicture);
-                      e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'flex';
-                    }}
-                  />
-                  <div className="w-full h-full bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full flex items-center justify-center text-white font-semibold text-xl" style={{display: 'none'}}>
-                    {expert.user?.fullName?.charAt(0) || 'E'}
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[85vh] flex flex-col overflow-hidden border border-slate-200"
+          >
+            {/* Header */}
+            <div className="bg-white border-b border-slate-100 p-6 flex-shrink-0 sticky top-0 z-10">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-5">
+                  <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-slate-100 shadow-sm shrink-0 bg-slate-50">
+                    {expert.profilePicture ? (
+                      <img
+                        src={expert.profilePicture}
+                        alt={`${expert.user?.fullName}'s profile`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <div
+                      className="w-full h-full bg-slate-900 flex items-center justify-center text-white font-bold text-xl"
+                      style={{ display: expert.profilePicture ? 'none' : 'flex' }}
+                    >
+                      {expert.user?.fullName?.charAt(0) || 'E'}
+                    </div>
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-900 leading-tight">
+                      {expert.user?.fullName}
+                    </h2>
+                    <p className="text-slate-600 font-medium">{expert.jobTitle}</p>
+                    {expert.company && (
+                      <p className="text-slate-500 text-sm">{expert.company}</p>
+                    )}
+
+                    {/* Quick Info Row */}
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-3">
+                      {expert.experience && (
+                        <div className="flex items-center gap-1.5 text-sm text-slate-500">
+                          <Briefcase className="w-4 h-4 text-slate-400" />
+                          <span>{expert.experience}</span>
+                        </div>
+                      )}
+                      {expert.location && (
+                        <div className="flex items-center gap-1.5 text-sm text-slate-500">
+                          <MapPin className="w-4 h-4 text-slate-400" />
+                          <span>{expert.location}</span>
+                        </div>
+                      )}
+                      {expert.hourlyRate && (
+                        <div className="flex items-center gap-1.5 text-sm text-slate-500">
+                          <TrendingUp className="w-4 h-4 text-emerald-500" />
+                          <span className="font-semibold text-emerald-600 font-mono">₹{parseFloat(expert.hourlyRate).toFixed(0)}/hr</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              ) : (
-                <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full flex items-center justify-center text-white font-semibold text-xl">
-                  {expert.user?.fullName?.charAt(0) || 'E'}
-                </div>
-              )}
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">
-                  {expert.user?.fullName}
-                </h2>
-                <p className="text-gray-600">{expert.jobTitle}</p>
-                {expert.company && (
-                  <p className="text-gray-500 text-sm">{expert.company}</p>
-                )}
+                <button
+                  onClick={onClose}
+                  className="text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-[3px] p-2 transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors p-2"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-          
-          {/* Quick Info Row */}
-          <div className="flex items-center space-x-6 mt-4 pt-4 border-t border-gray-100">
-            {expert.experience && (
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <Clock className="w-4 h-4" />
-                <span>{expert.experience}</span>
-              </div>
-            )}
-            {expert.location && (
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <MapPin className="w-4 h-4" />
-                <span>{expert.location}</span>
-              </div>
-            )}
-            {expert.hourlyRate && (
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <TrendingUp className="w-4 h-4" />
-                <span className="font-semibold text-green-600">₹{parseFloat(expert.hourlyRate).toFixed(0)}/hr</span>
-              </div>
-            )}
-          </div>
-        </div>
 
-        {/* Content */}
-        <div className="flex-1 p-6 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
-          <div className="space-y-6">
-            {/* About */}
-            {expert.bio && (
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">About</h3>
-                <p className="text-gray-700 leading-relaxed">{expert.bio}</p>
-              </div>
-            )}
+            {/* Content */}
+            <div className="flex-1 p-6 overflow-y-auto bg-slate-50/50 space-y-8">
+              {(() => {
+                const hasMainContent = Boolean(expert.bio || (expert.workexperience && expert.workexperience.length > 0));
 
-            {/* Primary Expertise */}
-            {expert.primaryExpertise && (
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Primary Expertise</h3>
-                <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
-                  <p className="text-gray-700 font-medium">
-                    {expert.primaryExpertise?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Skills */}
-            {expert.expertskill && expert.expertskill.length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Skills & Expertise</h3>
-                <div className="flex flex-wrap gap-2">
-                  {expert.expertskill.map(skill => (
-                    <span
-                      key={skill.id}
-                      className="px-3 py-1 bg-blue-50 text-blue-700 rounded-md text-sm border border-blue-200"
-                    >
-                      {skill.skillName}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Available For */}
-            {expert.availableFor && Array.isArray(expert.availableFor) && expert.availableFor.length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Available For</h3>
-                <div className="flex flex-wrap gap-2">
-                  {expert.availableFor.map((service, index) => (
-                    <span
-                      key={index}
-                      className="px-3 py-2 bg-green-50 text-green-700 text-sm rounded-lg border border-green-200 font-medium"
-                    >
-                      {service}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Preferred Mode */}
-            {expert.preferredMode && (
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Preferred Mode</h3>
-                <div className="p-3 bg-gray-50 rounded-md">
-                  <p className="text-gray-700">{expert.preferredMode}</p>
-                </div>
-              </div>
-            )}
-
-            {/* Work Experience Details */}
-            {expert.workexperience && expert.workexperience.length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Work Experience</h3>
-                <div className="space-y-4">
-                  {expert.workexperience.map((exp, index) => (
-                    <div key={exp.id} className="p-4 bg-white border border-gray-200 rounded-lg">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h4 className="font-semibold text-gray-900 text-lg">{exp.jobTitle}</h4>
-                          <p className="text-blue-600 font-medium">{exp.company}</p>
-                          {exp.location && (
-                            <p className="text-gray-600 text-sm">{exp.location}</p>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm text-gray-600">
-                            {new Date(exp.startDate).toLocaleDateString('en-US', { 
-                              month: 'short', 
-                              year: 'numeric' 
-                            })}
-                            {' - '}
-                            {exp.isCurrent 
-                              ? 'Present' 
-                              : exp.endDate 
-                                ? new Date(exp.endDate).toLocaleDateString('en-US', { 
-                                    month: 'short', 
-                                    year: 'numeric' 
-                                  })
-                                : 'N/A'
-                            }
+                return (
+                  <div className={hasMainContent ? "grid grid-cols-1 lg:grid-cols-3 gap-8" : "max-w-3xl mx-auto"}>
+                    {/* Main Content Column */}
+                    {hasMainContent && (
+                      <div className="lg:col-span-2 space-y-8">
+                        {/* About */}
+                        {expert.bio && (
+                          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
+                            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                              <User className="w-4 h-4 text-indigo-500" />
+                              About {expert.user?.fullName?.split(' ')[0]}
+                            </h3>
+                            <div className="relative z-10">
+                              <p className="text-slate-700 leading-relaxed text-base">
+                                {expert.bio}
+                              </p>
+                            </div>
                           </div>
-                          {exp.isCurrent && (
-                            <span className="inline-block px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full mt-1">
-                              Current
-                            </span>
-                          )}
-                        </div>
+                        )}
+
+                        {/* Work Experience */}
+                        {expert.workexperience && expert.workexperience.length > 0 && (
+                          <section>
+                            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 flex items-center gap-2">
+                              <Briefcase className="w-4 h-4 text-indigo-500" />
+                              Work Experience
+                            </h3>
+                            <div className="relative pl-2 border-l-2 border-slate-200 space-y-8">
+                              {expert.workexperience.map((exp, index) => (
+                                <div key={exp.id || index} className="relative pl-6">
+                                  {/* Timeline dot */}
+                                  <div className="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full bg-white border-2 border-slate-300"></div>
+
+                                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
+                                    <div>
+                                      <h4 className="font-bold text-slate-900 text-base">{exp.jobTitle}</h4>
+                                      <p className="text-indigo-600 font-medium text-sm">{exp.company}</p>
+                                    </div>
+                                    <div className="text-xs font-semibold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full whitespace-nowrap">
+                                      {new Date(exp.startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                                      {' - '}
+                                      {exp.isCurrent ? 'Present' : new Date(exp.endDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                                    </div>
+                                  </div>
+
+                                  {exp.location && (
+                                    <p className="text-xs text-slate-500 mb-3 flex items-center gap-1">
+                                      <MapPin className="w-3 h-3" /> {exp.location}
+                                    </p>
+                                  )}
+
+                                  {exp.description && (
+                                    <p className="text-slate-600 text-sm mb-3">{exp.description}</p>
+                                  )}
+
+                                  {exp.skills && Array.isArray(exp.skills) && exp.skills.length > 0 && (
+                                    <div className="flex flex-wrap gap-1.5 mt-2">
+                                      {exp.skills.map((skill, skillIndex) => (
+                                        <span key={skillIndex} className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] uppercase font-bold rounded border border-slate-200">
+                                          {skill}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </section>
+                        )}
                       </div>
-                      
-                      {exp.description && (
-                        <p className="text-gray-700 mb-3 leading-relaxed">{exp.description}</p>
-                      )}
-                      
-                      {exp.achievements && (
-                        <div className="mb-3">
-                          <p className="text-sm font-medium text-gray-900 mb-2">Key Achievements:</p>
-                          <p className="text-gray-700 text-sm leading-relaxed">{exp.achievements}</p>
+                    )}
+
+                    {/* Sidebar Column */}
+                    <div className="space-y-6">
+                      {/* Primary Expertise */}
+                      {expert.primaryExpertise && (
+                        <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+                          <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Primary Expertise</h3>
+                          <div className="flex items-center gap-2 text-indigo-700 font-semibold">
+                            <Award className="w-5 h-5" />
+                            {expert.primaryExpertise?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          </div>
                         </div>
                       )}
-                      
-                      {exp.skills && Array.isArray(exp.skills) && exp.skills.length > 0 && (
+
+                      {/* Skills */}
+                      {expert.expertskill && expert.expertskill.length > 0 && (
                         <div>
-                          <p className="text-sm font-medium text-gray-900 mb-2">Skills Used:</p>
+                          <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Skills</h3>
                           <div className="flex flex-wrap gap-2">
-                            {exp.skills.map((skill, skillIndex) => (
+                            {expert.expertskill.map(skill => (
                               <span
-                                key={skillIndex}
-                                className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded border border-blue-200"
+                                key={skill.id}
+                                className="px-2.5 py-1 bg-white text-slate-700 text-xs font-medium rounded border border-slate-200 shadow-sm"
                               >
-                                {skill}
+                                {skill.skillName}
                               </span>
                             ))}
                           </div>
                         </div>
                       )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
-            {/* Contact & Documents */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Contact */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold text-gray-900">Contact Information</h3>
-                  {!isContactRevealed && (
-                    <button
-                      onClick={handleRevealContact}
-                      className="text-sm text-indigo-600 hover:text-indigo-800 font-medium px-3 py-1 border border-indigo-300 rounded-md hover:bg-indigo-50 transition-colors"
-                    >
-                      Reveal
-                    </button>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-3 p-2">
-                    <Mail className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm text-gray-700">
-                      {isContactRevealed ? expert.user?.email : '••••••••••@•••'}
-                    </span>
-                  </div>
-                  {expert.user?.phone && (
-                    <div className="flex items-center space-x-3 p-2">
-                      <Phone className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm text-gray-700">
-                        {isContactRevealed ? expert.user?.phone : '••••••••••'}
-                      </span>
-                    </div>
-                  )}
-                  {expert.website && (
-                    <div className="flex items-center space-x-3 p-2">
-                      <Building2 className="w-4 h-4 text-gray-500" />
-                      <a
-                        href={expert.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-blue-600 hover:underline"
-                      >
-                        Visit Website
-                      </a>
-                    </div>
-                  )}
-                </div>
-              </div>
 
-              {/* Documents */}
-              {expert.resumeUrl && (
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Documents</h3>
-                  <div className="space-y-2">
-                    <a
-                      href={expert.resumeUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-md transition-colors"
-                    >
-                      <FileText className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm text-gray-700">View Resume</span>
-                    </a>
+
+                      {/* Preferred Mode */}
+                      {expert.preferredMode && (
+                        <div>
+                          <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Preferred Mode</h3>
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-medium border border-slate-200">
+                            {expert.preferredMode}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Contact Information Box */}
+                      <div className="bg-indigo-50/50 p-5 rounded-xl border border-indigo-100">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-sm font-bold text-indigo-900">Contact Details</h3>
+                          {!isContactRevealed && (
+                            <button
+                              onClick={handleRevealContact}
+                              className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-[3px] transition-all shadow-sm"
+                            >
+                              Reveal
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-indigo-500 shadow-sm">
+                              <Mail className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs text-indigo-400 font-medium uppercase">Email</p>
+                              <p className="text-sm text-indigo-900 truncate font-medium">
+                                {isContactRevealed ? expert.user?.email : '•••••••••@•••'}
+                              </p>
+                            </div>
+                          </div>
+
+                          {expert.user?.phone && (
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-indigo-500 shadow-sm">
+                                <Phone className="w-4 h-4" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs text-indigo-400 font-medium uppercase">Phone</p>
+                                <p className="text-sm text-indigo-900 truncate font-medium">
+                                  {isContactRevealed ? expert.user?.phone : '+91 ••••• •••••'}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+
+                          {expert.website && (
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-indigo-500 shadow-sm">
+                                <Globe className="w-4 h-4" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs text-indigo-400 font-medium uppercase">Website</p>
+                                <a
+                                  href={expert.website}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-sm text-indigo-600 hover:text-indigo-800 truncate font-medium hover:underline cursor-pointer block"
+                                >
+                                  Visit Website
+                                </a>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {isContactRevealed && (
+                          <button
+                            onClick={handleContactExpert}
+                            className="w-full mt-4 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold py-2.5 rounded-[3px] transition-all shadow-sm hover:shadow-md"
+                          >
+                            <Mail className="w-4 h-4" />
+                            Send Email
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Documents */}
+                      {expert.resumeUrl && (
+                        <a
+                          href={expert.resumeUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-lg hover:border-indigo-300 hover:shadow-sm transition-all group"
+                        >
+                          <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center text-red-500 group-hover:scale-110 transition-transform">
+                            <FileText className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">Resume / CV</p>
+                            <p className="text-xs text-slate-500">Click to view document</p>
+                          </div>
+                        </a>
+                      )}
+
+                    </div>
                   </div>
-                </div>
+                );
+              })()}
+            </div>
+
+            {/* Footer */}
+            <div className="bg-white border-t border-slate-100 p-4 flex items-center justify-end gap-3 flex-shrink-0">
+              <button
+                onClick={onClose}
+                className="px-5 py-2.5 border border-slate-200 text-slate-600 font-medium rounded-[3px] hover:bg-slate-50 transition-colors text-sm"
+              >
+                Close
+              </button>
+              {!isContactRevealed && (
+                <button
+                  onClick={handleRevealContact}
+                  className="px-5 py-2.5 bg-indigo-600 text-white font-bold rounded-[3px] hover:bg-indigo-700 transition-all shadow-md hover:shadow-lg text-sm flex items-center gap-2"
+                >
+                  Reveal Contact Details
+                </button>
               )}
             </div>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="bg-gray-50 border-t border-gray-200 p-4 flex-shrink-0">
-          <div className="flex space-x-3">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
-            >
-              Close
-            </button>
-            <button
-              onClick={handleContactExpert}
-              disabled={!revealedExpertIds.has(expert.id)}
-              className={`px-4 py-2 rounded-md transition-all duration-300 ${
-                revealedExpertIds.has(expert.id)
-                  ? 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-lg hover:shadow-xl'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-            >
-              Contact Expert
-            </button>
-          </div>
-        </div>
-      </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
 export default ExpertProfileModal;
-
-
-
