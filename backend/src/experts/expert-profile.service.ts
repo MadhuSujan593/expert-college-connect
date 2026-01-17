@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class ExpertProfileService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   /**
    * Get expert profile by user ID
@@ -71,7 +71,7 @@ export class ExpertProfileService {
       totalRatings: expertProfile._count.rating,
       totalServices: expertProfile._count.service,
     };
-    
+
     console.log('getProfileByUserId result profilePicture:', result.profilePicture);
     return result;
   }
@@ -118,10 +118,10 @@ export class ExpertProfileService {
     Object.keys(expertProfileFields).forEach(key => {
       if (expertProfileFields[key] === undefined) delete expertProfileFields[key];
     });
-    
+
     console.log('User fields to update:', userFields);
     console.log('Expert profile fields to update:', expertProfileFields);
-    
+
     // Update user table if user fields are provided
     if (Object.keys(userFields).length > 0) {
       console.log('Updating user table...');
@@ -320,6 +320,10 @@ export class ExpertProfileService {
       totalRatings,
       averageRating,
       profileViews,
+      applicationsPending,
+      applicationsShortlisted,
+      applicationsAccepted,
+      applicationsRejected
     ] = await Promise.all([
       this.prisma.service.count({
         where: { expertProfileId: expertProfile.id },
@@ -336,15 +340,29 @@ export class ExpertProfileService {
       }),
       // Profile views would need to be tracked separately
       0, // Placeholder for now
+      // Application counts
+      this.prisma.application.count({ where: { expertId: userId, status: 'PENDING' } }),
+      this.prisma.application.count({ where: { expertId: userId, status: 'SHORTLISTED' } }),
+      this.prisma.application.count({ where: { expertId: userId, status: 'ACCEPTED' } }),
+      this.prisma.application.count({ where: { expertId: userId, status: 'REJECTED' } }),
     ]);
 
     return {
-      totalServices,
-      activeServices,
-      totalRatings,
-      averageRating: averageRating._avg.overallRating || 0,
-      profileViews,
-      profileCompleteness: this.calculateProfileCompleteness(expertProfile),
+      stats: {
+        totalServices,
+        activeServices,
+        totalRatings,
+        averageRating: averageRating._avg.overallRating || 0,
+        profileViews,
+        profileCompleteness: this.calculateProfileCompleteness(expertProfile),
+        totalEarnings: 0, // Placeholder
+      },
+      applicationStats: {
+        pending: applicationsPending,
+        shortlisted: applicationsShortlisted,
+        accepted: applicationsAccepted,
+        rejected: applicationsRejected
+      }
     };
   }
 
@@ -553,7 +571,7 @@ export class ExpertProfileService {
     // Handle search query (searches across multiple fields)
     if (query) {
       console.log('Searching for original query:', query);
-      
+
       // Don't convert to lowercase yet - search as-is first
       whereConditions.OR = [
         { jobTitle: { contains: query } },
@@ -601,7 +619,7 @@ export class ExpertProfileService {
 
     console.log('Search where conditions:', JSON.stringify(whereConditions, null, 2));
     console.log('Search query:', query);
-    
+
     // Simple test: let's see if we can find ANY expert profiles first
     const testProfiles = await this.prisma.expertprofile.findMany({
       take: 3,
@@ -620,7 +638,7 @@ export class ExpertProfileService {
       jobTitle: p.jobTitle,
       availableFor: p.availableFor,
     })));
-    
+
     // Test: try to find profiles with "Training" in any field
     const trainingProfiles = await this.prisma.expertprofile.findMany({
       where: {
@@ -644,7 +662,7 @@ export class ExpertProfileService {
       company: p.company,
       primaryExpertise: p.primaryExpertise,
     })));
-    
+
     // First, let's check how many users with EXPERT role exist
     const expertUsersCount = await this.prisma.user.count({
       where: {
@@ -654,11 +672,11 @@ export class ExpertProfileService {
       },
     });
     console.log(`Found ${expertUsersCount} users with EXPERT role`);
-    
+
     // Let's also check how many expert profiles exist
     const totalExpertProfiles = await this.prisma.expertprofile.count();
     console.log(`Total expert profiles in database: ${totalExpertProfiles}`);
-    
+
     // Let's check what expert profiles exist without any filters
     const allProfiles = await this.prisma.expertprofile.findMany({
       take: 5,
@@ -683,9 +701,9 @@ export class ExpertProfileService {
       company: p.company,
       skills: p.expertskill.map(s => s.skillName),
     })));
-    
+
     let experts, total;
-    
+
     try {
       [experts, total] = await Promise.all([
         this.prisma.expertprofile.findMany({
@@ -722,7 +740,7 @@ export class ExpertProfileService {
     } catch (error) {
       console.error('Error in search query:', error);
       console.log('Falling back to basic search...');
-      
+
       // Fallback: just get all expert profiles
       [experts, total] = await Promise.all([
         this.prisma.expertprofile.findMany({
@@ -771,8 +789,8 @@ export class ExpertProfileService {
         }),
       ]);
     }
-    
-        console.log(`Found ${experts.length} expert profiles out of ${total} total`);
+
+    console.log(`Found ${experts.length} expert profiles out of ${total} total`);
     console.log('Expert profiles found:', experts.map(e => ({
       id: e.id,
       userId: e.userId,
@@ -781,11 +799,11 @@ export class ExpertProfileService {
       company: e.company,
       availableFor: e.availableFor
     })));
-    
+
     // If no results found and we have a search query, let's try searching in availableFor field manually
     if (experts.length === 0 && query) {
       console.log('No results found, trying manual availableFor search...');
-      
+
       // Get all expert profiles and filter manually
       const allExperts = await this.prisma.expertprofile.findMany({
         where: {
@@ -819,21 +837,21 @@ export class ExpertProfileService {
           },
         },
       });
-      
+
       console.log(`Got ${allExperts.length} total experts for manual filtering`);
-      
+
       // Filter manually by checking if availableFor contains the search query
       const manuallyFiltered = allExperts.filter(expert => {
         if (!expert.availableFor) return false;
-        
+
         try {
           // Parse availableFor JSON
-          const availableServices = Array.isArray(expert.availableFor) 
-            ? expert.availableFor 
+          const availableServices = Array.isArray(expert.availableFor)
+            ? expert.availableFor
             : JSON.parse(expert.availableFor as string);
-          
+
           // Check if any service contains the search query
-          return availableServices.some(service => 
+          return availableServices.some(service =>
             service.toLowerCase().includes(query.toLowerCase())
           );
         } catch (e) {
@@ -841,20 +859,20 @@ export class ExpertProfileService {
           return false;
         }
       });
-      
+
       console.log(`Manually filtered found ${manuallyFiltered.length} experts`);
-      
+
       if (manuallyFiltered.length > 0) {
         experts = manuallyFiltered.slice(skip, skip + limit);
         total = manuallyFiltered.length;
       }
     }
-    
+
     // Filter by minimum rating if specified
     let filteredExperts = experts;
     if (minRating) {
       filteredExperts = experts.filter(expert => {
-                const expertRating = (expert as any).rating || [];
+        const expertRating = (expert as any).rating || [];
         const avgRating = expertRating.length > 0
           ? expertRating.reduce((sum, r) => sum + r.rating, 0) / expertRating.length
           : 0;
@@ -865,7 +883,7 @@ export class ExpertProfileService {
     // Debug: Check if there are any ratings in the database
     const totalRatings = await this.prisma.rating.count();
     console.log(`Total ratings in database: ${totalRatings}`);
-    
+
     if (totalRatings > 0) {
       const sampleRatings = await this.prisma.rating.findMany({
         take: 3,
@@ -885,10 +903,10 @@ export class ExpertProfileService {
           where: { expertProfileId: expert.id },
           _avg: { overallRating: true },
         });
-        
+
         // Debug: Log rating calculation
         console.log(`Expert ${expert.id} (${expert.user?.fullName}): avgRating = ${avgRating._avg.overallRating}`);
-        
+
         return {
           ...expert,
           averageRating: avgRating._avg.overallRating ?? 0,
@@ -967,9 +985,9 @@ export class ExpertProfileService {
     }
 
     const service = await this.prisma.service.findFirst({
-      where: { 
+      where: {
         id: serviceId,
-        expertProfileId: expertProfile.id 
+        expertProfileId: expertProfile.id
       },
     });
 
@@ -999,9 +1017,9 @@ export class ExpertProfileService {
     }
 
     const service = await this.prisma.service.findFirst({
-      where: { 
+      where: {
         id: serviceId,
-        expertProfileId: expertProfile.id 
+        expertProfileId: expertProfile.id
       },
     });
 
@@ -1027,9 +1045,9 @@ export class ExpertProfileService {
     }
 
     const service = await this.prisma.service.findFirst({
-      where: { 
+      where: {
         id: serviceId,
-        expertProfileId: expertProfile.id 
+        expertProfileId: expertProfile.id
       },
     });
 

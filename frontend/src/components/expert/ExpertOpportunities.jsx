@@ -28,11 +28,11 @@ const ExpertOpportunities = () => {
     observer.current = new IntersectionObserver(entries => {
       if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
         console.log('🔄 Intersection observer triggered - loading more requirements');
-        console.log('📊 Current state:', { 
-          hasMore, 
-          isLoadingMore, 
+        console.log('📊 Current state:', {
+          hasMore,
+          isLoadingMore,
           currentRequirements: requirements.length,
-          totalRequirements 
+          totalRequirements
         });
         loadMoreRequirements();
       }
@@ -48,27 +48,27 @@ const ExpertOpportunities = () => {
     try {
       setLoading(!isLoadMore);
       setError(null);
-      
+
       console.log('🔍 Fetching requirements with recommendations...', 'Search:', filters.search);
       const response = await apiService.getRecommendedOpportunities(filters.page, filters.limit, 0, filters.search); // Get all with minScore = 0
-      
+
       console.log('📡 API Response:', response);
       console.log('📋 Requirements data:', response.opportunities);
-      
+
       // Sort by recommendation score (highest first), then by date
       const sortedRequirements = (response.opportunities || []).sort((a, b) => {
         const scoreA = a.recommendation?.score || 0;
         const scoreB = b.recommendation?.score || 0;
-        
+
         // First sort by recommendation score (descending)
         if (scoreA !== scoreB) {
           return scoreB - scoreA;
         }
-        
+
         // Then sort by date (newest first)
         return new Date(b.createdAt) - new Date(a.createdAt);
       });
-      
+
       if (isLoadMore) {
         console.log('📥 Adding to existing requirements:', sortedRequirements.length);
         setRequirements(prev => {
@@ -80,15 +80,15 @@ const ExpertOpportunities = () => {
         console.log('🔄 Setting initial requirements:', sortedRequirements.length);
         setRequirements(sortedRequirements);
       }
-      
+
       setTotalRequirements(response.pagination?.totalCount || 0);
       const currentPage = response.pagination?.currentPage || 1;
       const totalPages = response.pagination?.totalPages || 1;
       const shouldHaveMore = currentPage < totalPages;
-      
+
       console.log('📊 Pagination check:', { currentPage, totalPages, shouldHaveMore });
       setHasMore(shouldHaveMore);
-      
+
     } catch (err) {
       console.error('❌ Error fetching requirements:', err);
       setError('Failed to load requirements. Please try again.');
@@ -121,16 +121,16 @@ const ExpertOpportunities = () => {
       console.log('🔍 Fetching expert applications...');
       const response = await apiService.get('/applications/my-applications');
       console.log('📡 Expert applications response:', response);
-      
+
       if (response.data && response.data.applications) {
         const appliedIds = new Set();
         const statusMap = new Map();
-        
+
         response.data.applications.forEach(app => {
           appliedIds.add(app.requirementId);
           statusMap.set(app.requirementId, app.status);
         });
-        
+
         console.log('✅ Applied requirement IDs:', Array.from(appliedIds));
         console.log('📊 Application statuses:', Object.fromEntries(statusMap));
         setAppliedRequirements(appliedIds);
@@ -205,95 +205,98 @@ const ExpertOpportunities = () => {
     <div className="bg-white min-h-screen">
       <div className="max-w-6xl mx-auto p-6">
         <div className="space-y-6">
-       {/* Header */}
-       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">Browse Opportunities</h1>
-            <p className="text-gray-600 text-sm">Find requirements and review details before applying</p>
-          </div>
-        </div>
+          {/* Header */}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                  <Briefcase className="w-6 h-6 text-indigo-600" />
+                  Browse Opportunities
+                </h1>
+                <p className="text-slate-500 mt-1">Find requirements that match your expertise and review details before applying</p>
+              </div>
+            </div>
 
-        {/* Search Bar */}
-        <div className="mt-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <input
-              type="text"
-              placeholder="Search requirements by title, description, or category..."
-              value={filters.search}
-              onChange={(e) => handleSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-            />
+            {/* Search Bar */}
+            <div className="mt-6">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search requirements by title, description, or category..."
+                  value={filters.search}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  className="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm font-medium text-slate-700 bg-slate-50 focus:bg-white transition-colors"
+                />
+              </div>
+            </div>
           </div>
+
+          {/* Unified Opportunities List */}
+          {requirements.length > 0 && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                  <Briefcase className="w-5 h-5 text-gray-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">All Opportunities</h2>
+                  <p className="text-sm text-gray-600">Browse all available opportunities. Add skills to get personalized recommendations.</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {requirements.map((requirement, index) => (
+                  <motion.div
+                    key={requirement.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    ref={index === requirements.length - 1 ? lastRequirementRef : null}
+                  >
+                    <RequirementCard
+                      requirement={requirement}
+                      variant="expert"
+                      onClick={() => showRequirementDetails(requirement.id)}
+                      applicationStatus={appliedRequirements.has(requirement.id) ? applicationStatuses.get(requirement.id) : null}
+                    />
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Loading More Indicator (infinite scroll only) */}
+          {isLoadingMore && (
+            <div className="flex items-center justify-center py-8">
+              <div className="flex items-center gap-3 text-gray-600">
+                <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-600 border-t-transparent"></div>
+                <span>Loading more opportunities...</span>
+              </div>
+            </div>
+          )}
+
+          {/* End of Results */}
+          {!hasMore && requirements.length > 0 && (
+            <div className="flex flex-col items-center py-8 text-gray-500">
+              <div className="text-center">
+                <p className="text-lg font-medium mb-2">You've reached the end of all available opportunities.</p>
+                <p className="text-sm">Showing {requirements.length} of {totalRequirements} opportunities</p>
+              </div>
+            </div>
+          )}
+
+          {/* No Results */}
+          {!loading && requirements.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-16">
+              <FileText className="w-16 h-16 text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No opportunities found</h3>
+              <p className="text-gray-500 text-center">Try adjusting your filters or search terms.</p>
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Unified Opportunities List */}
-      {requirements.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-              <Briefcase className="w-5 h-5 text-gray-600" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">All Opportunities</h2>
-              <p className="text-sm text-gray-600">Browse all available opportunities. Add skills to get personalized recommendations.</p>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {requirements.map((requirement, index) => (
-              <motion.div
-                key={requirement.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                ref={index === requirements.length - 1 ? lastRequirementRef : null}
-              >
-                <RequirementCard
-                  requirement={requirement}
-                  variant="expert"
-                  onClick={() => showRequirementDetails(requirement.id)}
-                  applicationStatus={appliedRequirements.has(requirement.id) ? applicationStatuses.get(requirement.id) : null}
-                />
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Loading More Indicator (infinite scroll only) */}
-      {isLoadingMore && (
-        <div className="flex items-center justify-center py-8">
-          <div className="flex items-center gap-3 text-gray-600">
-            <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-600 border-t-transparent"></div>
-            <span>Loading more opportunities...</span>
-          </div>
-        </div>
-      )}
-
-       {/* End of Results */}
-       {!hasMore && requirements.length > 0 && (
-         <div className="flex flex-col items-center py-8 text-gray-500">
-           <div className="text-center">
-             <p className="text-lg font-medium mb-2">You've reached the end of all available opportunities.</p>
-             <p className="text-sm">Showing {requirements.length} of {totalRequirements} opportunities</p>
-           </div>
-         </div>
-       )}
-
-       {/* No Results */}
-       {!loading && requirements.length === 0 && (
-         <div className="flex flex-col items-center justify-center py-16">
-           <FileText className="w-16 h-16 text-gray-400 mb-4" />
-           <h3 className="text-lg font-medium text-gray-900 mb-2">No opportunities found</h3>
-           <p className="text-gray-500 text-center">Try adjusting your filters or search terms.</p>
-         </div>
-       )}
-         </div>
-       </div>
-     </div>
+    </div>
   );
 };
 

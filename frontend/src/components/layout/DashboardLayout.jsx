@@ -31,7 +31,9 @@ const DashboardLayout = ({ children, user, logout, activeTab, setActiveTab, logo
                         >
                             <Menu className="w-6 h-6" />
                         </button>
-                        <span className="font-semibold text-slate-900">CollegeConnect</span>
+                        <span className="font-semibold text-slate-900">
+                            {user?.role === 'EXPERT' || window.location.pathname.includes('/expert') ? 'Expert Connect' : 'CollegeConnect'}
+                        </span>
                     </div>
                     <div className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden">
                         {/* Simple avatar placeholder for mobile header */}

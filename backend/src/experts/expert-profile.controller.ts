@@ -1,19 +1,19 @@
-import { 
-  Controller, 
-  Get, 
-  Put, 
-  Post, 
-  Delete, 
-  Body, 
-  Param, 
-  Query, 
-  UseGuards, 
+import {
+  Controller,
+  Get,
+  Put,
+  Post,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
   Req,
   HttpStatus,
   HttpCode,
   UseInterceptors,
   UploadedFile,
-  BadRequestException 
+  BadRequestException
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -32,7 +32,7 @@ export class ExpertProfileController {
     private readonly expertProfileService: ExpertProfileService,
     private readonly fileUploadService: FileUploadService,
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
 
   @Get('profile')
   async getProfile(@Req() req: Request) {
@@ -49,7 +49,7 @@ export class ExpertProfileController {
     console.log('=== UPDATE PROFILE ENDPOINT ===');
     console.log('User ID:', userId);
     console.log('Update data received:', JSON.stringify(updateData, null, 2));
-    
+
     try {
       const result = await this.expertProfileService.updateProfile(userId, updateData);
       console.log('Profile updated successfully');
@@ -115,7 +115,7 @@ export class ExpertProfileController {
       },
     }),
     fileFilter: (req, file, cb) => {
-      const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+      const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/avif'];
       if (allowedMimes.includes(file.mimetype)) {
         cb(null, true);
       } else {
@@ -134,24 +134,24 @@ export class ExpertProfileController {
     console.log('Request headers:', req.headers);
     console.log('Request body:', req.body);
     console.log('File received:', file ? 'YES' : 'NO');
-    console.log('File details:', file ? { 
-      mimetype: file.mimetype, 
-      size: file.size, 
+    console.log('File details:', file ? {
+      mimetype: file.mimetype,
+      size: file.size,
       originalname: file.originalname,
       filename: file.filename,
-      path: file.path 
+      path: file.path
     } : 'no file');
-    
+
     if (!file) {
       throw new BadRequestException('No file uploaded or invalid file type');
     }
 
     const userId = (req.user as any).id;
     console.log('Processing file for user:', userId);
-    
+
     // Get current profile to check for existing profile picture
     const currentProfile = await this.expertProfileService.getProfileByUserId(userId);
-    
+
     // Delete old profile picture if exists
     if (currentProfile.profilePicture) {
       try {
@@ -159,7 +159,7 @@ export class ExpertProfileController {
         const path = require('path');
         const fs = require('fs');
         const oldFilePath = path.join(process.cwd(), 'uploads', 'profile-pics', oldFilename);
-        
+
         if (fs.existsSync(oldFilePath)) {
           fs.unlinkSync(oldFilePath);
           console.log('Old profile picture deleted:', oldFilename);
@@ -169,19 +169,19 @@ export class ExpertProfileController {
         // Continue with upload even if old file deletion fails
       }
     }
-    
+
     // Create URL for the uploaded file using static file serving
     const baseUrl = process.env.BASE_URL;
     const fileUrl = `${baseUrl}/uploads/profile-pics/${file.filename}`;
-    
+
     console.log('File URL:', fileUrl);
-    
+
     // Update expert profile with profile picture URL
     console.log('Updating profile with URL:', fileUrl);
     const updatedProfile = await this.expertProfileService.updateProfile(userId, {
       profilePicture: fileUrl,
     });
-    
+
     console.log('Profile updated, profilePicture field:', updatedProfile.profilePicture);
 
     return {
@@ -230,10 +230,10 @@ export class ExpertProfileController {
     }
 
     const userId = (req.user as any).id;
-    
+
     // Get current profile to check for existing resume
     const currentProfile = await this.expertProfileService.getProfileByUserId(userId);
-    
+
     // Delete old resume if exists
     if (currentProfile.resumeUrl) {
       try {
@@ -241,7 +241,7 @@ export class ExpertProfileController {
         const path = require('path');
         const fs = require('fs');
         const oldFilePath = path.join(process.cwd(), 'uploads', 'resumes', oldFilename);
-        
+
         if (fs.existsSync(oldFilePath)) {
           fs.unlinkSync(oldFilePath);
           console.log('Old resume deleted:', oldFilename);
@@ -251,11 +251,11 @@ export class ExpertProfileController {
         // Continue with upload even if old file deletion fails
       }
     }
-    
+
     // Create URL for the uploaded file
     const baseUrl = process.env.BASE_URL;
     const fileUrl = `${baseUrl}/uploads/resumes/${file.filename}`;
-    
+
     // Update expert profile with resume URL
     await this.expertProfileService.updateProfile(userId, {
       resumeUrl: fileUrl,
@@ -273,22 +273,22 @@ export class ExpertProfileController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async removeProfilePicture(@Req() req: Request) {
     const userId = (req.user as any).id;
-    
+
     // First, get the current profile to find the file to delete
     const currentProfile = await this.expertProfileService.getProfileByUserId(userId);
-    
+
     if (currentProfile.profilePicture) {
       try {
         // Extract filename from URL
         const filename = currentProfile.profilePicture.split('/').pop();
-        
+
         // Delete the physical file
         const path = require('path');
         const fs = require('fs');
         const filePath = path.join(process.cwd(), 'uploads', 'profile-pics', filename);
-        
+
         console.log('Attempting to delete file:', filePath);
-        
+
         if (fs.existsSync(filePath)) {
           fs.unlinkSync(filePath);
           console.log('File deleted successfully:', filename);
@@ -300,7 +300,7 @@ export class ExpertProfileController {
         // Continue with database update even if file deletion fails
       }
     }
-    
+
     // Update database to remove the URL
     await this.expertProfileService.updateProfile(userId, {
       profilePicture: null,
@@ -311,22 +311,22 @@ export class ExpertProfileController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async removeResume(@Req() req: Request) {
     const userId = (req.user as any).id;
-    
+
     // First, get the current profile to find the file to delete
     const currentProfile = await this.expertProfileService.getProfileByUserId(userId);
-    
+
     if (currentProfile.resumeUrl) {
       try {
         // Extract filename from URL
         const filename = currentProfile.resumeUrl.split('/').pop();
-        
+
         // Delete the physical file
         const path = require('path');
         const fs = require('fs');
         const filePath = path.join(process.cwd(), 'uploads', 'resumes', filename);
-        
+
         console.log('Attempting to delete resume file:', filePath);
-        
+
         if (fs.existsSync(filePath)) {
           fs.unlinkSync(filePath);
           console.log('Resume file deleted successfully:', filename);
@@ -338,7 +338,7 @@ export class ExpertProfileController {
         // Continue with database update even if file deletion fails
       }
     }
-    
+
     // Update database to remove the URL
     await this.expertProfileService.updateProfile(userId, {
       resumeUrl: null,

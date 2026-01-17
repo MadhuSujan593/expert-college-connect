@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  Mail, 
+import {
+  Mail,
   Phone,
-  Lock, 
-  Eye, 
-  EyeOff, 
-  ArrowRight, 
+  Lock,
+  Eye,
+  EyeOff,
+  ArrowRight,
   GraduationCap,
   ArrowLeft,
   Building2,
@@ -26,7 +26,7 @@ const Login = () => {
   });
   const [toast, setToast] = useState({ show: false, message: '', type: 'info' });
   const [toastTimeout, setToastTimeout] = useState(null);
-  
+
   const { isAuthenticated, login, getDashboardRoute, loading } = useAuth();
 
   // Redirect if already authenticated
@@ -51,14 +51,14 @@ const Login = () => {
     if (toastTimeout) {
       clearTimeout(toastTimeout);
     }
-    
+
     setToast({ show: true, message, type });
-    
+
     // Set new timeout for auto-hide after 5 seconds
     const timeout = setTimeout(() => {
       hideToast();
     }, 5000);
-    
+
     setToastTimeout(timeout);
   };
 
@@ -73,7 +73,7 @@ const Login = () => {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
+
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
@@ -84,7 +84,7 @@ const Login = () => {
   const detectIdentifierType = (identifier) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const phoneRegex = /^\+?[\d\s\-\(\)]+$/;
-    
+
     if (emailRegex.test(identifier)) return 'email';
     if (phoneRegex.test(identifier.replace(/\s/g, ''))) return 'phone';
     return 'unknown';
@@ -98,7 +98,7 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validate identifier and password
     if (!formData.identifier || !formData.password) {
       showToast('Please enter both email/phone and password', 'error');
@@ -121,13 +121,13 @@ const Login = () => {
       showToast(response.message || 'Login successful!', 'success');
 
       // Navigation will be handled by the AuthContext login method
-      
+
     } catch (error) {
       console.error('Login error:', error);
-      
+
       // Provide more specific error messages based on the error
       let errorMessage = error.message;
-      
+
       if (error.message.includes('Invalid credentials')) {
         errorMessage = 'Invalid email/phone or password. Please check your credentials and try again.';
       } else if (error.message.includes('Network') || error.message.includes('fetch')) {
@@ -135,7 +135,7 @@ const Login = () => {
       } else if (error.message.includes('Failed to fetch')) {
         errorMessage = 'Server connection failed. Please try again later.';
       }
-      
+
       showToast(errorMessage, 'error');
     }
   };
@@ -152,10 +152,10 @@ const Login = () => {
               alt="Professional team collaboration"
               className="w-full h-full object-cover"
             />
-            
+
             {/* Darker overlay for better text visibility */}
             <div className="absolute inset-0 bg-gradient-to-br from-black/40 via-black/30 to-black/20"></div>
-            
+
             {/* Brand content - Center positioned */}
             <div className="absolute inset-0 flex items-center justify-center p-6">
               <motion.div
@@ -329,7 +329,7 @@ const Login = () => {
                     <span className="text-xs font-semibold text-gray-900">Join as Expert</span>
                   </div>
                 </Link>
-                
+
                 <Link
                   to="/register/college"
                   className="group bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 hover:border-purple-400 hover:from-purple-100 hover:to-pink-100 rounded-lg p-3 transition-all duration-300 hover:shadow-lg"

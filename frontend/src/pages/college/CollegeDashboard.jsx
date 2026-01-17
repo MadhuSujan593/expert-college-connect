@@ -1762,6 +1762,7 @@ const CollegeDashboard = () => {
             recentRequirements={recentRequirements}
             setActiveTab={handleTabChange}
             loading={loading}
+            subscription={mySubscription}
             onCreateRequirement={() => {
               setActiveTab('requirements');
               // We need a slight delay or a way to trigger the create modal in RequirementsTab

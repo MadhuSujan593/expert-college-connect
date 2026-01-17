@@ -13,6 +13,42 @@ import {
 import RequirementCard from '../../../components/common/RequirementCard';
 import { formatCurrency } from '../../../utils/currency';
 
+// Reusable Form Input Component
+const FormInput = ({ label, type = "text", name, value, onChange, placeholder, required = false, ...props }) => (
+    <div>
+        <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">
+            {label} {required && <span className="text-red-500">*</span>}
+        </label>
+        <input
+            type={type}
+            name={name}
+            value={value}
+            onChange={onChange}
+            placeholder={placeholder}
+            required={required}
+            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-[3px] text-sm text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900 focus:border-slate-900 transition-all placeholder:text-slate-400"
+            {...props}
+        />
+    </div>
+);
+
+const FormTextarea = ({ label, name, value, onChange, placeholder, required = false, rows = 4 }) => (
+    <div>
+        <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">
+            {label} {required && <span className="text-red-500">*</span>}
+        </label>
+        <textarea
+            name={name}
+            value={value}
+            onChange={onChange}
+            placeholder={placeholder}
+            required={required}
+            rows={rows}
+            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-[3px] text-sm text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900 focus:border-slate-900 transition-all placeholder:text-slate-400 resize-none"
+        />
+    </div>
+);
+
 const RequirementsTab = ({
     recentRequirements,
     user,
@@ -309,42 +345,6 @@ const RequirementsTab = ({
             showToast('error', 'Failed to update requirement');
         }
     };
-
-    // Reusable Form Input Component within Tab
-    const FormInput = ({ label, type = "text", name, value, onChange, placeholder, required = false, ...props }) => (
-        <div>
-            <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">
-                {label} {required && <span className="text-red-500">*</span>}
-            </label>
-            <input
-                type={type}
-                name={name}
-                value={value}
-                onChange={onChange}
-                placeholder={placeholder}
-                required={required}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-[3px] text-sm text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900 focus:border-slate-900 transition-all placeholder:text-slate-400"
-                {...props}
-            />
-        </div>
-    );
-
-    const FormTextarea = ({ label, name, value, onChange, placeholder, required = false, rows = 4 }) => (
-        <div>
-            <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">
-                {label} {required && <span className="text-red-500">*</span>}
-            </label>
-            <textarea
-                name={name}
-                value={value}
-                onChange={onChange}
-                placeholder={placeholder}
-                required={required}
-                rows={rows}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-[3px] text-sm text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900 focus:border-slate-900 transition-all placeholder:text-slate-400 resize-none"
-            />
-        </div>
-    );
 
     return (
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">

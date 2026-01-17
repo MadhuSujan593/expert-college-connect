@@ -451,6 +451,57 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  // Expert Ratings & Requests
+  async getExpertRatings(filters = {}) {
+    const queryParams = new URLSearchParams(filters).toString();
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}/ratings?${queryParams}`, {
+      method: 'GET',
+      headers,
+    });
+    return this.handleResponse(response);
+  }
+
+  async getExpertRatingStats(expertProfileId) {
+    const headers = await this.getAuthHeaders();
+    // If no ID provided, dashboard usually gets it from context, but endpoint needs param
+    // The backend endpoint is /ratings/stats/:expertProfileId
+    // If we don't have ID, maybe we shouldn't call this or backend should support /ratings/stats/me
+    // For now, let's assume the caller provides it or we use the generic stats endpoint
+    if (!expertProfileId) {
+      console.warn('getExpertRatingStats called without expertProfileId');
+      return null;
+    }
+    const response = await fetch(`${this.baseURL}/ratings/stats/${expertProfileId}`, {
+      method: 'GET',
+      headers,
+    });
+    return this.handleResponse(response);
+  }
+
+  async getExpertRatingRequests(filters = {}) {
+    // Add defaults if not provided
+    const params = {
+      page: 1,
+      limit: 10,
+      ...filters
+    };
+    
+    const queryParams = new URLSearchParams({
+      page: params.page.toString(),
+      limit: params.limit.toString(),
+    });
+    
+    if (filters.status) queryParams.append('status', filters.status);
+
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}/rating-requests?${queryParams.toString()}`, {
+      method: 'GET',
+      headers,
+    });
+    return this.handleResponse(response);
+  }
+
   async searchExperts(filters = {}) {
     try {
       console.log('API: searchExperts called with filters:', filters);
@@ -675,6 +726,28 @@ class ApiService {
   async removeResume() {
     const headers = await this.getAuthHeaders();
     const response = await fetch(`${this.baseURL}/expert-profiles/upload/resume`, {
+      method: 'DELETE',
+      headers,
+    });
+    return this.handleResponse(response);
+  }
+
+  async addExpertSkill(skillData) {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}/expert-profiles/skills`, {
+      method: 'POST',
+      headers: {
+        ...headers,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(skillData),
+    });
+    return this.handleResponse(response);
+  }
+
+  async removeExpertSkill(skillId) {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}/expert-profiles/skills/${skillId}`, {
       method: 'DELETE',
       headers,
     });
@@ -942,6 +1015,13 @@ class ApiService {
       method: 'GET',
       headers,
     });
+    return this.handleResponse(response);
+  }
+
+  // ===== Super Admin: Plans & Subscriptions =====
+  async getCurrentSubscription() {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}/subscriptions/me`, { method: 'GET', headers });
     return this.handleResponse(response);
   }
 

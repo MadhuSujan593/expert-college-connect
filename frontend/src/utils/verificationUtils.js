@@ -277,3 +277,54 @@ export const useToastAutoHide = (toast, hideToast) => {
     }
   }, [toast.show, hideToast]);
 };
+
+// Helper functions for phone extraction
+export const extractPhoneDigits = (phone) => {
+  if (!phone) return '';
+  return phone.replace(/\D/g, '');
+};
+
+export const extractPhoneWithoutCountryCode = (phone) => {
+  if (!phone) return '';
+  const digits = phone.replace(/\D/g, '');
+  const countryCodes = ['91', '1', '44', '61', '49', '33', '81', '86', '55', '52', '65', '971', '966', '27'];
+  for (const code of countryCodes) {
+    if (digits.startsWith(code)) {
+      const remaining = digits.substring(code.length);
+      if (remaining.length === 10) return remaining;
+    }
+  }
+  return digits.length > 10 ? digits.substring(digits.length - 10) : digits;
+};
+
+export const detectCountryFromPhone = (phone) => {
+    if (!phone) return null;
+    const digits = phone.replace(/\D/g, '');
+    const countryMap = {
+        '91': { code: 'IN', name: 'India', dialCode: '+91', flag: '🇮🇳' },
+        '1': { code: 'US', name: 'United States', dialCode: '+1', flag: '🇺🇸' },
+        '44': { code: 'GB', name: 'United Kingdom', dialCode: '+44', flag: '🇬🇧' },
+        '61': { code: 'AU', name: 'Australia', dialCode: '+61', flag: '🇦🇺' },
+        '49': { code: 'DE', name: 'Germany', dialCode: '+49', flag: '🇩🇪' },
+        '33': { code: 'FR', name: 'France', dialCode: '+33', flag: '🇫🇷' },
+        '81': { code: 'JP', name: 'Japan', dialCode: '+81', flag: '🇯🇵' },
+        '86': { code: 'CN', name: 'China', dialCode: '+86', flag: '🇨🇳' },
+        '55': { code: 'BR', name: 'Brazil', dialCode: '+55', flag: '🇧🇷' },
+        '52': { code: 'MX', name: 'Mexico', dialCode: '+52', flag: '🇲🇽' },
+        '65': { code: 'SG', name: 'Singapore', dialCode: '+65', flag: '🇸🇬' },
+        '971': { code: 'AE', name: 'UAE', dialCode: '+971', flag: '🇦🇪' },
+        '966': { code: 'SA', name: 'Saudi Arabia', dialCode: '+966', flag: '🇸🇦' },
+        '27': { code: 'ZA', name: 'South Africa', dialCode: '+27', flag: '🇿🇦' },
+    };
+    
+    // Check for country codes (longer codes first to avoid partial matches)
+    const sortedCodes = Object.keys(countryMap).sort((a, b) => b.length - a.length);
+    for (const code of sortedCodes) {
+        if (digits.startsWith(code)) {
+            return countryMap[code];
+        }
+    }
+    
+    // Default to India
+    return countryMap['91'];
+};

@@ -251,10 +251,10 @@ const RequirementCard = ({
 
   // Get skills based on variant
   const getSkills = () => {
-    if (variant === 'expert' && requirement.recommendation?.matchedSkills) {
-      return requirement.recommendation.matchedSkills;
-    }
-    return requirement.requiredSkills;
+    // For expert variant, we still want to show the actual required skills of the job, 
+    // but maybe highlight matches if we were doing advanced UI. 
+    // For now, to match "College Dashboard", we should simply show the required skills.
+    return requirement.requiredSkills || requirement.recommendation?.matchedSkills;
   };
 
   const skills = getSkills();
@@ -344,7 +344,7 @@ const RequirementCard = ({
 
               {/* Description */}
               <div className="mb-4">
-                <p className="text-sm text-slate-600 line-clamp-2 leading-relaxed">
+                <p className="text-sm text-slate-600 line-clamp-1 leading-relaxed">
                   {requirement.description || 'No description provided.'}
                 </p>
               </div>

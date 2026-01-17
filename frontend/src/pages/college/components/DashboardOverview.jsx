@@ -19,6 +19,7 @@ const DashboardOverview = ({
     user,
     recentRequirements = [],
     loading,
+    subscription,
     onCreateRequirement
 }) => {
 
@@ -173,34 +174,71 @@ const DashboardOverview = ({
 
                 {/* Sidebar Column - Compact */}
                 <div className="space-y-4 flex flex-col">
-                    {/* Premium Plan Card - Compact */}
-                    <div className="relative overflow-hidden rounded-sm bg-slate-900 text-white shadow-xl shadow-indigo-900/20 group shrink-0">
-                        {/* Abstract Background Shapes */}
-                        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 blur-3xl opacity-40 group-hover:opacity-60 transition-opacity duration-1000"></div>
-                        <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-48 h-48 rounded-full bg-emerald-500 blur-3xl opacity-20 group-hover:opacity-30 transition-opacity duration-1000"></div>
+                    {/* Subscription / Premium Card */}
+                    {subscription && subscription.plan ? (
+                        <div className="relative overflow-hidden rounded-sm bg-indigo-600 text-white shadow-lg shadow-indigo-900/10 group shrink-0">
+                            {/* Abstract Background Shapes */}
+                            <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-indigo-500 blur-3xl opacity-20"></div>
+                            <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-48 h-48 rounded-full bg-indigo-400 blur-3xl opacity-20"></div>
 
-                        <div className="relative z-10 p-5">
-                            <div className="flex items-center gap-2 mb-2">
-                                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-gradient-to-r from-amber-300 to-orange-400 text-amber-950 shadow-sm">
-                                    Premium
-                                </span>
+                            <div className="relative z-10 p-5">
+                                <div className="flex items-center justify-between mb-3">
+                                    <h3 className="text-sm font-semibold text-indigo-100">Current Plan</h3>
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-white/20 text-white shadow-sm border border-white/10">
+                                        {subscription.status || 'Active'}
+                                    </span>
+                                </div>
+
+                                <h3 className="text-xl font-bold mb-1 tracking-tight">
+                                    {subscription.plan.name}
+                                </h3>
+                                <div className="flex items-center gap-1.5 text-xs text-indigo-100 mb-4">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
+                                    <span>Expires {new Date(subscription.endsAt || subscription.endDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                </div>
+
+                                {/* Usage Stats if available */}
+
+
+
+
+                                <Link
+                                    to="/subscription-plans"
+                                    className="block w-full text-center py-2 bg-white text-indigo-700 rounded-[3px] text-xs font-bold hover:bg-indigo-50 transition-colors shadow-sm active:scale-[0.98] transform duration-200"
+                                >
+                                    Upgrade Subscription
+                                </Link>
                             </div>
-
-                            <h3 className="text-lg font-bold mb-1">
-                                Unlock Elite Features
-                            </h3>
-                            <p className="text-slate-300 text-xs mb-4 leading-relaxed max-w-[90%]">
-                                Get direct access to top-tier experts, advanced analytics, and priority support.
-                            </p>
-
-                            <Link
-                                to="/subscription-plans"
-                                className="block w-full text-center py-2.5 bg-white text-slate-950 rounded-[3px] text-xs font-bold hover:bg-indigo-50 transition-colors shadow-lg active:scale-[0.98] transform duration-200"
-                            >
-                                Upgrade Plan
-                            </Link>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="relative overflow-hidden rounded-sm bg-slate-900 text-white shadow-xl shadow-indigo-900/20 group shrink-0">
+                            {/* Abstract Background Shapes */}
+                            <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 blur-3xl opacity-40 group-hover:opacity-60 transition-opacity duration-1000"></div>
+                            <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-48 h-48 rounded-full bg-emerald-500 blur-3xl opacity-20 group-hover:opacity-30 transition-opacity duration-1000"></div>
+
+                            <div className="relative z-10 p-5">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-gradient-to-r from-amber-300 to-orange-400 text-amber-950 shadow-sm">
+                                        Premium
+                                    </span>
+                                </div>
+
+                                <h3 className="text-lg font-bold mb-1">
+                                    Unlock Elite Features
+                                </h3>
+                                <p className="text-slate-300 text-xs mb-4 leading-relaxed max-w-[90%]">
+                                    Get direct access to top-tier experts, advanced analytics, and priority support.
+                                </p>
+
+                                <Link
+                                    to="/subscription-plans"
+                                    className="block w-full text-center py-2.5 bg-white text-slate-950 rounded-[3px] text-xs font-bold hover:bg-indigo-50 transition-colors shadow-lg active:scale-[0.98] transform duration-200"
+                                >
+                                    Upgrade Plan
+                                </Link>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Quick Actions - Compact */}
                     <div className="bg-white rounded-sm border border-slate-200/60 shadow-sm p-4 flex-1">
@@ -235,7 +273,7 @@ const DashboardOverview = ({
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

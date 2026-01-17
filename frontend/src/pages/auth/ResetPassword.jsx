@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  Lock, 
-  Eye, 
-  EyeOff, 
-  ArrowRight, 
+import {
+  Lock,
+  Eye,
+  EyeOff,
+  ArrowRight,
   ArrowLeft,
   CheckCircle,
   RefreshCw
@@ -32,14 +32,14 @@ const ResetPassword = () => {
     if (toastTimeout) {
       clearTimeout(toastTimeout);
     }
-    
+
     setToast({ show: true, message, type });
-    
+
     // Set new timeout for auto-hide after 5 seconds
     const timeout = setTimeout(() => {
       hideToast();
     }, 5000);
-    
+
     setToastTimeout(timeout);
   };
 
@@ -79,9 +79,9 @@ const ResetPassword = () => {
     setIsLoading(true);
     try {
       const response = await apiService.resetPassword(token, formData.newPassword);
-      
+
       showToast(response.message || 'Password reset successfully!', 'success');
-      
+
       // Redirect to login after a short delay
       setTimeout(() => {
         navigate('/login');

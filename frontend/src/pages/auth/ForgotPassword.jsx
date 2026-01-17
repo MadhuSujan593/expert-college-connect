@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  Mail, 
-  Lock, 
-  Eye, 
-  EyeOff, 
-  ArrowRight, 
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  ArrowRight,
   ArrowLeft,
   Key,
   RefreshCw
@@ -36,14 +36,14 @@ const ForgotPassword = () => {
     if (toastTimeout) {
       clearTimeout(toastTimeout);
     }
-    
+
     setToast({ show: true, message, type });
-    
+
     // Set new timeout for auto-hide after 5 seconds
     const timeout = setTimeout(() => {
       hideToast();
     }, 5000);
-    
+
     setToastTimeout(timeout);
   };
 
@@ -58,7 +58,7 @@ const ForgotPassword = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    
+
     // Special handling for OTP field - only allow numeric input
     if (name === 'otp') {
       const numericValue = value.replace(/\D/g, '');
@@ -68,7 +68,7 @@ const ForgotPassword = () => {
       }));
       return;
     }
-    
+
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -102,7 +102,7 @@ const ForgotPassword = () => {
     setIsLoading(true);
     try {
       const response = await apiService.forgotPassword(formData.email);
-      
+
       setOtpSent(true);
       startCountdown();
       setStep('otp');
@@ -124,7 +124,7 @@ const ForgotPassword = () => {
     setIsLoading(true);
     try {
       const response = await apiService.verifyPasswordResetOtp(formData.email, formData.otp);
-      
+
       // Store the reset token for the final step
       setResetToken(response.resetToken);
       setStep('reset');
@@ -157,9 +157,9 @@ const ForgotPassword = () => {
     setIsLoading(true);
     try {
       const response = await apiService.resetPassword(resetToken, formData.newPassword);
-      
+
       showToast(response.message || 'Password reset successfully!', 'success');
-      
+
       // Redirect to login after a short delay
       setTimeout(() => {
         window.location.href = '/login';
@@ -174,7 +174,7 @@ const ForgotPassword = () => {
 
   const handleResendOtp = () => {
     if (countdown > 0) return;
-    
+
     handleSendOtp();
   };
 
@@ -227,245 +227,245 @@ const ForgotPassword = () => {
           className="w-full max-w-md"
         >
           {/* Back to Login */}
-            <Link
-              to="/login"
+          <Link
+            to="/login"
             className="inline-flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors mb-8 group"
-            >
+          >
             <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
             <span className="text-base font-medium">Back to Login</span>
-            </Link>
+          </Link>
 
-            {/* Header */}
+          {/* Header */}
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-gray-900">{getStepTitle()}</h1>
             <p className="text-gray-600 mt-2">{getStepDescription()}</p>
-            </div>
+          </div>
 
-            {/* Form */}
+          {/* Form */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              {step === 'email' && (
+            {step === 'email' && (
               <div className="space-y-5">
-                  {/* Email Field */}
-                  <div>
+                {/* Email Field */}
+                <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                      Email Address
-                    </label>
+                    Email Address
+                  </label>
                   <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <Mail className="h-4 w-4 text-gray-500" />
-                      </div>
-                      <input
-                        id="email"
-                        name="email"
-                        type="email"
-                        required
-                        value={formData.email}
-                        onChange={handleInputChange}
+                    </div>
+                    <input
+                      id="email"
+                      name="email"
+                      type="email"
+                      required
+                      value={formData.email}
+                      onChange={handleInputChange}
                       className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200 transition-colors text-sm"
                       placeholder="john@example.com"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Send OTP Button */}
-                  <button
-                    type="button"
-                    onClick={handleSendOtp}
-                  disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 disabled:from-gray-300 disabled:to-gray-400 text-white py-3 px-6 rounded-md font-semibold transition-all duration-300 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl"
-                  >
-                    {isLoading ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                        <span>Sending...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>Send Verification Code</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
-
-              {step === 'otp' && (
-              <div className="space-y-5">
-                  {/* OTP Input Field */}
-                  <div>
-                  <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-1">
-                      Verification Code
-                    </label>
-                  <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Key className="h-4 w-4 text-gray-500" />
-                      </div>
-                      <input
-                        id="otp"
-                        name="otp"
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]{6}"
-                        required
-                        value={formData.otp}
-                        onChange={handleInputChange}
-                      className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-md bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200 transition-colors text-sm text-center tracking-widest text-lg font-mono"
-                        placeholder="000000"
-                        maxLength="6"
-                        style={{ color: '#111827' }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Resend OTP */}
-                  <div className="text-center">
-                    <button
-                      type="button"
-                      onClick={handleResendOtp}
-                      disabled={countdown > 0}
-                      className="text-sm text-blue-600 hover:text-blue-500 disabled:text-gray-400 disabled:cursor-not-allowed transition-all duration-200 hover:underline"
-                    >
-                      {countdown > 0 ? `Resend in ${countdown}s` : 'Resend code'}
-                    </button>
-                  </div>
-
-                  {/* Verify OTP Button */}
-                  <button
-                    type="button"
-                    onClick={handleVerifyOtp}
-                  disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 disabled:from-gray-300 disabled:to-gray-400 text-white py-3 px-6 rounded-md font-semibold transition-all duration-300 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl"
-                  >
-                    {isLoading ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                        <span>Verifying...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>Verify Code</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </>
-                    )}
-                  </button>
-
-                  {/* Back Button */}
-                  <div className="flex justify-center">
-                    <button
-                      type="button"
-                      onClick={resetForm}
-                    className="inline-flex items-center space-x-2 text-sm text-gray-600 hover:text-gray-800 transition-all duration-300"
-                    >
-                      <ArrowLeft className="w-4 h-4" />
-                      <span>Back to email</span>
-                    </button>
+                    />
                   </div>
                 </div>
-              )}
 
-              {step === 'reset' && (
-              <div className="space-y-5">
-                  {/* New Password Field */}
-                  <div>
-                  <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                      New Password
-                    </label>
-                  <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Lock className="h-4 w-4 text-gray-500" />
-                      </div>
-                      <input
-                        id="newPassword"
-                        name="newPassword"
-                        type={showPassword ? 'text' : 'password'}
-                        required
-                        value={formData.newPassword}
-                        onChange={handleInputChange}
-                      className="w-full pl-9 pr-10 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200 transition-colors text-sm"
-                      placeholder="••••••••"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 transition-colors"
-                      >
-                        {showPassword ? (
-                        <Eye className="h-4 w-4" />
-                        ) : (
-                        <EyeOff className="h-4 w-4" />
-                        )}
-                      </button>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">Password must be at least 8 characters long</p>
-                  </div>
-
-                  {/* Confirm Password Field */}
-                  <div>
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                      Confirm New Password
-                    </label>
-                  <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Lock className="h-4 w-4 text-gray-500" />
-                      </div>
-                      <input
-                        id="confirmPassword"
-                        name="confirmPassword"
-                        type={showConfirmPassword ? 'text' : 'password'}
-                        required
-                        value={formData.confirmPassword}
-                        onChange={handleInputChange}
-                      className="w-full pl-9 pr-10 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200 transition-colors text-sm"
-                      placeholder="••••••••"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 transition-colors"
-                      >
-                        {showConfirmPassword ? (
-                        <Eye className="h-4 w-4" />
-                        ) : (
-                        <EyeOff className="h-4 w-4" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                                     {/* Reset Password Button */}
-                   <button
-                     type="button"
-                     onClick={handleResetPassword}
+                {/* Send OTP Button */}
+                <button
+                  type="button"
+                  onClick={handleSendOtp}
                   disabled={isLoading}
                   className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 disabled:from-gray-300 disabled:to-gray-400 text-white py-3 px-6 rounded-md font-semibold transition-all duration-300 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl"
-                   >
-                    {isLoading ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                        <span>Resetting...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>Reset Password</span>
+                >
+                  {isLoading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Sending...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Send Verification Code</span>
                       <ArrowRight className="w-4 h-4" />
-                      </>
-                    )}
-                  </button>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
 
-                  {/* Back Button */}
-                  <div className="flex justify-center">
+            {step === 'otp' && (
+              <div className="space-y-5">
+                {/* OTP Input Field */}
+                <div>
+                  <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-1">
+                    Verification Code
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Key className="h-4 w-4 text-gray-500" />
+                    </div>
+                    <input
+                      id="otp"
+                      name="otp"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]{6}"
+                      required
+                      value={formData.otp}
+                      onChange={handleInputChange}
+                      className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-md bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200 transition-colors text-sm text-center tracking-widest text-lg font-mono"
+                      placeholder="000000"
+                      maxLength="6"
+                      style={{ color: '#111827' }}
+                    />
+                  </div>
+                </div>
+
+                {/* Resend OTP */}
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    disabled={countdown > 0}
+                    className="text-sm text-blue-600 hover:text-blue-500 disabled:text-gray-400 disabled:cursor-not-allowed transition-all duration-200 hover:underline"
+                  >
+                    {countdown > 0 ? `Resend in ${countdown}s` : 'Resend code'}
+                  </button>
+                </div>
+
+                {/* Verify OTP Button */}
+                <button
+                  type="button"
+                  onClick={handleVerifyOtp}
+                  disabled={isLoading}
+                  className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 disabled:from-gray-300 disabled:to-gray-400 text-white py-3 px-6 rounded-md font-semibold transition-all duration-300 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl"
+                >
+                  {isLoading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Verifying...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Verify Code</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+
+                {/* Back Button */}
+                <div className="flex justify-center">
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    className="inline-flex items-center space-x-2 text-sm text-gray-600 hover:text-gray-800 transition-all duration-300"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Back to email</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {step === 'reset' && (
+              <div className="space-y-5">
+                {/* New Password Field */}
+                <div>
+                  <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                    New Password
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Lock className="h-4 w-4 text-gray-500" />
+                    </div>
+                    <input
+                      id="newPassword"
+                      name="newPassword"
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={formData.newPassword}
+                      onChange={handleInputChange}
+                      className="w-full pl-9 pr-10 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200 transition-colors text-sm"
+                      placeholder="••••••••"
+                    />
                     <button
                       type="button"
-                      onClick={() => setStep('otp')}
-                    className="inline-flex items-center space-x-2 text-sm text-gray-600 hover:text-gray-800 transition-all duration-300"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 transition-colors"
                     >
-                      <ArrowLeft className="w-4 h-4" />
-                      <span>Back to verification</span>
+                      {showPassword ? (
+                        <Eye className="h-4 w-4" />
+                      ) : (
+                        <EyeOff className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Password must be at least 8 characters long</p>
+                </div>
+
+                {/* Confirm Password Field */}
+                <div>
+                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                    Confirm New Password
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Lock className="h-4 w-4 text-gray-500" />
+                    </div>
+                    <input
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      required
+                      value={formData.confirmPassword}
+                      onChange={handleInputChange}
+                      className="w-full pl-9 pr-10 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200 transition-colors text-sm"
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 transition-colors"
+                    >
+                      {showConfirmPassword ? (
+                        <Eye className="h-4 w-4" />
+                      ) : (
+                        <EyeOff className="h-4 w-4" />
+                      )}
                     </button>
                   </div>
                 </div>
-              )}
-            </div>
+
+                {/* Reset Password Button */}
+                <button
+                  type="button"
+                  onClick={handleResetPassword}
+                  disabled={isLoading}
+                  className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 disabled:from-gray-300 disabled:to-gray-400 text-white py-3 px-6 rounded-md font-semibold transition-all duration-300 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl"
+                >
+                  {isLoading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Resetting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Reset Password</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+
+                {/* Back Button */}
+                <div className="flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => setStep('otp')}
+                    className="inline-flex items-center space-x-2 text-sm text-gray-600 hover:text-gray-800 transition-all duration-300"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Back to verification</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
 
         </motion.div>
       </div>

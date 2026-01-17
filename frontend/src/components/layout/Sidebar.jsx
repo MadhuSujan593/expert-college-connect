@@ -32,7 +32,7 @@ const Sidebar = ({ user, logout, isOpen, toggleSidebar, mobile, activeTab, setAc
     const currentTab = new URLSearchParams(location.search).get('tab') || 'overview';
 
     // Define navigation items based on user role
-    const navItems = [
+    const collegeNavItems = [
         { id: 'overview', label: 'Overview', icon: LayoutGrid, path: '/dashboard/college?tab=overview' },
         { id: 'profile', label: 'Profile', icon: School, path: '/dashboard/college?tab=profile' },
         { id: 'requirements', label: 'Requirements', icon: Briefcase, path: '/dashboard/college?tab=requirements' },
@@ -40,6 +40,21 @@ const Sidebar = ({ user, logout, isOpen, toggleSidebar, mobile, activeTab, setAc
         { id: 'experts', label: 'Find Experts', icon: Search, path: '/dashboard/college?tab=experts' },
         { id: 'ratings', label: 'Ratings', icon: Award, path: '/dashboard/college?tab=ratings' },
     ];
+
+    const expertNavItems = [
+        { id: 'overview', label: 'Overview', icon: LayoutGrid, path: '/dashboard/expert?tab=overview' },
+        { id: 'profile', label: 'Profile', icon: User, path: '/dashboard/expert?tab=profile' },
+        { id: 'opportunities', label: 'Opportunities', icon: Search, path: '/dashboard/expert?tab=opportunities' },
+        { id: 'applications', label: 'Applications', icon: ClipboardCheck, path: '/dashboard/expert?tab=applications' },
+        { id: 'requests', label: 'Rating Requests', icon: Menu, path: '/dashboard/expert?tab=requests' },
+        { id: 'ratings', label: 'Reviews', icon: Star, path: '/dashboard/expert?tab=ratings' },
+        { id: 'settings', label: 'Settings', icon: Settings, path: '/dashboard/expert?tab=settings' },
+    ];
+
+    // Determine which nav items to use
+    // If we're on expert dashboard path or user role is explicitly expert (and not accessing college view somehow)
+    const isExpertPath = location.pathname.includes('/expert');
+    const navItems = isExpertPath ? expertNavItems : collegeNavItems;
 
     const isActive = (id) => {
         if (id === 'subscription') return location.pathname === '/subscription-plans';
@@ -59,7 +74,9 @@ const Sidebar = ({ user, logout, isOpen, toggleSidebar, mobile, activeTab, setAc
                     <div className="w-8 h-8 rounded-sm bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
                         <GraduationCap className="w-5 h-5 text-white" />
                     </div>
-                    <span className="font-bold text-white tracking-tight text-lg">CollegeConnect</span>
+                    <span className="font-bold text-white tracking-tight text-lg">
+                        {isExpertPath ? 'Expert Connect' : 'CollegeConnect'}
+                    </span>
                 </div>
                 {showCloseButton && (
                     <button
@@ -90,8 +107,10 @@ const Sidebar = ({ user, logout, isOpen, toggleSidebar, mobile, activeTab, setAc
                     <div className="flex-1 overflow-hidden">
                         <h4 className="text-sm font-medium text-white truncate">{user?.fullName || 'User'}</h4>
                         <div className="flex items-center gap-1.5 mt-0.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                            <span className="text-xs text-slate-400">College Admin</span>
+                            <span className={`w-1.5 h-1.5 rounded-full ${isExpertPath ? 'bg-indigo-500' : 'bg-emerald-500'}`}></span>
+                            <span className="text-xs text-slate-400">
+                                {isExpertPath ? 'Industry Expert' : 'College Admin'}
+                            </span>
                         </div>
                     </div>
                     <div className="absolute inset-0 border-2 border-indigo-500/0 rounded-lg group-hover:border-indigo-500/10 transition-colors" />
