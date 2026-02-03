@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import * as handlebars from 'handlebars';
+import PDFDocument from 'pdfkit';
 
 @Injectable()
 export class EmailService {
@@ -576,9 +577,9 @@ export class EmailService {
       `;
 
       const template = handlebars.compile(emailTemplate);
-      const htmlContent = template({ 
-        userName, 
-        frontendUrl: this.configService.get('CORS_ORIGIN') || 'http://localhost:5173' 
+      const htmlContent = template({
+        userName,
+        frontendUrl: this.configService.get('CORS_ORIGIN') || 'http://localhost:5173'
       });
 
       const mailOptions = {
@@ -1408,9 +1409,9 @@ export class EmailService {
                 
                 <div class="message-box">
                   <div class="message-text">
-                    ${isShortlisted 
-                      ? 'Congratulations! Your application has been shortlisted. The college may contact you directly for the next steps in the selection process.' 
-                      : 'Thank you for your interest in this opportunity. We encourage you to explore other requirements that align with your expertise and continue applying.'}
+                    ${isShortlisted
+          ? 'Congratulations! Your application has been shortlisted. The college may contact you directly for the next steps in the selection process.'
+          : 'Thank you for your interest in this opportunity. We encourage you to explore other requirements that align with your expertise and continue applying.'}
                   </div>
                 </div>
               </div>
@@ -1453,4 +1454,309 @@ export class EmailService {
       return false;
     }
   }
+  /**
+   * Generate Invoice PDF
+   */
+  async generateInvoicePdf(user: any, plan: any, subscription: any, payment: any): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      try {
+        const doc = new PDFDocument({ margin: 50, size: 'A4' });
+        const buffers: Buffer[] = [];
+
+        doc.on('data', buffers.push.bind(buffers));
+        doc.on('end', () => resolve(Buffer.concat(buffers)));
+
+        // --- Header Section ---
+        doc.rect(0, 0, 595, 80).fill('#2d3748');
+        doc.fillColor('#ffffff')
+          .fontSize(22)
+          .font('Helvetica-Bold')
+          .text('VMS Techhub', 50, 30);
+
+        doc.fontSize(8)
+          .font('Helvetica')
+          .text('GSTIN: 29AALCV2534Q1ZI', 50, 55);
+
+        doc.fontSize(26)
+          .font('Helvetica-Bold')
+          .fillColor('#718096')
+          .text('INVOICE', 350, 28, { align: 'right', width: 200 });
+
+        // --- Bill To & Invoice Details ---
+        doc.fillColor('#2d3748')
+          .fontSize(10)
+          .font('Helvetica-Bold')
+          .text('BILL TO:', 50, 110)
+          .font('Helvetica')
+          .text(user.fullName || 'Customer', 50, 125)
+          .fillColor('#4a5568')
+          .text(user.email, 50, 140)
+          .text(user.phone || '', 50, 155);
+
+        doc.fillColor('#2d3748')
+          .font('Helvetica-Bold')
+          .text('INVOICE DETAILS:', 350, 110)
+          .font('Helvetica')
+          .fillColor('#4a5568')
+          .text(`Invoice #: ${payment.transactionId || 'INV-' + Date.now()}`, 350, 125)
+          .text(`Date: ${new Date(payment.createdAt || Date.now()).toLocaleDateString()}`, 350, 140)
+          .moveDown(0.2);
+
+        // Paid Badge
+        doc.rect(350, 155, 50, 18).fill('#c6f6d5');
+        doc.fillColor('#22543d')
+          .font('Helvetica-Bold')
+          .fontSize(8)
+          .text('PAID', 350, 160, { width: 50, align: 'center' });
+
+        // --- Table ---
+        const tableTop = 200;
+        doc.rect(50, tableTop, 495, 25).fill('#f7fafc');
+
+        doc.fillColor('#4a5568')
+          .fontSize(10)
+          .font('Helvetica-Bold')
+          .text('DESCRIPTION', 60, tableTop + 8)
+          .text('BILLING', 250, tableTop + 8)
+          .text('AMOUNT', 450, tableTop + 8, { align: 'right', width: 85 });
+
+        // Content
+        const rowTop = tableTop + 40;
+        doc.fillColor('#2d3748')
+          .font('Helvetica')
+          .fontSize(11)
+          .text(plan.name, 60, rowTop)
+          .fontSize(9)
+          .fillColor('#718096')
+          .text('Subscription Plan Access', 60, rowTop + 14);
+
+        doc.fillColor('#2d3748')
+          .fontSize(10)
+          .text(payment.metadata?.billingPeriod || 'MONTHLY', 250, rowTop);
+
+        doc.font('Helvetica-Bold')
+          .text(`${payment.currency || 'INR'} ${(payment.amount || 0).toFixed(2)}`, 450, rowTop, { align: 'right', width: 85 });
+
+        // Border below row
+        doc.moveTo(50, rowTop + 40)
+          .lineTo(545, rowTop + 40)
+          .strokeColor('#edf2f7')
+          .stroke();
+
+        // --- Totals ---
+        const totalTop = rowTop + 60;
+        doc.fontSize(12)
+          .font('Helvetica-Bold')
+          .fillColor('#2d3748')
+          .text('TOTAL PAID', 250, totalTop)
+          .text(`${payment.currency || 'INR'} ${(payment.amount || 0).toFixed(2)}`, 450, totalTop, { align: 'right', width: 85 });
+
+        // --- Footer ---
+        const footerTop = 700;
+        doc.rect(0, footerTop, 595, 142).fill('#f7fafc');
+        doc.fillColor('#718096')
+          .fontSize(9)
+          .font('Helvetica')
+          .text('Thank you for being a part of VMS Techhub!', 50, footerTop + 20, { align: 'center', width: 495 })
+          .text('For support, please contact us at support@vmstechhub.com', 50, footerTop + 35, { align: 'center', width: 495 })
+          .font('Helvetica-Oblique')
+          .fontSize(8)
+          .text('This is a system generated receipt. No signature is required.', 50, footerTop + 60, { align: 'center', width: 495 });
+
+        doc.end();
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  /**
+   * Send Subscription Invoice Email
+   */
+  async sendSubscriptionInvoice(user: any, plan: any, subscription: any, payment: any): Promise<boolean> {
+    try {
+      this.logger.log(`Attempting to send subscription invoice email to: ${user.email}`);
+
+      // In development mode or if SMTP fails, just log
+      if (this.configService.get('NODE_ENV') === 'development' || !this.transporter) {
+        this.logger.log(`[DEV MODE] Invoice email would be sent to: ${user.email}`);
+        return true;
+      }
+
+      const emailTemplate = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background-color: #f4f7f9; margin: 0; padding: 0; }
+            .wrapper { width: 100%; background-color: #f4f7f9; padding: 40px 0; }
+            .container { width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+            .header { background-color: #2d3748; padding: 40px; }
+            .header-table { width: 100%; }
+            .logo { color: #ffffff; font-size: 24px; font-weight: bold; }
+            .invoice-label { color: #a0aec0; font-size: 28px; text-align: right; text-transform: uppercase; letter-spacing: 2px; }
+            .content { padding: 40px; }
+            .details-table { width: 100%; margin-bottom: 40px; }
+            .label { color: #718096; font-size: 12px; font-weight: bold; text-transform: uppercase; padding-bottom: 8px; }
+            .value { color: #2d3748; font-size: 14px; padding-bottom: 4px; }
+            .item-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+            .item-table th { background-color: #f8fafc; color: #4a5568; font-size: 12px; font-weight: bold; text-align: left; padding: 15px; border-bottom: 2px solid #edf2f7; }
+            .item-table td { padding: 15px; border-bottom: 1px solid #edf2f7; color: #2d3748; font-size: 14px; }
+            .total-row td { font-weight: bold; font-size: 18px; color: #2d3748; padding-top: 20px; border-bottom: none; }
+            .footer { background-color: #f8fafc; padding: 30px; text-align: center; color: #718096; font-size: 13px; }
+            .badge { background-color: #c6f6d5; color: #22543d; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; display: inline-block; }
+          </style>
+        </head>
+        <body>
+          <div class="wrapper">
+            <div class="container">
+              <div class="header">
+                <table class="header-table" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td class="logo" style="color: #ffffff; font-family: sans-serif; font-size: 24px; font-weight: bold;">VMS Techhub</td>
+                    <td class="invoice-label" style="color: #a0aec0; font-family: sans-serif; font-size: 28px; text-align: right; text-transform: uppercase;">Invoice</td>
+                  </tr>
+                </table>
+              </div>
+              <div class="content" style="padding: 40px;">
+                <table class="details-table" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+                  <tr>
+                    <td width="50%" valign="top">
+                      <div class="label" style="color: #718096; font-size: 12px; font-weight: bold; text-transform: uppercase; margin-bottom: 8px;">Bill To:</div>
+                      <div class="value" style="color: #2d3748; font-size: 14px; margin-bottom: 4px;"><strong>{{customerName}}</strong></div>
+                      <div class="value" style="color: #2d3748; font-size: 14px; margin-bottom: 4px;">{{customerEmail}}</div>
+                      <div class="value" style="color: #2d3748; font-size: 14px;">{{customerPhone}}</div>
+                    </td>
+                    <td width="50%" valign="top" style="text-align: right;">
+                      <div class="label" style="color: #718096; font-size: 12px; font-weight: bold; text-transform: uppercase; margin-bottom: 8px;">Invoice Details:</div>
+                      <div class="value" style="color: #2d3748; font-size: 14px; margin-bottom: 4px;"><strong>#{{invoiceNumber}}</strong></div>
+                      <div class="value" style="color: #2d3748; font-size: 14px; margin-bottom: 4px;">{{invoiceDate}}</div>
+                      <div style="margin-top: 8px;"><span class="badge" style="background-color: #c6f6d5; color: #22543d; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: bold;">PAID</span></div>
+                    </td>
+                  </tr>
+                </table>
+
+                <table class="item-table" cellpadding="0" cellspacing="0" border="0" style="width: 100%; border-collapse: collapse;">
+                  <thead>
+                    <tr>
+                      <th style="background-color: #f8fafc; color: #4a5568; font-size: 12px; font-weight: bold; text-align: left; padding: 15px; border-bottom: 2px solid #edf2f7;">Description</th>
+                      <th style="background-color: #f8fafc; color: #4a5568; font-size: 12px; font-weight: bold; text-align: left; padding: 15px; border-bottom: 2px solid #edf2f7;">Billing</th>
+                      <th style="background-color: #f8fafc; color: #4a5568; font-size: 12px; font-weight: bold; text-align: right; padding: 15px; border-bottom: 2px solid #edf2f7;">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style="padding: 15px; border-bottom: 1px solid #edf2f7; color: #2d3748; font-size: 14px;">
+                        <strong>{{planName}}</strong><br>
+                        <span style="color: #718096; font-size: 12px;">Full Access Subscription</span>
+                      </td>
+                      <td style="padding: 15px; border-bottom: 1px solid #edf2f7; color: #2d3748; font-size: 14px;">{{billingPeriod}}</td>
+                      <td style="padding: 15px; border-bottom: 1px solid #edf2f7; color: #2d3748; font-size: 14px; text-align: right;">{{currency}} {{amount}}</td>
+                    </tr>
+                    <tr class="total-row">
+                      <td colspan="2" style="text-align: right; padding: 20px 15px 15px; font-weight: bold; font-size: 18px; color: #2d3748;">Total Paid</td>
+                      <td style="text-align: right; padding: 20px 15px 15px; font-weight: bold; font-size: 18px; color: #2d3748;">{{currency}} {{amount}}</td>
+                    </tr>
+                  </tbody>
+                </table>
+                
+                <div style="text-align: center; color: #718096; font-size: 14px; margin-top: 40px;">
+                  <p>Thank you for choosing VMS Techhub!</p>
+                  <p>A PDF copy is attached for your records.</p>
+                </div>
+              </div>
+              <div class="footer" style="background-color: #f8fafc; padding: 30px; text-align: center; color: #718096; font-size: 13px;">
+                <p>&copy; 2025 VMS Techhub. All rights reserved.</p>
+              </div>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      this.logger.log('Compiling invoice template...');
+      const template = handlebars.compile(emailTemplate);
+
+      const formatCurrency = (amount: number, currency: string) => {
+        return new Intl.NumberFormat('en-IN', {
+          style: 'currency',
+          currency: currency || 'INR',
+        }).format(amount);
+      };
+
+      const htmlContent = template({
+        customerName: user.fullName || 'Valued Customer',
+        customerEmail: user.email,
+        customerPhone: user.phone || 'N/A',
+        invoiceNumber: payment.transactionId || `INV-${Date.now()}`,
+        invoiceDate: new Date(payment.createdAt).toLocaleDateString(),
+        planName: plan.name,
+        billingPeriod: payment.metadata?.billingPeriod || 'MONTHLY',
+        amount: (payment.amount || 0).toFixed(2),
+        currency: payment.currency || 'INR',
+      });
+
+      const subject = `Invoice for your ${plan.name} Subscription - VMS Techhub`;
+      const adminEmail = this.configService.get('SMTP_USER'); // Use SMTP_USER for admin copy as requested
+
+      this.logger.log('Generating invoice PDF...');
+      const pdfBuffer = await this.generateInvoicePdf(user, plan, subscription, payment);
+
+      this.logger.log('Sending invoice to customer...');
+      // Verify Transporter again before sending 
+      if (this.transporter) {
+        // Send to Customer
+        await this.transporter.sendMail({
+          from: `"VMS Techhub" <${this.configService.get('SMTP_USER')}>`,
+          to: user.email,
+          subject: subject,
+          html: htmlContent,
+          attachments: [
+            {
+              filename: `Invoice-${payment.transactionId || 'INV'}.pdf`,
+              content: pdfBuffer,
+              contentType: 'application/pdf'
+            }
+          ]
+        });
+
+        this.logger.log(`Invoice sent to user: ${user.email}`);
+
+        // Send to Admin
+        if (adminEmail) {
+          this.logger.log(`Sending invoice copy to admin: ${adminEmail}`);
+          await this.transporter.sendMail({
+            from: `"VMS Techhub System" <${this.configService.get('SMTP_USER')}>`,
+            to: adminEmail,
+            subject: `[ADMIN COPY] ${subject}`,
+            html: `
+                <div style="background: #fff3cd; padding: 10px; border: 1px solid #ffeeba; text-align: center; margin-bottom: 20px;">
+                <strong>ADMIN COPY</strong> - This is a copy of the invoice sent to the customer.
+                </div>
+                ${htmlContent}
+            `,
+            attachments: [
+              {
+                filename: `Invoice-${payment.transactionId || 'INV'}.pdf`,
+                content: pdfBuffer,
+                contentType: 'application/pdf'
+              }
+            ]
+          });
+          this.logger.log(`Invoice copy sent to admin: ${adminEmail}`);
+        } else {
+          this.logger.warn('Admin email (SMTP_USER) not set, skipping admin copy.');
+        }
+      } else {
+        this.logger.error('Transporter not available, cannot send invoice.');
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      this.logger.error(`Failed to send invoice email to ${user.email}:`, error);
+      return false;
+    }
+  }
 }
+

@@ -1,10 +1,15 @@
 import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CashfreeService } from '../services/cashfree.service';
+import { EmailService } from '../services/email.service';
 
 @Injectable()
 export class SubscriptionsService {
-  constructor(private readonly prisma: PrismaService, private readonly cashfree: CashfreeService) { }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cashfree: CashfreeService,
+    private readonly emailService: EmailService
+  ) { }
 
   // Calculate dynamic pricing based on billing period
   calculateDynamicPrice(plan: any, billingPeriod: string): number {
@@ -440,6 +445,19 @@ export class SubscriptionsService {
           },
         });
         console.log('Payment record created:', payment);
+      }
+
+
+      // Fetch user details for email
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { email: true, fullName: true, phone: true }
+      });
+
+      if (user) {
+        // Send invoice email asynchronously (don't block response)
+        this.emailService.sendSubscriptionInvoice(user, plan, subscription, payment)
+          .catch(err => console.error('Failed to send invoice email:', err));
       }
 
       return subscription;
