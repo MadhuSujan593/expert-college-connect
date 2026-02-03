@@ -35,7 +35,7 @@ export class SubscriptionsController {
   }
 
   // List active plans filtered by user's subscription history
-  @Get('plans/user')
+  @Get(['plans/user', 'plans/for-user'])
   async listPlansForUser(@Req() req: any, @Query('audience') audience?: 'COLLEGE' | 'EXPERT') {
     const userId = req.user?.userId || req.user?.id;
     return this.subscriptionsService.listActivePlansForUser(userId, audience);
