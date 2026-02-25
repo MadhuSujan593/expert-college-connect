@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import apiService from '../../utils/api';
+import apiService from '../utils/api';
 
 /**
  * Custom hook to handle Cashfree payment callbacks after redirect
@@ -20,6 +20,7 @@ export const usePaymentCallback = (loadMySubscription, showToast) => {
         try {
           // Verify order status with backend
           const verifyResponse = await fetch(`${apiService.baseURL}/subscriptions/verify-order?orderId=${orderId}`, {
+            method: 'POST',
             headers: await apiService.getAuthHeaders(),
           });
 

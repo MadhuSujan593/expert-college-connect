@@ -78,9 +78,9 @@ const SubscriptionPlans = () => {
   // Set default selected plan when plans are loaded
   useEffect(() => {
     if (availablePlans.length > 0 && !selectedPlanId) {
-      // Set the second plan (index 1) as default selected, or first plan if only one exists
-      const defaultPlanIndex = availablePlans.length > 1 ? 1 : 0;
-      setSelectedPlanId(availablePlans[defaultPlanIndex].id);
+      // Find the first PAID plan to select by default, or just pick the first plan available
+      const firstPaidPlan = availablePlans.find(p => p.planType === 'PAID');
+      setSelectedPlanId(firstPaidPlan ? firstPaidPlan.id : availablePlans[0].id);
     }
   }, [availablePlans, selectedPlanId]);
 
@@ -539,8 +539,8 @@ const SubscriptionPlans = () => {
                     key={period.value}
                     onClick={() => setSelectedBillingPeriod(period.value)}
                     className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${selectedBillingPeriod === period.value
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-white hover:bg-white/10'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-white hover:bg-white/10'
                       }`}
                   >
                     {period.label}
@@ -582,8 +582,8 @@ const SubscriptionPlans = () => {
                   >
                     {/* Plan Card */}
                     <div className={`relative bg-white border transition-all duration-300 cursor-pointer select-none h-full flex flex-col ${isSelected
-                        ? 'border-blue-500 shadow-lg ring-1 ring-blue-500/20'
-                        : 'border-gray-200 shadow-sm hover:border-gray-300 hover:shadow-md'
+                      ? 'border-blue-500 shadow-lg ring-1 ring-blue-500/20'
+                      : 'border-gray-200 shadow-sm hover:border-gray-300 hover:shadow-md'
                       } rounded-xl overflow-hidden`}
                       onClick={() => setSelectedPlanId(plan.id)}>
 
@@ -613,8 +613,8 @@ const SubscriptionPlans = () => {
                           <div className="flex-1">
                             <div className="flex items-center space-x-3 mb-2">
                               <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isSelected
-                                  ? 'bg-blue-100 text-blue-600'
-                                  : 'bg-gray-100 text-gray-600'
+                                ? 'bg-blue-100 text-blue-600'
+                                : 'bg-gray-100 text-gray-600'
                                 }`}>
                                 {isFree ? (
                                   <Star className="w-4 h-4" />
@@ -693,10 +693,10 @@ const SubscriptionPlans = () => {
                           onClick={() => subscribeToPlan(plan.id)}
                           disabled={subscribingPlanId === plan.id || isCurrentPlan}
                           className={`w-full py-3 px-4 rounded-[3px] font-medium text-sm transition-all duration-200 group ${isCurrentPlan
-                              ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
-                              : isSelected
-                                ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md'
-                                : 'bg-gray-900 hover:bg-gray-800 text-white shadow-sm hover:shadow-md'
+                            ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                            : isSelected
+                              ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md'
+                              : 'bg-gray-900 hover:bg-gray-800 text-white shadow-sm hover:shadow-md'
                             } disabled:opacity-50 disabled:cursor-not-allowed`}
                         >
                           <div className="flex items-center justify-center gap-2">

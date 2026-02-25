@@ -118,24 +118,31 @@ export class SubscriptionsService {
     });
 
     // Check if user has any subscription history (including expired ones)
-    const userSubscriptionHistory = await this.prisma.subscription.findFirst({
+    const userSubscriptionHistory = await this.prisma.subscription.findMany({
       where: { userId },
       include: { plan: true },
       orderBy: { createdAt: 'desc' },
     });
 
     // If user has no subscription history at all, show all plans (including free)
-    if (!userSubscriptionHistory) {
+    if (userSubscriptionHistory.length === 0) {
       return this.listActivePlans(audience);
     }
 
-    // If user has an ACTIVE subscription, show all plans (they can upgrade/downgrade)
-    if (activeSubscription) {
+    // Check if the user has EVER had a Paid plan
+    const hasEverHadPaidPlan = userSubscriptionHistory.some(sub => sub.plan.planType === 'PAID');
+
+    // Check if the currently active plan (if any) is a FREE plan
+    const isCurrentlyOnFreePlan = activeSubscription && activeSubscription.plan.planType === 'FREE';
+
+    // We only show the Free plan if they've never had a paid plan AND they are currently on a free trial
+    // OR if they have absolutely no history (handled above)
+    // In all other cases (have had paid plan, or free plan expired), we hide the Free plan
+    if (!hasEverHadPaidPlan && isCurrentlyOnFreePlan) {
       return this.listActivePlans(audience);
     }
 
-    // If user has subscription history but no active subscription (expired/cancelled),
-    // filter out free plans (they've already used their free trial)
+    // Hide free plans (only return paid plans)
     return this.prisma.subscriptionplan.findMany({
       where: {
         isActive: true,
