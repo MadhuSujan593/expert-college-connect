@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import api from '../../utils/api';
 import Toast from '../../components/common/Toast';
 import DashboardLayout from '../../components/layout/DashboardLayout';
+import { usePaymentCallback } from '../../hooks/usePaymentCallback';
 
 // Sub-components
 import ExpertOverview from './components/ExpertOverview';
@@ -96,6 +97,9 @@ const ExpertDashboard = () => {
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
+
+  // Handle payment callback from Cashfree redirect (subscription activation)
+  usePaymentCallback(fetchDashboardData, showToast);
 
   // --- Handlers ---
 
