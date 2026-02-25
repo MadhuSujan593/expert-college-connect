@@ -1498,19 +1498,21 @@ export class EmailService {
           .text('INVOICE DETAILS:', 350, 110)
           .font('Helvetica')
           .fillColor('#4a5568')
-          .text(`Invoice #: ${payment.transactionId || 'INV-' + Date.now()}`, 350, 125)
-          .text(`Date: ${new Date(payment.createdAt || Date.now()).toLocaleDateString()}`, 350, 140)
-          .moveDown(0.2);
+          .text(`Invoice #: ${payment.transactionId || 'INV-' + Date.now()}`, 350, 125, { width: 195 });
+
+        const dateY = doc.y;
+        doc.text(`Date: ${new Date(payment.createdAt || Date.now()).toLocaleDateString()}`, 350, dateY);
 
         // Paid Badge
-        doc.rect(350, 155, 50, 18).fill('#c6f6d5');
+        const badgeY = doc.y + 10;
+        doc.rect(350, badgeY, 50, 18).fill('#c6f6d5');
         doc.fillColor('#22543d')
           .font('Helvetica-Bold')
           .fontSize(8)
-          .text('PAID', 350, 160, { width: 50, align: 'center' });
+          .text('PAID', 350, badgeY + 5, { width: 50, align: 'center' });
 
         // --- Table ---
-        const tableTop = 200;
+        const tableTop = Math.max(badgeY + 40, 200);
         doc.rect(50, tableTop, 495, 25).fill('#f7fafc');
 
         doc.fillColor('#4a5568')
