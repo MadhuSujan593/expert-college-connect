@@ -21,7 +21,9 @@ async function bootstrap() {
   app.use(cors({
     origin: [
       process.env.FRONTEND_URL || 'http://localhost:5173',
-      'http://localhost:5174' // Alternative Vite port
+      'http://localhost:5174',// Alternative Vite port
+      'https://vmstechhub.com',
+      'https://www.vmstechhub.com',
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -44,13 +46,13 @@ async function bootstrap() {
   const uploadsDir = join(process.cwd(), 'uploads');
   const profilePicsDir = join(uploadsDir, 'profile-pics');
   const resumesDir = join(uploadsDir, 'resumes');
-  
+
   console.log('📁 Upload directories setup:');
   console.log('📁 Current working directory:', process.cwd());
   console.log('📁 Main uploads dir:', uploadsDir);
   console.log('📁 Profile pics dir:', profilePicsDir);
   console.log('📁 Resumes dir:', resumesDir);
-  
+
   if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
     console.log('✅ Created uploads directory');
