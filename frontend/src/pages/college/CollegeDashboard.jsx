@@ -139,6 +139,97 @@ const CollegeDashboard = () => {
   const [toast, setToast] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const showToast = (type, message) => {
+    setToast({ type, message });
+  };
+
+  const hideToast = () => {
+    setToast(null);
+  };
+
+  // Fetch dashboard data
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const [profileData, statsData, requirementsData] = await Promise.all([
+        apiService.getCollegeProfile(),
+        apiService.getCollegeDashboardStats(),
+        apiService.getCollegeRecentRequirements(5),
+      ]);
+      // Debug: Log the profile data received from backend
+      console.log('=== PROFILE DATA RECEIVED FROM BACKEND ===');
+      console.log('Full profile data:', profileData);
+      console.log('Email field value:', profileData.email);
+      console.log('Email field type:', typeof profileData.email);
+      console.log('Email field truthy check:', !!profileData.email);
+      console.log('Phone field value:', profileData.phone);
+      console.log('Phone field type:', typeof profileData.phone);
+      console.log('Phone field truthy check:', !!profileData.phone);
+      console.log('=== USER DATA FROM AUTH CONTEXT ===');
+      console.log('User object:', user);
+      console.log('User email:', user?.email);
+      console.log('User email verification:', user?.isEmailVerified);
+
+      setProfile(profileData);
+      setStats(statsData);
+      setRecentRequirements(requirementsData);
+
+      // Initialize profile form with proper default values
+      const formData = {
+        institutionName: profileData.institutionName || '',
+        contactPersonName: profileData.contactPersonName || '',
+        email: user?.email || profileData.email || '',
+        institutionType: profileData.institutionType || 'UNIVERSITY',
+        accreditation: profileData.accreditation || '',
+        website: profileData.website || '',
+        address: profileData.address || '',
+        city: profileData.city || '',
+        state: profileData.state || '',
+        country: profileData.country || '',
+        postalCode: profileData.postalCode || '',
+        phone: user?.phone || profileData.phone || '', // Phone comes from user object, not profile
+        logoUrl: profileData.logoUrl || '',
+        description: profileData.description || '',
+      };
+
+      // Extract phone digits (without country code) for display
+      const phoneDigits = formData.phone ? extractPhoneWithoutCountryCode(formData.phone) : '';
+      formData.phone = phoneDigits;
+
+      // Set original values for tracking changes
+      setOriginalEmail(formData.email);
+      setOriginalPhone(user?.phone || profileData.phone || '');
+
+      // Set current verification status
+      setCurrentEmailVerified(user?.isEmailVerified || false);
+      setCurrentPhoneVerified(user?.isPhoneVerified || false);
+
+      // Initialize country selector based on phone number
+      if (user?.phone || profileData.phone) {
+        const fullPhone = user?.phone || profileData.phone;
+        const detectedCountry = detectCountryFromPhone(fullPhone);
+        if (detectedCountry) {
+          setSelectedCountry(detectedCountry);
+        }
+      } else {
+        // Default to India if no phone
+        setSelectedCountry({ code: 'IN', name: 'India', dialCode: '+91', flag: '🇮🇳' });
+      }
+
+      // Debug: Log the form data being set
+      console.log('=== FORM DATA BEING SET ===');
+      console.log('Form data object:', formData);
+      console.log('Phone in form data:', formData.phone);
+
+      setProfileForm(formData);
+    } catch (error) {
+      showToast('error', 'Failed to load dashboard data');
+      console.error('Dashboard error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Rating state
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [selectedExpert, setSelectedExpert] = useState(null);
@@ -1277,13 +1368,6 @@ const CollegeDashboard = () => {
     }
   }, [profile?.logoUrl]);
 
-  const showToast = (type, message) => {
-    setToast({ type, message });
-  };
-
-  const hideToast = () => {
-    setToast(null);
-  };
 
   useEffect(() => {
     fetchDashboardData();
@@ -1418,89 +1502,6 @@ const CollegeDashboard = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [activeTab, loadMoreRequirements, loadMoreRatingRequests]);
 
-  // Fetch dashboard data
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      const [profileData, statsData, requirementsData] = await Promise.all([
-        apiService.getCollegeProfile(),
-        apiService.getCollegeDashboardStats(),
-        apiService.getCollegeRecentRequirements(5),
-      ]);
-      // Debug: Log the profile data received from backend
-      console.log('=== PROFILE DATA RECEIVED FROM BACKEND ===');
-      console.log('Full profile data:', profileData);
-      console.log('Email field value:', profileData.email);
-      console.log('Email field type:', typeof profileData.email);
-      console.log('Email field truthy check:', !!profileData.email);
-      console.log('Phone field value:', profileData.phone);
-      console.log('Phone field type:', typeof profileData.phone);
-      console.log('Phone field truthy check:', !!profileData.phone);
-      console.log('=== USER DATA FROM AUTH CONTEXT ===');
-      console.log('User object:', user);
-      console.log('User email:', user?.email);
-      console.log('User email verification:', user?.isEmailVerified);
-
-      setProfile(profileData);
-      setStats(statsData);
-      setRecentRequirements(requirementsData);
-
-      // Initialize profile form with proper default values
-      const formData = {
-        institutionName: profileData.institutionName || '',
-        contactPersonName: profileData.contactPersonName || '',
-        email: user?.email || profileData.email || '',
-        institutionType: profileData.institutionType || 'UNIVERSITY',
-        accreditation: profileData.accreditation || '',
-        website: profileData.website || '',
-        address: profileData.address || '',
-        city: profileData.city || '',
-        state: profileData.state || '',
-        country: profileData.country || '',
-        postalCode: profileData.postalCode || '',
-        phone: user?.phone || profileData.phone || '', // Phone comes from user object, not profile
-        logoUrl: profileData.logoUrl || '',
-        description: profileData.description || '',
-      };
-
-      // Extract phone digits (without country code) for display
-      const phoneDigits = formData.phone ? extractPhoneWithoutCountryCode(formData.phone) : '';
-      formData.phone = phoneDigits;
-
-      // Set original values for tracking changes
-      setOriginalEmail(formData.email);
-      setOriginalPhone(user?.phone || profileData.phone || '');
-
-      // Set current verification status
-      setCurrentEmailVerified(user?.isEmailVerified || false);
-      setCurrentPhoneVerified(user?.isPhoneVerified || false);
-
-      // Initialize country selector based on phone number
-      if (user?.phone || profileData.phone) {
-        const fullPhone = user?.phone || profileData.phone;
-        const detectedCountry = detectCountryFromPhone(fullPhone);
-        if (detectedCountry) {
-          setSelectedCountry(detectedCountry);
-        }
-      } else {
-        // Default to India if no phone
-        setSelectedCountry({ code: 'IN', name: 'India', dialCode: '+91', flag: '🇮🇳' });
-      }
-
-      // Debug: Log the form data being set
-      console.log('=== FORM DATA BEING SET ===');
-      console.log('Form data object:', formData);
-      console.log('Phone in form data:', formData.phone);
-
-      setProfileForm(formData);
-    } catch (error) {
-      showToast('error', 'Failed to load dashboard data');
-      console.error('Dashboard error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleProfileUpdate = async () => {
     try {
       // Debug: Log the profile form data
@@ -1513,16 +1514,27 @@ const CollegeDashboard = () => {
           showToast('error', 'Please enter a valid phone number before saving changes');
           return;
         }
-        // Phone verification requirement removed - allow saving without verification
       }
 
-      // Email verification requirement removed - email is now non-editable
+      setLoading(true);
 
-      // Phone verification requirement removed - allow saving without verification
-
-      // Create a clean profile data object (similar to expert profile updates)
-      const profileData = { ...profileForm };
-
+      // Data to send to backend
+      const profileData = {
+        institutionName: profileForm.institutionName,
+        contactPersonName: profileForm.contactPersonName,
+        email: profileForm.email,
+        institutionType: profileForm.institutionType,
+        accreditation: profileForm.accreditation,
+        website: profileForm.website,
+        address: profileForm.address,
+        city: profileForm.city,
+        state: profileForm.state,
+        country: profileForm.country,
+        postalCode: profileForm.postalCode,
+        phone: profileForm.phone,
+        logoUrl: profileForm.logoUrl,
+        description: profileForm.description,
+      };
       // Handle phone number update - combine country code with phone number if phone is provided
       if (phoneChanged && profileData.phone && selectedCountry) {
         // Remove any existing country code prefix from the phone number
@@ -1561,8 +1573,6 @@ const CollegeDashboard = () => {
       } else {
         setOriginalPhone(user?.phone || profileData.phone || '');
       }
-
-      showToast('success', 'Profile updated successfully!');
 
       showToast('success', 'Profile updated successfully!');
       const statsData = await apiService.getCollegeDashboardStats();
