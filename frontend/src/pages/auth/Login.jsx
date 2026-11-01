@@ -30,7 +30,7 @@ const Login = () => {
   const { isAuthenticated, login, getDashboardRoute, loading } = useAuth();
 
   // Redirect if already authenticated
-  if (loading) {
+  if (loading && !isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">

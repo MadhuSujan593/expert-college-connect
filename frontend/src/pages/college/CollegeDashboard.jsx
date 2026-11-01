@@ -1372,6 +1372,7 @@ const CollegeDashboard = () => {
   useEffect(() => {
     fetchDashboardData();
     fetchRatingRequests();
+    fetchRequirements();
   }, []);
 
   // Load requirements when requirements tab is active
@@ -1588,23 +1589,7 @@ const CollegeDashboard = () => {
     showToast('success', 'Logged out successfully!');
   };
 
-  useEffect(() => {
-    if (user) {
-      fetchDashboardData();
-      fetchRequirements();
-    }
-  }, [user]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-2 border-slate-200 border-t-blue-600"></div>
-          <p className="text-slate-600 font-medium">Loading your dashboard...</p>
-        </div>
-      </div>
-    );
-  }
 
   const StatCard = ({ icon: Icon, title, value, change, color = "blue", trend = "up" }) => (
     <motion.div

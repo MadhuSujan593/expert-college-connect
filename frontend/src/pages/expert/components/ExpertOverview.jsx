@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import StatsCard from '../../../components/common/StatsCard';
 
-const ExpertOverview = ({ stats, applicationStats, user, profile, subscription, workExperiences, onTabChange }) => {
+const ExpertOverview = ({ stats, applicationStats, user, profile, subscription, workExperiences, onTabChange, loading = false }) => {
     const navigate = useNavigate();
 
 
@@ -69,6 +69,7 @@ const ExpertOverview = ({ stats, applicationStats, user, profile, subscription, 
                     trend="neutral"
                     trendValue="-"
                     delay={0}
+                    loading={loading}
                 />
                 <StatsCard
                     title="Shortlisted"
@@ -78,6 +79,7 @@ const ExpertOverview = ({ stats, applicationStats, user, profile, subscription, 
                     trend="up"
                     trendValue="+20%" // Placeholder trend
                     delay={1}
+                    loading={loading}
                 />
                 <StatsCard
                     title="Rejected"
@@ -87,6 +89,7 @@ const ExpertOverview = ({ stats, applicationStats, user, profile, subscription, 
                     trend="neutral"
                     trendValue="-"
                     delay={2}
+                    loading={loading}
                 />
                 <StatsCard
                     title="Average Rating"
@@ -96,6 +99,7 @@ const ExpertOverview = ({ stats, applicationStats, user, profile, subscription, 
                     trend="neutral"
                     trendValue="0%"
                     delay={3}
+                    loading={loading}
                 />
             </motion.div>
 

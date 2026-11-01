@@ -578,16 +578,7 @@ const SuperAdminDashboard = () => {
     setNewExpirationDate('');
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-2 border-slate-200 border-t-blue-600"></div>
-          <p className="text-slate-600 font-medium">Loading your dashboard...</p>
-        </div>
-      </div>
-    );
-  }
+
 
   const SidebarItem = ({ id, label, icon: Icon, isActive, onClick }) => (
     <motion.button
@@ -813,7 +804,15 @@ const SuperAdminDashboard = () => {
           {/* Scrollable Content */}
           <main className="flex-1 overflow-y-auto bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
             <div className="p-6 space-y-6">
-          <AnimatePresence mode="wait">
+              {loading && !stats ? (
+                <div className="flex items-center justify-center py-24">
+                  <div className="flex flex-col items-center space-y-4">
+                    <div className="animate-spin rounded-full h-10 w-10 border-2 border-slate-200 border-t-blue-600"></div>
+                    <p className="text-slate-500 font-medium text-sm">Loading dashboard data...</p>
+                  </div>
+                </div>
+              ) : (
+                <AnimatePresence mode="wait">
             {activeTab === 'overview' && (
               <motion.div
                 key="overview"
@@ -2097,6 +2096,7 @@ const SuperAdminDashboard = () => {
             )}
 
           </AnimatePresence>
+              )}
             </div>
         </main>
         </div>

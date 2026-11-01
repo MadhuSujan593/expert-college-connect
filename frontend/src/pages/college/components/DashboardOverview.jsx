@@ -15,7 +15,7 @@ import StatsCard from '../../../components/common/StatsCard';
 import { Link } from 'react-router-dom';
 
 const DashboardOverview = ({
-    stats,
+    stats = {},
     user,
     recentRequirements = [],
     loading,
@@ -63,7 +63,7 @@ const DashboardOverview = ({
             >
                 <StatsCard
                     title="Total Jobs"
-                    value={stats.totalRequirements}
+                    value={stats?.totalRequirements ?? 0}
                     icon={Briefcase}
                     color="blue"
                     trend="up"
@@ -72,7 +72,7 @@ const DashboardOverview = ({
                 />
                 <StatsCard
                     title="Active Jobs"
-                    value={stats.activeRequirements}
+                    value={stats?.activeRequirements ?? 0}
                     icon={Briefcase}
                     color="emerald"
                     trend="neutral"
@@ -81,16 +81,16 @@ const DashboardOverview = ({
                 />
                 <StatsCard
                     title="Urgent Needs"
-                    value={stats.urgentRequirements}
+                    value={stats?.urgentRequirements ?? 0}
                     icon={AlertCircle}
                     color="amber"
-                    trend={stats.urgentRequirements > 0 ? "down" : "neutral"}
-                    trendValue={stats.urgentRequirements > 0 ? "Action needed" : "Stable"}
+                    trend={(stats?.urgentRequirements || 0) > 0 ? "down" : "neutral"}
+                    trendValue={(stats?.urgentRequirements || 0) > 0 ? "Action needed" : "Stable"}
                     loading={loading}
                 />
                 <StatsCard
                     title="Profile Health"
-                    value={`${stats.profileCompleteness}%`}
+                    value={`${stats?.profileCompleteness ?? 0}%`}
                     icon={Activity}
                     color="violet"
                     trend="neutral"

@@ -223,7 +223,18 @@ const ExpertDashboard = () => {
         );
 
       default:
-        return <ExpertOverview stats={stats} user={user} profile={profile} workExperiences={workExperiences} onTabChange={setActiveTab} />;
+        return (
+          <ExpertOverview
+            stats={stats}
+            applicationStats={applicationStats}
+            user={user}
+            profile={profile}
+            subscription={subscription}
+            workExperiences={workExperiences}
+            onTabChange={setActiveTab}
+            loading={loading}
+          />
+        );
     }
   };
 

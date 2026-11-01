@@ -39,8 +39,8 @@ const ProtectedRoute = ({ children, requiredRole = null, redirectTo = '/login' }
     }
   }, [isAuthenticated, loading, navigate, redirectTo]);
 
-  // Show loading spinner while checking authentication
-  if (loading && !loadingTimedOut) {
+  // Show loading spinner while checking authentication only if user is not already loaded
+  if (loading && !user && !loadingTimedOut) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -73,7 +73,7 @@ const ProtectedRoute = ({ children, requiredRole = null, redirectTo = '/login' }
   }
 
   // Redirect to login if not authenticated
-  if (!isAuthenticated) {
+  if (!loading && !isAuthenticated) {
     return <Navigate to={redirectTo} replace />;
   }
 

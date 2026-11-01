@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import apiService from '../utils/api';
 
 const AuthContext = createContext();
@@ -35,15 +36,55 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [initialized, setInitialized] = useState(false);
+  const navigate = useNavigate();
+
+  const [user, setUser] = useState(() => {
+    try {
+      const storedUser = localStorage.getItem('user');
+      const token = localStorage.getItem('accessToken');
+      if (storedUser && token && !apiService.isTokenExpired(token)) {
+        return JSON.parse(storedUser);
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      return !!token && !apiService.isTokenExpired(token);
+    } catch {
+      return false;
+    }
+  });
+
+  const [loading, setLoading] = useState(() => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const storedUser = localStorage.getItem('user');
+      // If we already have token and user cached, we do not block with loading=true
+      return !(token && storedUser && !apiService.isTokenExpired(token));
+    } catch {
+      return true;
+    }
+  });
+
+  const [initialized, setInitialized] = useState(() => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const storedUser = localStorage.getItem('user');
+      return !!(token && storedUser && !apiService.isTokenExpired(token));
+    } catch {
+      return false;
+    }
+  });
+
   const [checkingAuth, setCheckingAuth] = useState(false);
   const [loadingStartTime, setLoadingStartTime] = useState(Date.now());
 
   const handleAuthFailure = useCallback(() => {
-    // Clear loading state on auth failure to prevent infinite loading
     console.warn('🚨 Auth failure detected - clearing auth state');
     setLoading(false);
     setCheckingAuth(false);
@@ -57,32 +98,20 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const clearStaleAuth = () => {
       try {
-        // Check if session is valid
-        if (!apiService.isValidSession()) {
-          console.log('🧹 Invalid session detected, clearing auth state');
+        const token = localStorage.getItem('accessToken');
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (!token && !refreshToken) {
           localStorage.removeItem('user');
           setLoading(false);
           setCheckingAuth(false);
           setIsAuthenticated(false);
           setUser(null);
-        } else {
-          console.log('✅ Valid session detected, keeping auth state');
         }
       } catch (error) {
-        console.error('Error clearing sticky auth:', error);
-        // Only clear auth-related items, not everything
-        localStorage.removeItem('user');
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('authSessionId');
-        setLoading(false);
-        setCheckingAuth(false);
-        setIsAuthenticated(false);
-        setUser(null);
+        console.error('Error clearing stale auth:', error);
       }
     };
 
-    // Clear stale state immediately
     clearStaleAuth();
   }, []);
 
@@ -93,7 +122,11 @@ export const AuthProvider = ({ children }) => {
     
     try {
       setCheckingAuth(true);
-      setLoading(true);
+      // Only set loading to true if we don't already have a valid cached user
+      const hasCachedSession = user || (localStorage.getItem('user') && localStorage.getItem('accessToken'));
+      if (!hasCachedSession) {
+        setLoading(true);
+      }
       setLoadingStartTime(Date.now());
       
       // Add timeout protection to prevent infinite loading
@@ -156,8 +189,9 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
       setCheckingAuth(false);
+      setInitialized(true);
     }
-  }, [checkingAuth, handleAuthFailure]);
+  }, [checkingAuth, handleAuthFailure, user]);
 
   const validateToken = useCallback(async () => {
     if (checkingAuth) {
@@ -207,26 +241,25 @@ export const AuthProvider = ({ children }) => {
         console.warn('⚠️ No tokens received in login response');
       }
 
-      // Set user state
+      // Set user state and cache in localStorage
       console.log('👤 Setting user state:', response.user);
       setUser(response.user);
       setIsAuthenticated(true);
+      setLoading(false);
+      setInitialized(true);
+      localStorage.setItem('user', JSON.stringify(response.user));
 
       // Check if email is verified
       if (!response.user.isEmailVerified) {
         console.log('📧 Email not verified, redirecting to verification page');
-        // Store user data in localStorage for the verification page
-        localStorage.setItem('user', JSON.stringify(response.user));
-        window.location.href = '/email-verification-required';
+        navigate('/email-verification-required', { replace: true });
         return response;
       }
 
-      // Navigate to appropriate dashboard using response user data
+      // Navigate to appropriate dashboard smoothly without full page reload
       const dashboardRoute = getDashboardRouteForUser(response.user);
       console.log('✅ Login successful, redirecting to:', dashboardRoute);
-      
-      // Use window.location for navigation to avoid context issues
-      window.location.href = dashboardRoute;
+      navigate(dashboardRoute, { replace: true });
 
       return response;
     } catch (error) {
@@ -235,7 +268,7 @@ export const AuthProvider = ({ children }) => {
       const errorMessage = error?.message || error?.toString() || 'Login failed. Please try again.';
       throw new Error(errorMessage);
     }
-  }, []);
+  }, [navigate, getDashboardRouteForUser]);
 
   const logout = useCallback(async () => {
     try {
@@ -251,11 +284,12 @@ export const AuthProvider = ({ children }) => {
       apiService.clearTokens();
       setUser(null);
       setIsAuthenticated(false);
+      setLoading(false);
       
       // Redirect to home page
-      window.location.href = '/';
+      navigate('/', { replace: true });
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, navigate]);
 
   const getDashboardRoute = useCallback(() => {
     if (!user) return '/';
@@ -338,7 +372,7 @@ export const AuthProvider = ({ children }) => {
 
   const value = useMemo(() => ({
     user,
-    loading: loading || !initialized,
+    loading: loading && !user,
     isAuthenticated,
     login,
     logout,
