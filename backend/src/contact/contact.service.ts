@@ -41,7 +41,7 @@ export class ContactService {
   private async sendContactEmailToAdmin(contactData: SubmitContactFormDto): Promise<boolean> {
     try {
       // Get admin email from environment or use a default
-      const adminEmail = process.env.ADMIN_EMAIL || process.env.SMTP_USER;
+      const adminEmail = process.env.ADMIN_EMAIL || process.env.MAIL_FROM_ADDRESS || process.env.SMTP_USER;
       
       if (!adminEmail) {
         this.logger.error('No admin email configured');
@@ -225,8 +225,11 @@ export class ContactService {
         timestamp: new Date().toLocaleString()
       });
 
+      const fromName = process.env.MAIL_FROM_NAME ? `${process.env.MAIL_FROM_NAME} Contact Form` : 'VMS Class Contact Form';
+      const fromAddress = process.env.MAIL_FROM_ADDRESS || process.env.SMTP_USER || 'info@vmsclass.in';
+
       const mailOptions = {
-        from: `"VMS Techhub Contact Form" <${process.env.SMTP_USER}>`,
+        from: `"${fromName}" <${fromAddress}>`,
         to: adminEmail,
         subject: `New Contact Form Submission: ${contactData.subject}`,
         html: htmlContent,

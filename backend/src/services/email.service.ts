@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import * as handlebars from 'handlebars';
 import PDFDocument from 'pdfkit';
 
@@ -8,28 +9,64 @@ import PDFDocument from 'pdfkit';
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
   private transporter: nodemailer.Transporter | null = null;
+  private resendClient: Resend | null = null;
+  private mailer: 'resend' | 'smtp' = 'resend';
 
   constructor(private readonly configService: ConfigService) {
-    this.initializeTransporter();
+    this.initializeEmailClient();
+  }
+
+  private async initializeEmailClient() {
+    const configuredMailer = (this.configService.get<string>('MAIL_MAILER') || '').toLowerCase();
+    const resendApiKey = this.configService.get<string>('RESEND_API_KEY');
+
+    // Default to resend if explicitly requested or if RESEND_API_KEY is provided and not set to smtp
+    if (configuredMailer === 'resend' || (resendApiKey && configuredMailer !== 'smtp')) {
+      this.mailer = 'resend';
+      this.initializeResend(resendApiKey);
+    } else {
+      this.mailer = 'smtp';
+      await this.initializeTransporter();
+    }
+  }
+
+  private initializeResend(apiKey?: string) {
+    const key = apiKey || this.configService.get<string>('RESEND_API_KEY');
+    if (!key) {
+      this.logger.warn('Resend mailer selected but RESEND_API_KEY is not configured');
+      return;
+    }
+
+    try {
+      this.logger.log('Initializing Resend email client...');
+      this.resendClient = new Resend(key);
+      this.logger.log(`Resend email client initialized successfully (Sender: ${this.getDefaultFrom()})`);
+    } catch (error) {
+      this.logger.error('Failed to initialize Resend client:', error);
+      this.resendClient = null;
+    }
   }
 
   private async initializeTransporter() {
     try {
       this.logger.log('Initializing SMTP transporter...');
-      this.logger.log(`SMTP Host: ${this.configService.get('SMTP_HOST')}`);
-      this.logger.log(`SMTP Port: ${this.configService.get('SMTP_PORT')}`);
-      this.logger.log(`SMTP Secure: ${this.configService.get('SMTP_SECURE')}`);
-      this.logger.log(`SMTP User: ${this.configService.get('SMTP_USER')}`);
-      this.logger.log(`SMTP Pass: ${this.configService.get('SMTP_PASS') ? '***SET***' : 'NOT SET'}`);
+      const host = this.configService.get('SMTP_HOST');
+      const port = this.configService.get('SMTP_PORT');
+      const secure = this.configService.get('SMTP_SECURE') === 'true' || port === 465 || port === '465';
+      const user = this.configService.get('SMTP_USER');
+      const pass = this.configService.get('SMTP_PASS');
+
+      this.logger.log(`SMTP Host: ${host}`);
+      this.logger.log(`SMTP Port: ${port}`);
+      this.logger.log(`SMTP Secure: ${secure}`);
+      this.logger.log(`SMTP User: ${user}`);
+      this.logger.log(`SMTP Pass: ${pass ? '***SET***' : 'NOT SET'}`);
 
       this.transporter = nodemailer.createTransport({
-        host: this.configService.get('SMTP_HOST'),
-        port: this.configService.get('SMTP_PORT'),
-        secure: this.configService.get('SMTP_SECURE') === 'true',
-        auth: {
-          user: this.configService.get('SMTP_USER'),
-          pass: this.configService.get('SMTP_PASS'),
-        },
+        host,
+        port: Number(port) || 587,
+        secure,
+        auth: user ? { user, pass } : undefined,
       });
 
       // Verify connection configuration
@@ -49,6 +86,103 @@ export class EmailService {
     }
   }
 
+  public isReady(): boolean {
+    if (this.mailer === 'resend') {
+      return !!this.resendClient;
+    }
+    return !!this.transporter;
+  }
+
+  public getFromName(): string {
+    return this.configService.get<string>('MAIL_FROM_NAME') || 'VMS Class';
+  }
+
+  public getFromAddress(): string {
+    return this.configService.get<string>('MAIL_FROM_ADDRESS') || this.configService.get<string>('SMTP_USER') || 'info@vmsclass.in';
+  }
+
+  public getDefaultFrom(customName?: string): string {
+    const name = customName || this.getFromName();
+    const address = this.getFromAddress();
+    return `"${name}" <${address}>`;
+  }
+
+  public async sendMail(options: {
+    to: string | string[];
+    subject: string;
+    html: string;
+    text?: string;
+    from?: string;
+    attachments?: Array<{
+      filename: string;
+      content: Buffer | string;
+      contentType?: string;
+    }>;
+    headers?: Record<string, string>;
+  }): Promise<boolean> {
+    const from = options.from || this.getDefaultFrom();
+    const toRecipients = Array.isArray(options.to) ? options.to : [options.to];
+
+    this.logger.log(`[EmailService] Attempting to send email to: ${toRecipients.join(', ')} | Subject: "${options.subject}" | Mailer: ${this.mailer}`);
+
+    if (!this.isReady()) {
+      if (this.configService.get('NODE_ENV') === 'development') {
+        this.logger.log(`[DEV MODE] Email would be sent to: ${toRecipients.join(', ')}`);
+        return true;
+      }
+      this.logger.error(`[EmailService] Neither Resend nor SMTP is configured. Cannot send email to: ${toRecipients.join(', ')}`);
+      return false;
+    }
+
+    try {
+      if (this.mailer === 'resend' && this.resendClient) {
+        const resendAttachments = options.attachments?.map((att) => ({
+          filename: att.filename,
+          content: att.content,
+        }));
+
+        const response = await this.resendClient.emails.send({
+          from,
+          to: toRecipients,
+          subject: options.subject,
+          html: options.html,
+          text: options.text,
+          headers: options.headers,
+          attachments: resendAttachments,
+        });
+
+        if (response.error) {
+          this.logger.error(`Resend API error sending email to ${toRecipients.join(', ')}:`, response.error);
+          return false;
+        }
+
+        this.logger.log(`Email successfully sent via Resend to ${toRecipients.join(', ')}. ID: ${response.data?.id}`);
+        return true;
+      }
+
+      if (this.transporter) {
+        const mailOptions = {
+          from,
+          to: options.to,
+          subject: options.subject,
+          html: options.html,
+          text: options.text,
+          headers: options.headers,
+          attachments: options.attachments,
+        };
+
+        const result = await this.transporter.sendMail(mailOptions);
+        this.logger.log(`Email successfully sent via SMTP to ${toRecipients.join(', ')}. Message ID: ${result.messageId}`);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      this.logger.error(`Failed to send email to ${toRecipients.join(', ')}:`, error);
+      return false;
+    }
+  }
+
   /**
    * Send OTP Email
    */
@@ -57,11 +191,11 @@ export class EmailService {
       this.logger.log(`Attempting to send OTP email to: ${email}`);
       this.logger.log(`User Name: ${userName}`);
       this.logger.log(`OTP: ${otp}`);
-      this.logger.log(`Transporter available: ${this.transporter ? 'YES' : 'NO'}`);
+      this.logger.log(`Email service ready: ${this.isReady() ? 'YES' : 'NO'} (${this.mailer})`);
       this.logger.log(`NODE_ENV: ${this.configService.get('NODE_ENV')}`);
 
-      // In development mode or if SMTP fails, just log the OTP
-      if (this.configService.get('NODE_ENV') === 'development' || !this.transporter) {
+      // In development mode or if mailer is not ready, just log the OTP
+      if (!this.isReady() && this.configService.get('NODE_ENV') === 'development') {
         this.logger.log(`[DEV MODE] OTP for ${email}: ${otp}`);
         this.logger.log(`[DEV MODE] Email would be sent to: ${email}`);
         return true;
@@ -303,26 +437,14 @@ export class EmailService {
       const template = handlebars.compile(emailTemplate);
       const htmlContent = template({ userName, otp });
 
-      this.logger.log('Preparing mail options...');
-      const mailOptions = {
-        from: `"VMS Techhub" <${this.configService.get('SMTP_USER')}>`,
+      this.logger.log('Sending email...');
+      return await this.sendMail({
+        from: this.getDefaultFrom(),
         to: email,
-        subject: 'Verify Your Email Address - VMS Techhub',
+        subject: `Verify Your Email Address - ${this.getFromName()}`,
         html: htmlContent,
-        text: `Hello ${userName}!\n\nYour verification code is: ${otp}\n\nThis code will expire in 10 minutes.\n\nBest regards,\nThe VMS Techhub Team`,
-      };
-
-      this.logger.log('Mail options prepared:', {
-        from: mailOptions.from,
-        to: mailOptions.to,
-        subject: mailOptions.subject
+        text: `Hello ${userName}!\n\nYour verification code is: ${otp}\n\nThis code will expire in 10 minutes.\n\nBest regards,\nThe ${this.getFromName()} Team`,
       });
-
-      this.logger.log('Sending email via SMTP...');
-      const result = await this.transporter.sendMail(mailOptions);
-      this.logger.log(`OTP email sent successfully to ${email}. Message ID: ${result.messageId}`);
-      this.logger.log('Email result:', result);
-      return true;
     } catch (error) {
       this.logger.error(`Failed to send OTP email to ${email}:`, error);
       this.logger.error('Email Error Details:', {
@@ -341,7 +463,7 @@ export class EmailService {
    */
   async sendWelcomeEmail(email: string, userName: string): Promise<boolean> {
     try {
-      if (this.configService.get('NODE_ENV') === 'development' || !this.transporter) {
+      if (!this.isReady() && this.configService.get('NODE_ENV') === 'development') {
         this.logger.log(`[DEV MODE] Welcome email would be sent to: ${email}`);
         return true;
       }
@@ -582,17 +704,13 @@ export class EmailService {
         frontendUrl: this.configService.get('CORS_ORIGIN') || 'http://localhost:5173'
       });
 
-      const mailOptions = {
-        from: `"VMS Techhub" <${this.configService.get('SMTP_USER')}>`,
+      return await this.sendMail({
+        from: this.getDefaultFrom(),
         to: email,
-        subject: 'Welcome to VMS Techhub! 🎉',
+        subject: `Welcome to ${this.getFromName()}! 🎉`,
         html: htmlContent,
-        text: `Hello ${userName}!\n\nWelcome to VMS Techhub! Your account has been successfully verified.\n\nGet started by visiting our platform and completing your profile.\n\nBest regards,\nThe VMS Techhub Team`,
-      };
-
-      const result = await this.transporter.sendMail(mailOptions);
-      this.logger.log(`Welcome email sent successfully to ${email}. Message ID: ${result.messageId}`);
-      return true;
+        text: `Hello ${userName}!\n\nWelcome to ${this.getFromName()}! Your account has been successfully verified.\n\nGet started by visiting our platform and completing your profile.\n\nBest regards,\nThe ${this.getFromName()} Team`,
+      });
     } catch (error) {
       this.logger.error(`Failed to send welcome email to ${email}:`, error);
       return false;
@@ -606,8 +724,8 @@ export class EmailService {
     try {
       this.logger.log(`Attempting to send password reset OTP email to: ${email}`);
 
-      // In development mode or if SMTP fails, just log the OTP
-      if (this.configService.get('NODE_ENV') === 'development' || !this.transporter) {
+      // In development mode or if mailer not ready, just log the OTP
+      if (!this.isReady() && this.configService.get('NODE_ENV') === 'development') {
         this.logger.log(`[DEV MODE] Password Reset OTP for ${email}: ${otp}`);
         return true;
       }
@@ -780,17 +898,13 @@ export class EmailService {
       const template = handlebars.compile(emailTemplate);
       const htmlContent = template({ userName, otp });
 
-      const mailOptions = {
-        from: `"VMS Techhub" <${this.configService.get('SMTP_USER')}>`,
+      return await this.sendMail({
+        from: this.getDefaultFrom(),
         to: email,
-        subject: 'Password Reset Code - VMS Techhub',
+        subject: `Password Reset Code - ${this.getFromName()}`,
         html: htmlContent,
-        text: `Hello ${userName}!\n\nYour password reset verification code is: ${otp}\n\nThis code will expire in 10 minutes.\n\nBest regards,\nThe VMS Techhub Team`,
-      };
-
-      const result = await this.transporter.sendMail(mailOptions);
-      this.logger.log(`Password reset OTP email sent successfully to ${email}. Message ID: ${result.messageId}`);
-      return true;
+        text: `Hello ${userName}!\n\nYour password reset verification code is: ${otp}\n\nThis code will expire in 10 minutes.\n\nBest regards,\nThe ${this.getFromName()} Team`,
+      });
     } catch (error) {
       this.logger.error(`Failed to send password reset OTP email to ${email}:`, error);
       return false;
@@ -802,7 +916,7 @@ export class EmailService {
    */
   async sendPasswordResetEmail(email: string, resetToken: string, userName: string): Promise<boolean> {
     try {
-      if (this.configService.get('NODE_ENV') === 'development' || !this.transporter) {
+      if (!this.isReady() && this.configService.get('NODE_ENV') === 'development') {
         this.logger.log(`[DEV MODE] Password reset email would be sent to: ${email}`);
         return true;
       }
@@ -861,17 +975,13 @@ export class EmailService {
       const template = handlebars.compile(emailTemplate);
       const htmlContent = template({ userName, resetUrl });
 
-      const mailOptions = {
-        from: `"VMS Techhub" <${this.configService.get('SMTP_USER')}>`,
+      return await this.sendMail({
+        from: this.getDefaultFrom(),
         to: email,
-        subject: 'Password Reset Request - VMS Techhub',
+        subject: `Password Reset Request - ${this.getFromName()}`,
         html: htmlContent,
-        text: `Hello ${userName}!\n\nWe received a request to reset your password.\n\nClick this link to reset your password: ${resetUrl}\n\nThis link will expire in 1 hour.\n\nBest regards,\nThe VMS Techhub Team`,
-      };
-
-      const result = await this.transporter.sendMail(mailOptions);
-      this.logger.log(`Password reset email sent successfully to ${email}. Message ID: ${result.messageId}`);
-      return true;
+        text: `Hello ${userName}!\n\nWe received a request to reset your password.\n\nClick this link to reset your password: ${resetUrl}\n\nThis link will expire in 1 hour.\n\nBest regards,\nThe ${this.getFromName()} Team`,
+      });
     } catch (error) {
       this.logger.error(`Failed to send password reset email to ${email}:`, error);
       return false;
@@ -885,18 +995,21 @@ export class EmailService {
     try {
       this.logger.log(`Attempting to send contact email to: ${to}`);
 
-      // In development mode or if SMTP fails, just log the email
-      if (this.configService.get('NODE_ENV') === 'development' || !this.transporter) {
+      // In development mode or if mailer not ready, just log the email
+      if (!this.isReady() && this.configService.get('NODE_ENV') === 'development') {
         this.logger.log(`[DEV MODE] Contact email would be sent to: ${to}`);
         this.logger.log(`[DEV MODE] Subject: ${mailOptions.subject}`);
         this.logger.log(`[DEV MODE] Content preview: ${mailOptions.text?.substring(0, 100)}...`);
         return true;
       }
 
-      this.logger.log('Sending contact email via SMTP...');
-      const result = await this.transporter.sendMail(mailOptions);
-      this.logger.log(`Contact email sent successfully to ${to}. Message ID: ${result.messageId}`);
-      return true;
+      return await this.sendMail({
+        from: mailOptions.from || this.getDefaultFrom(`${this.getFromName()} Contact Form`),
+        to: to,
+        subject: mailOptions.subject,
+        html: mailOptions.html,
+        text: mailOptions.text,
+      });
     } catch (error) {
       this.logger.error(`Failed to send contact email to ${to}:`, error);
       return false;
@@ -922,11 +1035,11 @@ export class EmailService {
         expertExpertise,
         requirementTitle,
         applicationId,
-        nodeEnv: this.configService.get('NODE_ENV'),
-        hasTransporter: !!this.transporter
+        emailServiceReady: this.isReady(),
+        mailer: this.mailer
       });
 
-      if (this.configService.get('NODE_ENV') === 'development' || !this.transporter) {
+      if (!this.isReady() && this.configService.get('NODE_ENV') === 'development') {
         this.logger.log(`[DEV MODE] New application email would be sent to: ${collegeEmail}`);
         return true;
       }
@@ -1132,22 +1245,18 @@ export class EmailService {
         applicationUrl
       });
 
-      const mailOptions = {
-        from: `"VMS Techhub" <${this.configService.get('SMTP_USER')}>`,
+      return await this.sendMail({
+        from: this.getDefaultFrom(),
         to: collegeEmail,
         subject: `New Application from ${expertName} - ${requirementTitle}`,
         html: htmlContent,
-        text: `Hello ${collegeName}!\n\nGreat news! A new expert has submitted an application for your requirement: "${requirementTitle}".\n\nView the application: ${applicationUrl}\n\nBest regards,\nThe VMS Techhub Team`,
+        text: `Hello ${collegeName}!\n\nGreat news! A new expert has submitted an application for your requirement: "${requirementTitle}".\n\nView the application: ${applicationUrl}\n\nBest regards,\nThe ${this.getFromName()} Team`,
         headers: {
           'X-Entity-Ref-ID': applicationId,
-          'Message-ID': `<application-${applicationId}-${Date.now()}@vms-techhub.com>`,
+          'Message-ID': `<application-${applicationId}-${Date.now()}@vmsclass.in>`,
           'X-Prevent-Threading': '1'
         }
-      };
-
-      const result = await this.transporter.sendMail(mailOptions);
-      this.logger.log(`New application email sent successfully to ${collegeEmail}. Message ID: ${result.messageId}`);
-      return true;
+      });
     } catch (error) {
       this.logger.error(`Failed to send new application email to ${collegeEmail}:`, error);
       return false;
@@ -1166,7 +1275,7 @@ export class EmailService {
     reviewNotes?: string
   ): Promise<boolean> {
     try {
-      if (this.configService.get('NODE_ENV') === 'development' || !this.transporter) {
+      if (!this.isReady() && this.configService.get('NODE_ENV') === 'development') {
         this.logger.log(`[DEV MODE] Application status update email would be sent to: ${expertEmail}`);
         return true;
       }
@@ -1438,17 +1547,13 @@ export class EmailService {
         frontendUrl
       });
 
-      const mailOptions = {
-        from: `"VMS Techhub" <${this.configService.get('SMTP_USER')}>`,
+      return await this.sendMail({
+        from: this.getDefaultFrom(),
         to: expertEmail,
         subject: `Application ${statusText} - ${requirementTitle}`,
         html: htmlContent,
-        text: `Hello ${expertName}!\n\nYour application for "${requirementTitle}" at ${collegeName} has been ${statusText.toLowerCase()}.\n\n${reviewNotes ? `Review Notes: ${reviewNotes}\n\n` : ''}View your applications: ${frontendUrl}/dashboard/expert?tab=applications\n\nBest regards,\nThe VMS Techhub Team`
-      };
-
-      const result = await this.transporter.sendMail(mailOptions);
-      this.logger.log(`Application status update email sent successfully to ${expertEmail}. Message ID: ${result.messageId}`);
-      return true;
+        text: `Hello ${expertName}!\n\nYour application for "${requirementTitle}" at ${collegeName} has been ${statusText.toLowerCase()}.\n\n${reviewNotes ? `Review Notes: ${reviewNotes}\n\n` : ''}View your applications: ${frontendUrl}/dashboard/expert?tab=applications\n\nBest regards,\nThe ${this.getFromName()} Team`
+      });
     } catch (error) {
       this.logger.error(`Failed to send application status update email to ${expertEmail}:`, error);
       return false;
@@ -1579,8 +1684,8 @@ export class EmailService {
     try {
       this.logger.log(`Attempting to send subscription invoice email to: ${user.email}`);
 
-      // In development mode or if SMTP fails, just log
-      if (this.configService.get('NODE_ENV') === 'development' || !this.transporter) {
+      // In development mode or if mailer not ready, just log
+      if (!this.isReady() && this.configService.get('NODE_ENV') === 'development') {
         this.logger.log(`[DEV MODE] Invoice email would be sent to: ${user.email}`);
         return true;
       }
@@ -1698,37 +1803,35 @@ export class EmailService {
         currency: payment.currency || 'INR',
       });
 
-      const subject = `Invoice for your ${plan.name} Subscription - VMS Techhub`;
-      const adminEmail = this.configService.get('SMTP_USER'); // Use SMTP_USER for admin copy as requested
+      const subject = `Invoice for your ${plan.name} Subscription - ${this.getFromName()}`;
+      const adminEmail = this.configService.get('ADMIN_EMAIL') || this.configService.get('MAIL_FROM_ADDRESS') || this.configService.get('SMTP_USER');
 
       this.logger.log('Generating invoice PDF...');
       const pdfBuffer = await this.generateInvoicePdf(user, plan, subscription, payment);
 
       this.logger.log('Sending invoice to customer...');
-      // Verify Transporter again before sending 
-      if (this.transporter) {
-        // Send to Customer
-        await this.transporter.sendMail({
-          from: `"VMS Techhub" <${this.configService.get('SMTP_USER')}>`,
-          to: user.email,
-          subject: subject,
-          html: htmlContent,
-          attachments: [
-            {
-              filename: `Invoice-${payment.transactionId || 'INV'}.pdf`,
-              content: pdfBuffer,
-              contentType: 'application/pdf'
-            }
-          ]
-        });
+      const customerSent = await this.sendMail({
+        from: this.getDefaultFrom(),
+        to: user.email,
+        subject: subject,
+        html: htmlContent,
+        attachments: [
+          {
+            filename: `Invoice-${payment.transactionId || 'INV'}.pdf`,
+            content: pdfBuffer,
+            contentType: 'application/pdf'
+          }
+        ]
+      });
 
+      if (customerSent) {
         this.logger.log(`Invoice sent to user: ${user.email}`);
 
         // Send to Admin
         if (adminEmail) {
           this.logger.log(`Sending invoice copy to admin: ${adminEmail}`);
-          await this.transporter.sendMail({
-            from: `"VMS Techhub System" <${this.configService.get('SMTP_USER')}>`,
+          await this.sendMail({
+            from: this.getDefaultFrom(`${this.getFromName()} System`),
             to: adminEmail,
             subject: `[ADMIN COPY] ${subject}`,
             html: `
@@ -1747,14 +1850,11 @@ export class EmailService {
           });
           this.logger.log(`Invoice copy sent to admin: ${adminEmail}`);
         } else {
-          this.logger.warn('Admin email (SMTP_USER) not set, skipping admin copy.');
+          this.logger.warn('Admin email not set, skipping admin copy.');
         }
-      } else {
-        this.logger.error('Transporter not available, cannot send invoice.');
-        return false;
       }
 
-      return true;
+      return customerSent;
     } catch (error) {
       this.logger.error(`Failed to send invoice email to ${user.email}:`, error);
       return false;
