@@ -35,6 +35,23 @@ export const useAuth = () => {
   return context;
 };
 
+export const getDashboardRouteForUser = (userData) => {
+  if (!userData || !userData.role) return '/';
+  
+  switch (userData.role) {
+    case 'EXPERT':
+      return '/dashboard/expert';
+    case 'COLLEGE_ADMIN':
+      return '/dashboard/college';
+    case 'SUPER_ADMIN':
+      return '/dashboard/super-admin';
+    default:
+      return '/dashboard';
+  }
+};
+  
+
+
 export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
 
@@ -268,7 +285,7 @@ export const AuthProvider = ({ children }) => {
       const errorMessage = error?.message || error?.toString() || 'Login failed. Please try again.';
       throw new Error(errorMessage);
     }
-  }, [navigate, getDashboardRouteForUser]);
+  }, [navigate]);
 
   const logout = useCallback(async () => {
     try {
@@ -293,33 +310,8 @@ export const AuthProvider = ({ children }) => {
 
   const getDashboardRoute = useCallback(() => {
     if (!user) return '/';
-    
-    switch (user.role) {
-      case 'EXPERT':
-        return '/dashboard/expert';
-      case 'COLLEGE_ADMIN':
-        return '/dashboard/college';
-      case 'SUPER_ADMIN':
-        return '/dashboard/super-admin';
-      default:
-        return '/dashboard';
-    }
+    return getDashboardRouteForUser(user);
   }, [user]);
-
-  const getDashboardRouteForUser = useCallback((userData) => {
-    if (!userData || !userData.role) return '/';
-    
-    switch (userData.role) {
-      case 'EXPERT':
-        return '/dashboard/expert';
-      case 'COLLEGE_ADMIN':
-        return '/dashboard/college';
-      case 'SUPER_ADMIN':
-        return '/dashboard/super-admin';
-      default:
-        return '/dashboard';
-    }
-  }, []);
 
   // Check if user is authenticated on app load (only once)
   useEffect(() => {
@@ -378,6 +370,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     checkAuthStatus,
     getDashboardRoute,
+    getDashboardRouteForUser,
     setUser,
   }), [user, loading, initialized, isAuthenticated, login, logout, checkAuthStatus, getDashboardRoute, setUser]);
 
