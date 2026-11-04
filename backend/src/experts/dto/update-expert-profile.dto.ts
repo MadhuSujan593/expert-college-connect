@@ -37,7 +37,7 @@ export class UpdateExpertProfileDto {
   bio?: string;
 
   @IsOptional()
-  @Transform(({ value }) => parseFloat(value))
+  @Transform(({ value }) => (value === '' || value === null || value === undefined ? undefined : parseFloat(value)))
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   hourlyRate?: number;

@@ -125,12 +125,25 @@ export class ExpertProfileService {
     // Update user table if user fields are provided
     if (Object.keys(userFields).length > 0) {
       console.log('Updating user table...');
-      // If phone is being updated, set it as verified
       const userUpdateData: any = { ...userFields };
+
+      // If phone is being updated, verify it isn't already taken by another user
       if (userUpdateData.phone) {
+        const existingUserWithPhone = await this.prisma.user.findFirst({
+          where: {
+            phone: userUpdateData.phone,
+            id: { not: userId },
+          },
+        });
+
+        if (existingUserWithPhone) {
+          throw new BadRequestException('This phone number is already registered to another account.');
+        }
+
         userUpdateData.isPhoneVerified = true;
         userUpdateData.phoneVerifiedAt = new Date();
       }
+
       await this.prisma.user.update({
         where: { id: userId },
         data: userUpdateData,

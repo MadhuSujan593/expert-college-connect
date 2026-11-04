@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsBoolean, IsDateString, MaxLength, IsArray } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsBoolean, IsDateString, MaxLength, IsArray, ValidateIf } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class CreateWorkExperienceDto {
@@ -22,6 +22,8 @@ export class CreateWorkExperienceDto {
   startDate: string;
 
   @IsOptional()
+  @Transform(({ value }) => (value === '' || value === null ? undefined : value))
+  @ValidateIf((o) => !o.isCurrent && o.endDate !== undefined && o.endDate !== null)
   @IsDateString()
   endDate?: string;
 
